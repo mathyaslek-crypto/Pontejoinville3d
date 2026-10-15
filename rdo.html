@@ -865,22 +865,29 @@ async function buildPdf(d){
  if(x.stops.length)table([{t:'#',w:.04},{t:'Horário',w:.13},{t:'Duração',w:.08,align:'right'},{t:'Atividade',w:.25,bold:true},{t:'Equipe',w:.17},{t:'Tipo do motivo',w:.33}],
   [...x.stops].sort((p,q)=>p.sm-q.sm).map((p,i)=>{let a=st.acts.find(k=>k.key===p.act),c=p.crew==='all'?'Todas da atividade':short(x.crews.find(k=>k.id===p.crew)?.fid||'');return {cells:[String(i+1),span(p.sm,p.em),fmtH((p.em-p.sm)/60),actName(a),c,p.type],sub:'Motivo: '+p.desc};}));
  else none('Sem paralisações no dia.');
- section('6. Registro fotográfico',40);
- if(x.photos.length){const BH=190,pw=(W-12)/2;let order=new Map(st.acts.map((a,i)=>[a.key,i]));
-  for(let g of [...x.photos].sort((p,q)=>(order.get(p.act)??99)-(order.get(q.act)??99))){let a=st.acts.find(k=>k.key===g.act),c=x.crews.find(k=>k.id===g.crew),urls=[];
-   for(let id of g.items){let b=await getPhoto(id);if(b)urls.push(await blobURL(b));}if(!urls.length)continue;
-   need(24+BH+16);doc.rect(M,y,W,18,{fill:SOFT,stroke:LINE,lw:.5});doc.text(M+6,y+4.5,doc.wrap(`${actName(a)} · ${a?span(a.sm,a.em):''} · ${c?title(c.fid):'Sem encarregado'}`,8.5,true,W-12)[0],{size:8.5,bold:true,color:INK});y+=22;
-   for(let i=0;i<urls.length;i+=2){need(BH+16);for(let j=0;j<2&&i+j<urls.length;j++){let u=urls[i+j],sz=await imgSize(u),sc=Math.min(pw/sz.w,BH/sz.h),iw=sz.w*sc,ih=sz.h*sc,bx=M+j*(pw+12);doc.rect(bx,y,pw,BH,{fill:SOFT,stroke:LINE,lw:.5});doc.image(u,bx+(pw-iw)/2,y+(BH-ih)/2,iw,ih);doc.text(bx,y+BH+3,'Foto '+(i+j+1)+' de '+urls.length,{size:7,color:MUTE});}y+=BH+14;}
-   y+=6;}}
- else none('Sem registro fotográfico.');
- section('7. Equipamentos na frente');
+ section('6. Equipamentos na frente');
  let eq=EQUIP.filter(t=>count(x.equipment[t]));
  if(eq.length)table([{t:'Equipamento',w:.35,bold:true},{t:'Identificação',w:.5},{t:'Qtd.',w:.15,align:'right'}],eq.map(t=>({cells:[t,x.equipment[t],String(count(x.equipment[t]))]})));
  else none('Nenhum equipamento informado.');
- section('8. Observações e ocorrências',40);
+ section('7. Observações e ocorrências',40);
  let lines=doc.wrap(x.notes||'Sem observações.',9,false,W-12);need(lines.length*12+14);doc.rect(M,y,W,lines.length*12+12,{stroke:LINE,lw:.6});lines.forEach((l,i)=>doc.text(M+6,y+6+i*12,l,{size:9,color:x.notes?INK:MUTE}));y+=lines.length*12+24;
  need(80);y=Math.max(y,doc.H-140);let sw=(W-30)/2;
  [[x.author,'Apontador'],['','Responsável pela frente']].forEach(([n,r],i)=>{let cx=M+i*(sw+30);doc.line(cx,y+40,cx+sw,y+40,{color:INK,lw:.8});doc.text(cx,y+45,n||' ',{size:9,bold:true,color:INK});doc.text(cx,y+57,r,{size:8,color:MUTE});});
+ // Anexo · Registro fotográfico: uma folha por atividade, com até 6 fotos (2 por linha).
+ let byAct=new Map;for(let g of x.photos){if(!byAct.has(g.act))byAct.set(g.act,{crews:new Set,items:[]});let e=byAct.get(g.act);if(g.crew)e.crews.add(g.crew);e.items.push(...g.items);}
+ let order=new Map(st.acts.map((a,i)=>[a.key,i])),groups=[...byAct.entries()].sort((p,q)=>(order.get(p[0])??99)-(order.get(q[0])??99));
+ if(!groups.length){}
+ for(let [k,g] of groups){let a=st.acts.find(z=>z.key===k),urls=[];for(let id of g.items.slice(0,6)){let bl=await getPhoto(id);if(bl)urls.push(await blobURL(bl));}if(!urls.length)continue;
+  doc.addPage();header();section('Anexo · Registro fotográfico',0);
+  let crs=[...g.crews].map(id=>x.crews.find(z=>z.id===id)).filter(Boolean).map(c=>title(c.fid)).join(', ')||'—';
+  doc.rect(M,y,W,40,{fill:'#fbf7ec',stroke:LINE,lw:.6});doc.rect(M,y,4,40,{fill:AMB});
+  doc.text(M+12,y+6,doc.wrap(a?(a.kind==='3d'?a.label+' · '+a.sub:'Atividade extra · '+a.label):'Atividade',11,true,W-24)[0],{size:11,bold:true,color:INK});
+  doc.text(M+12,y+23,doc.wrap(`${a?span(a.sm,a.em):''} · ${a?.kind==='3d'?(a.place?a.place+' · ':'')+a.status+' · ':''}Encarregado: ${crs} · ${urls.length} foto${urls.length>1?'s':''}`,8,false,W-24)[0],{size:8,color:MUTE});
+  y+=48;const pw=(W-12)/2,BH=Math.min(200,(doc.H-48-y-3*16)/3);
+  for(let i=0;i<urls.length;i++){let col=i%2,row=Math.floor(i/2),bx=M+col*(pw+12),by=y+row*(BH+16),u=urls[i],sz=await imgSize(u),sc=Math.min(pw/sz.w,BH/sz.h),iw=sz.w*sc,ih=sz.h*sc;
+   doc.rect(bx,by,pw,BH,{fill:SOFT,stroke:LINE,lw:.5});doc.image(u,bx+(pw-iw)/2,by+(BH-ih)/2,iw,ih);doc.text(bx,by+BH+3,'Foto '+(i+1)+' de '+urls.length,{size:7,color:MUTE});}
+  y+=Math.ceil(urls.length/2)*(BH+16);
+  }
  let n=doc.pages.length;doc.pages.forEach((p,i)=>{doc.cur=p;footer(i+1,n);});
  return doc.output();
 }
