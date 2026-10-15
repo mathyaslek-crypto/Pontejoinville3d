@@ -170,7 +170,7 @@ details.card>div{padding:0 16px 16px}
 <main id="content"></main>
 <div id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sh-t"><header><button class="btn ghost sm" type="button" id="sh-x" aria-label="Fechar">✕</button><div class="ttl"><b id="sh-t"></b><span id="sh-s"></span></div></header><div class="bar"><i id="sh-bar"></i></div><div class="body" id="sh-body"></div><footer id="sh-foot"></footer></div>
 <div id="notice" role="status" aria-live="polite"></div>
-<input type="file" id="file" accept=".json,application/json" multiple hidden>
+<input type="file" id="file" accept=".json,.txt,application/json,text/plain" multiple hidden>
 <script>
 'use strict';
 // MiniPDF — gerador de PDF offline (A4, Helvetica WinAnsi, linhas, retângulos, JPEG).
@@ -298,7 +298,7 @@ function pageToday(){
   <h3>Equipamentos na frente</h3><p class="hint" style="margin-top:0">Prefixos ou placas separados por vírgula.</p>
   <div class="eq">${EQUIP.map((t,i)=>`<label class="f">${t}<input id="eq${i}" value="${esc(d.equipment[t]||'')}" ${fin?'disabled':''}><small id="eqn${i}">${count(d.equipment[t])} un.</small></label>`).join('')}</div>
  </div></details>
- ${fin?'':`<button class="btn go big" type="button" id="finish">Finalizar RDO do dia</button><p class="hint" style="text-align:center">Gera o PDF oficial e o pacote para o 3D.</p>`}`;
+ ${fin?'':`<button class="btn go big" type="button" id="finish">Finalizar RDO do dia</button><p class="hint" style="text-align:center">Gera o PDF oficial e o pacote para o 3D. Na tela de compartilhar, escolha <b>OneDrive</b> e salve na pasta <b>RDO</b> da obra.</p>`}`;
  $('dprev').onclick=()=>{day=shift(day,-1);render();};$('dnext').onclick=()=>{if(day<today()){day=shift(day,1);render();}};
  $('editDay').onclick=()=>openDaySheet();
  $('newEv')&&($('newEv').onclick=()=>{if(!d.author)return openDaySheet(true);openWizard();});
@@ -448,9 +448,9 @@ const slug=s=>String(s||'apontador').normalize('NFD').replace(/[̀-ͯ]/g,'').rep
 function pkg(){return {schema:'alya-rdo-pacote-1',app:APP,from:db.profile||'',device:db.device,exported:new Date().toISOString(),catalog:catalog.generated,teams:db.teams,days:db.days,events:db.events};}
 function pdfFile(d){let f=getDay(d).finalized,bytes=buildPdf(d);return new File([bytes],`RDO_${d}_${slug(getDay(d).author)}_Rev${f?f.rev:0}.pdf`,{type:'application/pdf'});}
 async function shareFiles(d,withPkg){
- let files=[];try{if(d)files.push(pdfFile(d));if(withPkg){let p=pkg();files.push(new File([JSON.stringify(p)],`RDO_${slug(db.profile)}_${d||today()}.json`,{type:'application/json'}));db.sentAt=p.exported;}}catch(e){console.error(e);return note('Não foi possível gerar os arquivos: '+e.message,true);}
+ let files=[];try{if(d)files.push(pdfFile(d));if(withPkg){let p=pkg();files.push(new File([JSON.stringify(p)],`RDO_${slug(db.profile)}_${d||today()}_3D.txt`,{type:'text/plain'}));db.sentAt=p.exported;}}catch(e){console.error(e);return note('Não foi possível gerar os arquivos: '+e.message,true);}
  save();render();
- if(navigator.canShare&&navigator.canShare({files})){try{await navigator.share({files,title:'RDO '+br(d||today()),text:'RDO '+br(d||today())+' · '+(db.profile||'')});return note('Arquivos compartilhados.');}catch(e){if(e.name==='AbortError')return note('Compartilhamento cancelado. Os arquivos podem ser baixados em Enviar.');}}
+ if(navigator.canShare&&navigator.canShare({files})){try{await navigator.share({files,title:'RDO '+br(d||today()),text:'RDO '+br(d||today())+' · '+(db.profile||'')});return note('Arquivos enviados. Confira se foram salvos na pasta RDO da obra no OneDrive.');}catch(e){if(e.name==='AbortError')return note('Compartilhamento cancelado. Os arquivos podem ser baixados em Enviar.');}}
  for(let f of files){let url=URL.createObjectURL(f),a=document.createElement('a');a.href=url;a.download=f.name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);}
  note(files.length>1?'PDF e pacote salvos em Downloads. Envie pelo WhatsApp ou e-mail.':'Arquivo salvo em Downloads.');
 }
