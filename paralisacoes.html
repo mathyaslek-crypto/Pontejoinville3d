@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1117">
+<title>Paralisações · Ponte Joinville</title>
+<style>
+:root{--bg:#0e141a;--panel:#141c24;--raise:#1a242e;--line:#22303b;--line2:#304150;--ink:#e8edf2;--ink2:#c3ccd5;--muted:#8a99a8;--amber:#f2b33d;--rain:#3987e5;--bolt:#d95926;--stop:#d95926;--ok:#3fb37f;--warn:#e0a83a;
+ --s0:#18222c;--s1:#1f3347;--s2:#24507a;--s3:#2a6aa8;--s4:#3987e5;--s5:#86b8f2;
+ --f:Bahnschrift,"DIN Alternate","Segoe UI Variable Text","Segoe UI",Roboto,Arial,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.45 var(--f)}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;padding:12px 20px;background:#0b1117f2;backdrop-filter:blur(8px);border-bottom:1px solid var(--line);flex-wrap:wrap}
+header .mk{width:30px;height:30px;background:var(--amber);clip-path:polygon(50% 0,100% 100%,72% 100%,50% 52%,28% 100%,0 100%)}
+header h1{font-size:17px;margin:0;font-weight:600}
+header small{display:block;color:var(--muted);font-size:12px;font-weight:400}
+header .sp{flex:1}
+.btn{min-height:40px;padding:0 14px;border-radius:8px;border:1px solid var(--line2);background:var(--raise);color:#d3dbe3;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-size:14px;white-space:nowrap}
+.btn.primary{background:var(--amber);border-color:var(--amber);color:#18140a;font-weight:600}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+main{max-width:1280px;margin:0 auto;padding:16px 20px 60px}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.seg{display:flex;border:1px solid var(--line2);border-radius:9px;overflow:hidden;background:var(--raise)}
+.seg button{border:0;background:transparent;color:#b8c4cf;padding:0 14px;min-height:38px;cursor:pointer;font-size:13.5px}
+.seg button+button{border-left:1px solid var(--line2)}
+.seg button[aria-pressed=true]{background:var(--amber);color:#18140a;font-weight:600}
+input[type=date],select{min-height:38px;border-radius:8px;border:1px solid var(--line2);background:var(--raise);padding:0 10px;color-scheme:dark}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:4px 0 16px}
+.tabs button{border:0;background:transparent;color:var(--muted);padding:10px 14px;cursor:pointer;font-size:14.5px;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--amber);font-weight:600}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;position:relative}
+.card h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;font-weight:600;display:flex;justify-content:space-between;gap:10px}
+.card h2 span{letter-spacing:0;text-transform:none;font-weight:400}
+.grid{display:grid;gap:14px}
+.kpis{grid-template-columns:repeat(6,minmax(0,1fr))}
+.kpi .v{font-size:30px;font-weight:600;line-height:1.05;font-variant-numeric:tabular-nums}
+.kpi .v small{font-size:14px;color:var(--muted);font-weight:400;margin-left:3px}
+.kpi .s{color:var(--muted);font-size:12.5px;margin-top:6px}
+.kpi i{position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0}
+.two{grid-template-columns:1.6fr 1fr}
+.half{grid-template-columns:1fr 1fr}
+.legend{display:flex;gap:14px;font-size:12.5px;color:var(--ink2);text-transform:none;letter-spacing:0;font-weight:400}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+svg.chart{width:100%;display:block;overflow:visible}
+svg.chart text{fill:var(--muted);font-size:11px;font-family:var(--f)}
+svg.chart .gl{stroke:var(--line);stroke-width:1}
+svg.chart .ax{stroke:var(--line2)}
+svg.chart .hit{fill:transparent;cursor:crosshair}
+svg.chart .lab{fill:var(--ink2);font-size:11.5px}
+#tip{position:fixed;z-index:50;pointer-events:none;background:#0b1117;border:1px solid var(--line2);border-radius:8px;padding:8px 10px;font-size:12.5px;box-shadow:0 10px 24px #0009;min-width:150px;display:none}
+#tip b{display:block;margin-bottom:3px}
+#tip div{display:flex;justify-content:space-between;gap:14px;color:var(--ink2)}
+#tip div span:last-child{font-variant-numeric:tabular-nums;color:var(--ink)}
+.cal{display:flex;gap:18px;flex-wrap:wrap}
+.mon b{display:block;font-size:12.5px;margin-bottom:6px;color:var(--ink2);font-weight:600}
+.kpi .v.sm{font-size:22px;padding-top:6px}
+.mon .g{display:grid;grid-template-columns:repeat(7,26px);gap:3px}
+.mon .g span{width:26px;height:26px;border-radius:5px;background:var(--s0);font-size:10px;display:grid;place-items:center;color:#ffffff80}
+.mon .g span.e{background:transparent}
+.mon .g span.n{outline:1px dashed var(--line2);outline-offset:-1px;background:transparent;color:var(--muted)}
+.mon .g .h{background:transparent;color:var(--muted);font-size:10px;height:16px}
+.scale{display:flex;gap:4px;align-items:center;font-size:11.5px;color:var(--muted);margin-top:10px}
+.scale span{width:22px;height:12px;border-radius:3px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{position:sticky;top:0;background:#18212a;color:var(--muted);font-weight:600;text-align:left;padding:9px 10px;border-bottom:1px solid var(--line2);white-space:nowrap;cursor:pointer;user-select:none}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr:hover td{background:#17212b}
+.tw{max-height:640px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.pill{display:inline-block;font-size:11.5px;padding:1px 7px;border-radius:9px;background:#22303d;color:var(--ink2)}
+.pill.r{background:#15324d;color:#cfe7ff}
+.pill.w{background:#2a2412;color:#f6dc9a}
+.hb{display:grid;gap:8px}
+.hr{display:grid;grid-template-columns:minmax(0,42%) 1fr 92px;gap:10px;align-items:center;font-size:13px;cursor:default}
+.hr .l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink2)}
+.hr .t{height:12px;background:#1b2530;border-radius:4px;overflow:hidden}
+.hr .t i{display:block;height:100%;background:var(--stop);border-radius:0 4px 4px 0}
+.hr .v{text-align:right;font-variant-numeric:tabular-nums}
+.hr .v small{color:var(--muted);margin-left:4px}
+.mot{display:block;max-width:320px;color:var(--ink2)}
+.kpi .s{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty b{display:block;color:var(--ink);font-size:18px;margin-bottom:8px}
+.drop{border:2px dashed var(--line2);border-radius:14px}
+.drop.on{border-color:var(--amber);background:#2a241210}
+.note{font-size:12.5px;color:var(--muted)}
+.demo{background:#2a2412;border:1px solid #6b5520;color:#f6dc9a;border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:12px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b2631;border:1px solid var(--line2);border-radius:10px;padding:10px 16px;font-size:14px;display:none;z-index:60;max-width:calc(100% - 24px)}
+@media(max-width:1000px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.two,.half{grid-template-columns:1fr}}
+@media(max-width:560px){main{padding:12px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi .v{font-size:24px}header{padding:10px 12px}}
+</style>
+</head>
+<body>
+<header><a class="btn ghost" href="./" title="Voltar ao início" style="padding:0 10px">←</a><div class="mk"></div><div><h1>Paralisações · Ponte Joinville</h1><small id="sub">Dados dos RDOs dos apontadores</small></div><div class="sp"></div>
+ <button class="btn" id="folder" hidden>Pasta do RDO</button><button class="btn primary" id="imp">Importar RDOs</button><input type="file" id="file" multiple accept=".txt,.json" hidden></header>
+<main id="app"></main>
+<div id="tip"></div><div id="toast"></div>
+<script>
+'use strict';
+const KEY='alya-paral-v1',$=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=(n,d=1)=>Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:d});
+const fmtH=h=>{let m=Math.round((h||0)*60),H=Math.floor(m/60),M=m%60;return M?`${H}h${String(M).padStart(2,'0')}`:`${H}h`;};
+const br=d=>d?d.split('-').reverse().join('/'):'—';
+const wd=d=>new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','');
+const iso=x=>{let d=new Date(x);return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);};
+const addD=(d,n)=>{let x=new Date(d+'T12:00:00');x.setDate(x.getDate()+n);return x.toISOString().slice(0,10);};
+const today=()=>iso(Date.now());
+function toast(t){let e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',4200);}
+
+// ---------- Base de dados (no navegador) ----------
+let db={recs:{},days:{},files:{}},demo=null;
+try{let x=JSON.parse(localStorage.getItem(KEY));if(x&&x.recs)db=Object.assign({recs:{},days:{},files:{}},x);}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){toast('Sem espaço para salvar no navegador.');}};
+// Cada RDO substitui as paralisações daquele dia/apontador/turno (assim exclusões e correções também chegam).
+function importPkg(o,name,exported){
+ if(!o||o.schema!=='alya-rdo-pacote-1')throw Error(name+': não é um arquivo do RDO.');
+ if(!Array.isArray(o.paralisacoes))return name+': RDO antigo, sem paralisações estruturadas (use a V0.4 ou mais nova).';
+ let at=o.exported||exported||'',by=new Map;
+ for(let r of o.paralisacoes){if(!/^\d{4}-\d{2}-\d{2}$/.test(r.data))continue;let k=r.data+'|'+(r.apontador||'?')+'|'+(r.turno||'dia');if(!by.has(k))by.set(k,[]);by.get(k).push(r);}
+ for(let [d,x] of Object.entries(o.days||{})){if(!x||!(x.stops||x.extras||x.crews))continue;let k=d+'|'+(x.author||o.from||'?')+'|'+(x.shift||'dia');if(!by.has(k))by.set(k,[]);}
+ let add=0,nd=0;
+ for(let [k,list] of by){if(String(db.days[k]||'')>at)continue;for(let id of Object.keys(db.recs))if(db.recs[id]._k===k)delete db.recs[id];list.forEach((r,i)=>{db.recs[k+'|'+i]={...r,_k:k,_file:name};add++;});db.days[k]=at;nd++;}
+ return `${name}: ${add} paralisaç${add===1?'ão':'ões'} em ${nd} dia(s)`;}
+async function importFiles(files){let out=[];for(let f of files){try{out.push(importPkg(JSON.parse(await f.text()),f.name,new Date(f.lastModified).toISOString()));}catch(e){out.push(e.message);}}save();demo=null;render();toast(out.join(' · '));}
+$('imp').onclick=()=>$('file').click();$('file').onchange=()=>{importFiles([...$('file').files]);$('file').value='';};
+document.addEventListener('dragover',e=>{e.preventDefault();document.querySelector('.drop')?.classList.add('on');});
+document.addEventListener('drop',e=>{e.preventDefault();document.querySelector('.drop')?.classList.remove('on');if(e.dataTransfer.files.length)importFiles([...e.dataTransfer.files]);});
+
+// Pasta sincronizada do SharePoint (Chrome/Edge no computador): lê os RDOs novos sozinho.
+const canDir=typeof window.showDirectoryPicker==='function';let dir=null;
+function idb(){return new Promise((res,rej)=>{let r=indexedDB.open('alya-paral-pasta',1);r.onupgradeneeded=()=>r.result.createObjectStore('h');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+async function getH(){try{let d=await idb();return await new Promise(r=>{let q=d.transaction('h').objectStore('h').get('dir');q.onsuccess=()=>r(q.result||null);q.onerror=()=>r(null);});}catch(e){return null;}}
+async function setH(h){try{let d=await idb();d.transaction('h','readwrite').objectStore('h').put(h,'dir');}catch(e){}}
+async function walk(h,depth,out){for await(const e of h.values()){if(e.kind==='file'&&/\.(txt|json)$/i.test(e.name))out.push(e);else if(e.kind==='directory'&&depth<2)await walk(e,depth+1,out);}return out;}
+async function scan(manual){if(!dir)return;try{let perm=await dir.queryPermission({mode:'read'});if(perm!=='granted'){if(!manual)return toast('Clique em "Pasta do RDO" para liberar a leitura.');perm=await dir.requestPermission({mode:'read'});if(perm!=='granted')return;}
+ let out=[],n=0;for(let e of await walk(dir,0,[])){let f=await e.getFile(),k=e.name+'|'+f.size+'|'+f.lastModified;if(db.files[k])continue;db.files[k]=1;try{let o=JSON.parse(await f.text());if(o.schema==='alya-rdo-pacote-1'){out.push(importPkg(o,e.name,new Date(f.lastModified).toISOString()));n++;}}catch(err){}}
+ save();demo=null;render();toast(n?n+' RDO(s) lidos da pasta '+dir.name:'Pasta '+dir.name+': nenhum RDO novo.');}catch(e){toast('Não consegui ler a pasta: '+e.message);}}
+if(canDir){$('folder').hidden=false;$('folder').onclick=async()=>{if(dir){await scan(true);return;}try{dir=await showDirectoryPicker({id:'rdo-alya',mode:'read'});await setH(dir);$('folder').textContent='Ler pasta '+dir.name;await scan(true);}catch(e){}};
+ getH().then(h=>{if(h){dir=h;$('folder').textContent='Ler pasta '+h.name;setTimeout(()=>scan(false),800);}});
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&dir)scan(false);});}
+
+// ---------- Filtros ----------
+let st={tab:'dash',per:'30',from:'',to:'',turno:'todos',sort:['data',-1]};
+try{Object.assign(st,JSON.parse(localStorage.getItem(KEY+'-ui')||'{}'));}catch(e){}
+const saveUI=()=>{try{localStorage.setItem(KEY+'-ui',JSON.stringify(st));}catch(e){}};
+function allRecs(){return demo||Object.values(db.recs);}
+function range(rs){let ds=rs.map(r=>r.data).sort(),last=ds.at(-1)||today(),first=ds[0]||today();
+ if(st.per==='30')return [addD(last,-29),last];if(st.per==='mes')return [last.slice(0,8)+'01',last];if(st.per==='ano')return [last.slice(0,5)+'01-01',last];if(st.per==='custom')return [st.from||first,st.to||last];return [first,last];}
+function filtered(){let rs=allRecs();if(st.turno!=='todos')rs=rs.filter(r=>(r.turno||'dia')===st.turno);let [a,b]=range(allRecs());return {rs:rs.filter(r=>r.data>=a&&r.data<=b),a,b};}
+
+// ---------- Agrupamentos ----------
+const hh=r=>(+r.horas||0)*(+r.pessoas||0);
+function group(rs,fn){let m=new Map;for(let r of rs)for(let k of [].concat(fn(r))){if(!k)continue;let g=m.get(k)||{k,h:0,hh:0,n:0};g.h+=+r.horas||0;g.hh+=hh(r);g.n++;m.set(k,g);}return [...m.values()].sort((a,b)=>b.h-a.h);}
+function byDay(rs){let m=new Map;for(let r of rs){let g=m.get(r.data)||{data:r.data,h:0,hh:0,n:0};g.h+=+r.horas||0;g.hh+=hh(r);g.n++;m.set(r.data,g);}return [...m.values()].sort((a,b)=>a.data.localeCompare(b.data));}
+const actLabel=r=>r.tipoAtividade==='3D'&&r.servico?r.atividade+' · '+r.servico:(r.atividade||'—');
+function hbar(items,o){if(!items.length)return '<p class="note">Sem paralisações no período.</p>';let mx=Math.max(...items.map(i=>i[o.key]))||1,tot=items.reduce((s,i)=>s+i[o.key],0)||1;
+ return `<div class="hb">${items.slice(0,o.max||8).map(i=>`<div class="hr" data-tip="${esc(JSON.stringify({t:i.k,r:[['Horas paradas',fmtH(i.h)],['Homem-hora parado',fmt(i.hh)+' H-H'],['Ocorrências',String(i.n)]]}))}"><span class="l" title="${esc(i.k)}">${esc(i.k)}</span><span class="t"><i style="width:${Math.max(1.5,i[o.key]/mx*100)}%"></i></span><span class="v">${o.key==='hh'?fmt(i.hh):fmtH(i.h)} <small>${fmt(i[o.key]/tot*100,0)}%</small></span></div>`).join('')}${items.length>(o.max||8)?`<p class="note">+ ${items.length-(o.max||8)} outros</p>`:''}</div>`;}
+
+// ---------- Render ----------
+function render(){
+ let all=allRecs(),{rs,a,b}=filtered();
+ $('sub').textContent=all.length?`${demo?'Dados de exemplo':Object.keys(db.recs).length+' paralisações importadas'} · ${br(a)} a ${br(b)}`:'Dados dos RDOs dos apontadores';
+ if(!all.length){$('app').innerHTML=`<div class="card drop empty"><b>Nenhuma paralisação importada ainda</b>Importe os arquivos <b>_3D.txt</b> gerados pelo RDO (pode selecionar vários de uma vez ou arrastar para cá).${canDir?'<br>No computador, use <b>Pasta do RDO</b> e escolha a pasta TESTE RDO sincronizada: os novos RDOs entram sozinhos.':''}<div style="margin-top:18px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="btn primary" id="e1">Importar RDOs</button><button class="btn" id="e2">Ver com dados de exemplo</button></div></div>`;
+  $('e1').onclick=()=>$('file').click();$('e2').onclick=()=>{demo=makeDemo();render();};return;}
+ let nd=byDay(rs).length;
+ $('app').innerHTML=`${demo?'<div class="demo">Dados de <b>exemplo</b> só para visualizar. Importe os RDOs para ver os dados reais. <button class="btn ghost" id="nodemo" style="min-height:28px;margin-left:8px">Sair do exemplo</button></div>':''}
+ <div class="bar"><div class="seg" id="per">${[['30','30 dias'],['mes','Mês'],['ano','Ano'],['tudo','Tudo'],['custom','Período']].map(([k,t])=>`<button data-k="${k}" aria-pressed="${st.per===k}">${t}</button>`).join('')}</div>
+  ${st.per==='custom'?`<input type="date" id="from" value="${a}"><span class="note">a</span><input type="date" id="to" value="${b}">`:''}
+  <div class="seg" id="tur">${[['todos','Dia e noite'],['dia','Dia'],['noite','Noite']].map(([k,t])=>`<button data-k="${k}" aria-pressed="${st.turno===k}">${t}</button>`).join('')}</div>
+  <span class="note">${br(a)} a ${br(b)} · ${rs.length} paralisaç${rs.length===1?'ão':'ões'} em ${nd} dia${nd===1?'':'s'}</span></div>
+ <div class="tabs" role="tablist">${[['dash','Dashboard'],['graf','Gráficos'],['lin','Linhas']].map(([k,t])=>`<button role="tab" data-t="${k}" aria-selected="${st.tab===k}">${t}</button>`).join('')}</div>
+ <div id="view"></div>`;
+ $('nodemo')&&($('nodemo').onclick=()=>{demo=null;render();});
+ document.querySelectorAll('#per button').forEach(x=>x.onclick=()=>{st.per=x.dataset.k;saveUI();render();});
+ document.querySelectorAll('#tur button').forEach(x=>x.onclick=()=>{st.turno=x.dataset.k;saveUI();render();});
+ document.querySelectorAll('.tabs button').forEach(x=>x.onclick=()=>{st.tab=x.dataset.t;saveUI();render();});
+ $('from')&&($('from').onchange=()=>{st.from=$('from').value;saveUI();render();});$('to')&&($('to').onchange=()=>{st.to=$('to').value;saveUI();render();});
+ ({dash:viewDash,graf:viewGraf,lin:viewLin})[st.tab](rs,a,b);
+}
+function series(days,a,b){let m=new Map(days.map(d=>[d.data,d])),out=[];for(let d=a;d<=b;d=addD(d,1))out.push(m.get(d)||{data:d,none:true,h:0,hh:0,n:0});return out;}
+function viewDash(rs,a,b){
+ let H=rs.reduce((s,r)=>s+(+r.horas||0),0),HH=rs.reduce((s,r)=>s+hh(r),0),days=byDay(rs),mot=group(rs,r=>r.tipoMotivo||'Sem tipo'),act=group(rs,actLabel),enc=group(rs,r=>r.encarregados?.length?r.encarregados:['Sem encarregado']);
+ $('view').innerHTML=`<div class="grid kpis">
+  ${kpi('Horas paradas',fmtH(H),'',`média ${fmtH(days.length?H/days.length:0)} por dia parado`,'var(--stop)')}
+  ${kpi('Paralisações',rs.length,'',`${days.length} dia(s) com paralisação`,'var(--stop)')}
+  ${kpi('Homem-hora parado',fmt(HH),'H-H','horas × pessoas paradas','var(--stop)')}
+  ${kpi('Principal motivo',mot[0]?fmt(mot[0].h/H*100,0)+'%':'—','',mot[0]?mot[0].k:'—','var(--amber)')}
+  ${kpi('Atividade mais afetada',act[0]?fmtH(act[0].h):'—','',act[0]?act[0].k:'—','var(--amber)')}
+  ${kpi('Equipe mais afetada',enc[0]?fmtH(enc[0].h):'—','',enc[0]?enc[0].k:'—','var(--line2)')}
+ </div>
+ <div class="grid two" style="margin-top:14px"><div class="card"><h2>Horas paradas por dia <span class="legend"><span><i style="background:var(--stop)"></i>horas</span></span></h2>${barChart(series(days,a,b),{key:'h',color:'var(--stop)',unit:'h',h:240,fv:fmtH,tip:d=>[['Horas paradas',fmtH(d.h)],['Paralisações',String(d.n)],['Homem-hora',fmt(d.hh)+' H-H']]})}</div>
+  <div class="card"><h2>Por tipo de motivo <span>horas · % do total</span></h2>${hbar(mot,{key:'h'})}</div></div>
+ <div class="grid half" style="margin-top:14px"><div class="card"><h2>Por atividade <span>horas paradas</span></h2>${hbar(act,{key:'h'})}</div>
+  <div class="card"><h2>Por encarregado <span>horas paradas</span></h2>${hbar(enc,{key:'h'})}</div></div>`;
+ bindTips();}
+const kpi=(t,v,u,s,c)=>`<div class="card kpi"><i style="background:${c}"></i><h2>${t}</h2><div class="v ${String(v).length>7?'sm':''}">${v}<small>${u}</small></div><div class="s" title="${esc(s)}">${esc(s)}</div></div>`;
+function viewGraf(rs,a,b){let days=byDay(rs),s=series(days,a,b);
+ let months=new Map;for(let d of days){let k=d.data.slice(0,7),m=months.get(k)||{data:k,h:0,hh:0,n:0};m.h+=d.h;m.hh+=d.hh;m.n+=d.n;months.set(k,m);}let ms=[...months.values()];
+ $('view').innerHTML=`<div class="grid half"><div class="card"><h2>Horas paradas por dia <span>horas</span></h2>${barChart(s,{key:'h',color:'var(--stop)',unit:'h',h:240,fv:fmtH,tip:d=>[['Horas paradas',fmtH(d.h)],['Paralisações',String(d.n)]]})}</div>
+ <div class="card"><h2>Homem-hora parado por dia <span>H-H</span></h2>${barChart(s,{key:'hh',color:'var(--stop)',unit:'H-H',h:240,tip:d=>[['Homem-hora',fmt(d.hh)+' H-H'],['Horas paradas',fmtH(d.h)]]})}</div>
+ <div class="card"><h2>Horas paradas por mês <span>horas</span></h2>${barChart(ms,{key:'h',color:'var(--stop)',unit:'h',h:220,month:true,fv:fmtH,tip:d=>[['Horas paradas',fmtH(d.h)],['Paralisações',String(d.n)]]})}</div>
+ <div class="card"><h2>Homem-hora por motivo <span>H-H · % do total</span></h2>${hbar(group(rs,r=>r.tipoMotivo||'Sem tipo'),{key:'hh'})}</div>
+ <div class="card"><h2>Por frente de serviço <span>horas</span></h2>${hbar(group(rs,r=>r.frente||'Sem frente'),{key:'h'})}</div>
+ <div class="card"><h2>Atividades do 3D × extras <span>horas</span></h2>${hbar(group(rs,r=>r.tipoAtividade==='3D'?'Atividades do 3D':'Atividades extras'),{key:'h'})}</div></div>`;
+ bindTips();}
+function viewLin(rs){
+ let rows=rs.map(r=>({...r,hh:hh(r),ativ:actLabel(r),enc:(r.encarregados||[]).join(', ')}));
+ let [k,dir]=st.sort;rows.sort((x,y)=>{let p=x[k],q=y[k];return (p>q?1:p<q?-1:0)*dir||(x.inicio>y.inicio?1:-1);});
+ let cols=[['data','Data'],['inicio','Início'],['fim','Fim'],['horas','Horas',1],['turno','Turno'],['ativ','Atividade'],['enc','Encarregado'],['pessoas','Pessoas',1],['hh','H-H',1],['tipoMotivo','Tipo do motivo'],['motivo','Motivo'],['apontador','Apontador']];
+ const cell=(r,c)=>{let v=r[c];switch(c){case 'data':return `${br(v)} <span class="note">${wd(v)}</span>`;case 'horas':return fmtH(v);case 'hh':return fmt(v);case 'turno':return v==='noite'?'Noite':'Dia';case 'tipoMotivo':return `<span class="pill w">${esc(v||'—')}</span>`;case 'motivo':return `<span class="mot">${esc(v||'')}</span>`;default:return esc(v??'—');}};
+ $('view').innerHTML=`<div class="bar"><span class="note">${rows.length} paralisaç${rows.length===1?'ão':'ões'}</span><div style="flex:1"></div><button class="btn" id="csv">Baixar planilha (Excel)</button>${demo?'':'<button class="btn ghost" id="clear">Limpar dados</button>'}</div>
+ <div class="tw"><table><thead><tr>${cols.map(([c,t,n])=>`<th class="${n?'n':''}" data-c="${c}">${t}${k===c?(dir>0?' ▲':' ▼'):''}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${cols.map(([c,,n])=>`<td class="${n?'n':''}">${cell(r,c)}</td>`).join('')}</tr>`).join('')}</tbody>
+ ${rows.length?`<tfoot><tr><td><b>Total</b></td><td></td><td></td><td class="n"><b>${fmtH(rows.reduce((s,r)=>s+(+r.horas||0),0))}</b></td><td></td><td></td><td></td><td></td><td class="n"><b>${fmt(rows.reduce((s,r)=>s+r.hh,0))}</b></td><td></td><td></td><td></td></tr></tfoot>`:''}</table></div>
+ <p class="note">H-H = horas paradas × pessoas da equipe parada.</p>`;
+ document.querySelectorAll('th[data-c]').forEach(th=>th.onclick=()=>{let c=th.dataset.c;st.sort=[c,st.sort[0]===c?-st.sort[1]:-1];saveUI();render();});
+ $('csv').onclick=()=>downloadCSV(rows);
+ $('clear')&&($('clear').onclick=e=>{let b=e.currentTarget;if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent='Confirmar: apagar tudo';return;}db={recs:{},days:{},files:{}};save();render();toast('Dados apagados deste navegador.');});}
+function downloadCSV(rows){const n=v=>v==null?'':String(Math.round(v*100)/100).replace('.',',');
+ let head=['Data','Dia','Início','Fim','Horas','Turno','Apontador','Frente','Tipo de atividade','Atividade','Serviço','Encarregado(s)','Pessoas','Homem-hora','Tipo do motivo','Motivo'];
+ let body=rows.map(r=>[br(r.data),wd(r.data),r.inicio,r.fim,n(r.horas),r.turno==='noite'?'Noite':'Dia',r.apontador,r.frente||'',r.tipoAtividade||'',r.atividade||'',r.servico||'',(r.encarregados||[]).join(', '),r.pessoas??'',n(r.hh),r.tipoMotivo||'',r.motivo||'']);
+ let csv='﻿'+[head,...body].map(l=>l.map(v=>{v=String(v??'');return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(';')).join('\r\n');
+ let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download=`Paralisacoes_Ponte_Joinville_${today()}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);}
+
+// ---------- Gráficos (SVG) ----------
+const W=640;
+function scaleMax(v){if(v<=0)return 1;let p=Math.pow(10,Math.floor(Math.log10(v))),n=v/p;return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*p;}
+function xLabel(s,i,n,month){let d=s.data;if(month)return new Date(d+'-15T12:00:00').toLocaleDateString('pt-BR',{month:'short'}).replace('.','')+'/'+d.slice(2,4);let step=Math.ceil(n/8);return i%step===0?d.slice(8)+'/'+d.slice(5,7):'';}
+function axes(mx,h,unit,fmtv){let t=[0,.25,.5,.75,1].map(f=>f*mx);return t.map(v=>{let y=h-26-(v/mx)*(h-46);return `<line class="gl" x1="44" x2="${W}" y1="${y}" y2="${y}"/><text x="38" y="${y+4}" text-anchor="end">${fmtv?fmtv(v):fmt(v)}</text>`;}).join('');}
+function barChart(s,o){let h=o.h,n=s.length||1,mx=scaleMax(Math.max(...s.map(d=>+d[o.key]||0))),bw=(W-50)/n,gap=Math.max(Math.min(2,bw*.2),bw-56),ph=h-46;
+ let bars=s.map((d,i)=>{let v=+d[o.key]||0,bh=v/mx*ph,x=48+i*bw,y=h-26-bh;return `${v>0?`<path d="M${x+gap/2} ${h-26}V${y+Math.min(4,bh)}q0-${Math.min(4,bh)} ${Math.min(4,bh)}-${Math.min(4,bh)}h${Math.max(0,bw-gap-2*Math.min(4,bh))}q${Math.min(4,bh)} 0 ${Math.min(4,bh)} ${Math.min(4,bh)}V${h-26}z" fill="${o.color}"/>`:d.none&&!o.month?`<rect x="${x+gap/2}" y="${h-28}" width="${Math.max(1,bw-gap)}" height="2" fill="var(--line2)"/>`:''}<text x="${x+bw/2}" y="${h-8}" text-anchor="middle">${xLabel(d,i,n,o.month)}</text><rect class="hit" x="${x}" y="0" width="${bw}" height="${h-26}" data-tip="${esc(JSON.stringify({t:o.month?xLabel(d,0,1,true):br(d.data)+' · '+wd(d.data),r:d.none&&!o.month?[['Sem paralisação','']]:(o.tip?o.tip(d):[['Valor',fmt(v)+' '+o.unit]])}))}"/>`;}).join('');
+ let top=s.reduce((m,d)=>(+d[o.key]||0)>(+m?.[o.key]||0)?d:m,null);
+ let lab=top&&(+top[o.key])>0?(()=>{let i=s.indexOf(top),x=48+i*bw+bw/2,y=h-26-(+top[o.key])/mx*ph-6;return `<text class="lab" x="${x}" y="${y}" text-anchor="middle">${(o.fv||fmt)(+top[o.key])}</text>`;})():'';
+ return `<svg class="chart" viewBox="0 0 ${W} ${h}" role="img" aria-label="Gráfico de barras">${axes(mx,h,o.unit,o.fv)}<line class="ax" x1="44" x2="${W}" y1="${h-26}" y2="${h-26}"/>${bars}${lab}</svg>`;}
+function stackChart(s,o){let keys=o.keys||[['hc','var(--rain)','Chuva'],['hr','var(--bolt)','Raio']],h=o.h,n=s.length||1,unit=o.unit||'h',mx=scaleMax(Math.max(...s.map(d=>keys.reduce((t,[k])=>t+(+d[k]||0),0)))),bw=(W-50)/n,gap=Math.max(Math.min(2,bw*.2),bw-56),ph=h-46;
+ const fv=v=>unit==='h'?fmtH(v):fmt(v);
+ let bars=s.map((d,i)=>{let x=48+i*bw,y=h-26,segs='';keys.forEach(([k,c],j)=>{let v=+d[k]||0;if(!v)return;let bh=v/mx*ph;y-=bh;segs+=`<rect x="${x+gap/2}" y="${y+(j?1:0)}" width="${Math.max(1,bw-gap)}" height="${Math.max(1,bh-(j?1:0))}" rx="${Math.min(3,bw/4)}" fill="${c}"/>`;});
+  return `${segs}<text x="${x+bw/2}" y="${h-8}" text-anchor="middle">${xLabel(d,i,n,o.month)}</text><rect class="hit" x="${x}" y="0" width="${bw}" height="${h-26}" data-tip="${esc(JSON.stringify({t:o.month?xLabel(d,0,1,true):br(d.data)+' · '+wd(d.data),r:d.none&&!o.month?[['Sem registro','']]:keys.map(([k,,t])=>[t,d[k]==null&&unit!=='h'?'—':fv(+d[k]||0)])}))}"/>`;}).join('');
+ return `<svg class="chart" viewBox="0 0 ${W} ${h}" role="img" aria-label="Gráfico de barras empilhadas">${axes(mx,h,unit,fv)}<line class="ax" x1="44" x2="${W}" y1="${h-26}" y2="${h-26}"/>${bars}</svg>`;}
+function lineChart(s,o){let h=o.h,n=s.length,mx=scaleMax(Math.max(...s.map(d=>d[o.key]))),ph=h-46,X=i=>48+(n>1?i*(W-56)/(n-1):(W-56)/2),Y=v=>h-26-v/mx*ph;
+ let pts=s.map((d,i)=>`${X(i).toFixed(1)},${Y(d[o.key]).toFixed(1)}`).join(' '),bw=(W-50)/Math.max(1,n);
+ let last=s.at(-1);
+ return `<svg class="chart" viewBox="0 0 ${W} ${h}" role="img" aria-label="Linha de chuva acumulada">${axes(mx,h,o.unit)}<line class="ax" x1="44" x2="${W}" y1="${h-26}" y2="${h-26}"/>
+ <polygon points="48,${h-26} ${pts} ${X(n-1)},${h-26}" fill="${o.color}" opacity=".12"/><polyline points="${pts}" fill="none" stroke="${o.color}" stroke-width="2" stroke-linejoin="round"/>
+ ${last?`<circle cx="${X(n-1)}" cy="${Y(last[o.key])}" r="4.5" fill="var(--panel)" stroke="${o.color}" stroke-width="2"/><text class="lab" x="${X(n-1)-8}" y="${Y(last[o.key])-10}" text-anchor="end">${fmt(last[o.key])} ${o.unit}</text>`:''}
+ ${s.map((d,i)=>`<text x="${X(i)}" y="${h-8}" text-anchor="middle">${xLabel(d,i,n)}</text><rect class="hit" x="${X(i)-bw/2}" y="0" width="${bw}" height="${h-26}" data-tip="${esc(JSON.stringify({t:br(d.data)+' · '+wd(d.data),r:[['Acumulado',fmt(d[o.key])+' mm'],['No dia',d.none?'sem registro':fmt(d.total)+' mm']]}))}"/>`).join('')}</svg>`;}
+function calendar(days,a,b){let m=new Map(days.map(d=>[d.data,d])),months=[];for(let d=a.slice(0,8)+'01';d<=b;){months.push(d.slice(0,7));let x=new Date(d+'T12:00:00');x.setMonth(x.getMonth()+1);d=x.toISOString().slice(0,8)+'01';}
+ const col=v=>v<=0?'var(--s0)':v<2?'var(--s1)':v<10?'var(--s2)':v<25?'var(--s3)':v<50?'var(--s4)':'var(--s5)';
+ return `<div class="cal">${months.slice(-4).map(k=>{let first=new Date(k+'-01T12:00:00'),pad=first.getDay(),dim=new Date(first.getFullYear(),first.getMonth()+1,0).getDate(),cells=[];
+  for(let i=0;i<pad;i++)cells.push('<span class="e"></span>');for(let i=1;i<=dim;i++){let d=k+'-'+String(i).padStart(2,'0'),r=m.get(d);cells.push(r?`<span style="background:${col(r.total)};color:${r.total>=25?'#0b1117':'#ffffffb0'}" data-tip="${esc(JSON.stringify({t:br(d)+' · '+wd(d),r:[['Chuva',r.medido?fmt(r.total)+' mm':'sem leitura'],['Parada chuva',fmtH(r.hc)],['Parada raio',fmtH(r.hr)]]}))}">${i}</span>`:`<span class="n">${i}</span>`);}
+  return `<div class="mon"><b>${(t=>t[0].toUpperCase()+t.slice(1))(first.toLocaleDateString('pt-BR',{month:'long',year:'numeric'}))}</b><div class="g">${['D','S','T','Q','Q','S','S'].map(x=>`<span class="h">${x}</span>`).join('')}${cells.join('')}</div></div>`;}).join('')}</div>
+ <div class="scale">0 <span style="background:var(--s0)"></span><span style="background:var(--s1)"></span><span style="background:var(--s2)"></span><span style="background:var(--s3)"></span><span style="background:var(--s4)"></span><span style="background:var(--s5)"></span> 50+ mm · tracejado = sem registro</div>`;}
+function bindTips(){let tip=$('tip');document.querySelectorAll('[data-tip]').forEach(el=>{el.onmousemove=e=>{let d=JSON.parse(el.dataset.tip);tip.innerHTML=`<b>${esc(d.t)}</b>${d.r.map(([k,v])=>`<div><span>${esc(k)}</span><span>${esc(v)}</span></div>`).join('')}`;tip.style.display='block';let x=e.clientX+14,y=e.clientY+14;if(x+190>innerWidth)x=e.clientX-200;tip.style.left=x+'px';tip.style.top=y+'px';};el.onmouseleave=()=>tip.style.display='none';el.onclick=el.onmousemove;});}
+
+// ---------- Exemplo ----------
+function makeDemo(){let out=[],seed=11,rnd=()=>(seed=(seed*16807)%2147483647)/2147483647,end=today();
+ const MOT=['Falta de material','Falta ou quebra de equipamento','Aguardando concreto / bomba','Aguardando liberação (qualidade, topografia, fiscalização)','Aguardando outra equipe ou frente','Nível do rio / maré','Projeto ou definição técnica','Segurança do trabalho'],W=[5,4,4,3,2,2,1,1];
+ const ACT=[['VPM - 23 - 38,7m - C','Armação','3D'],['AP05.1','Concretagem','3D'],['Aduela A01 - 9.1','Forma','3D'],['Bloco 4A','Escavação','3D'],['Travessa 12','Forma','3D'],['Limpeza do canteiro','','Extra']],ENC=['Edinarte Oliveira da Silva','Celso Custodio Santana','Cicero Alves de Santana','Ariosvaldo Silva de Jesus','Ivanildo Macedo Araujo'];
+ const pickW=()=>{let t=W.reduce((a,b)=>a+b),r=rnd()*t;for(let i=0;i<W.length;i++){if((r-=W[i])<0)return MOT[i];}return MOT[0];};
+ for(let i=60;i>=0;i--){let d=addD(end,-i),w=new Date(d+'T12:00:00').getDay();if(w===0)continue;let n=rnd()<.45?(rnd()<.3?2:1):0;
+  for(let j=0;j<n;j++){let s=7*60+Math.floor(rnd()*8)*60+Math.floor(rnd()*4)*15,dur=[15,30,45,60,90,120,180][Math.floor(rnd()*7)],a=ACT[Math.floor(rnd()*ACT.length)],e=ENC[Math.floor(rnd()*ENC.length)],hm=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+   out.push({data:d,apontador:'Exemplo',turno:rnd()<.85?'dia':'noite',frente:rnd()<.6?'Boa Vista':'Adhemar',inicio:hm(s),fim:hm(s+dur),horas:dur/60,atividade:a[0],servico:a[1],tipoAtividade:a[2],encarregados:[e],pessoas:3+Math.floor(rnd()*9),tipoMotivo:pickW(),motivo:'Exemplo de descrição do motivo da paralisação.'});}}
+ return out;}
+
+render();
+window.__paral={get db(){return db},importPkg,render,demo:()=>{demo=makeDemo();render();}};
+</script>
+</body>
+</html>
