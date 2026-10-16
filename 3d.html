@@ -7030,7 +7030,7 @@ function stats(){const out={n:0,ok:0,and:0,lib:0,pend:0,spans:0,okSpans:0,vc:0,v
 
 // ---------- 3D ----------
 const MAT={};
-function mat(k){if(MAT[k])return MAT[k];const o={ok:{color:0xdcd7cb,roughness:.82,metalness:0},and:{color:0xf0b43c,roughness:.7,metalness:0},lib:{color:0x9cc7f0,roughness:.6,metalness:0,transparent:true,opacity:.42,depthWrite:false},pend:{color:0xb8c0c8,roughness:.6,metalness:0,transparent:true,opacity:.16,depthWrite:false}}[k];return MAT[k]=new ye(o);}
+function mat(k){if(MAT[k])return MAT[k];const o={ok:{color:0xdcd7cb,roughness:.82,metalness:0},and:{color:0xf0b43c,roughness:.7,metalness:0},lib:{color:0x8fbdea,roughness:.65,metalness:0},pend:{color:0xb9c1c9,roughness:.7,metalness:0,transparent:true,opacity:.72}}[k];return MAT[k]=new ye(o);}
 const GEO=new Pn(1,1,1),group=new De;group.name='Pré-lajes (V1.48)';const meshes=new Map;let built=false;
 function geomOf(p){const a=p.angle||0,dx=Math.cos(a),dz=-Math.sin(a),run=p.w;
  // ponta A (apoio p.a) = centro − dir·run/2 com fundo y0; ponta B = centro + dir·run/2 com fundo y1
@@ -7056,7 +7056,7 @@ function buildSpan(s){const bs=beams(s);if(bs.length<2)return null;
 function build(){if(built)return;built=true;for(const s of SPEC){try{const im=buildSpan(s);if(im){meshes.set(s.uid,im);group.add(im);}}catch(e){console.warn('pré-laje',s.uid,e);}}}
 function ghostOn(){try{return W('ghost').checked;}catch(e){return true;}}
 function paint(){if(!built)return;const date=Ul(),gh=ghostOn();
- for(const s of SPEC){const im=meshes.get(s.uid);if(!im)continue;const st=status(s,date);im.material=mat(st.k);im.visible=inScope(s)&&(gh||st.k==='ok'||st.k==='and');}}
+ for(const s of SPEC){const im=meshes.get(s.uid);if(!im)continue;const st=status(s,date);im.material=mat(st.k);im.visible=inScope(s);}}
 function ensure(){if(typeof Xr==='undefined'||!Xr)return;if(!built&&typeof tr!=='undefined'&&tr['9.1']){build();paint();}
  if(group.parent!==Xr)Xr.add(group);let v=false;try{v=show&&Zt==='all';}catch(e){}group.visible=v;}
 let lastT=0;function tick(t){if(t-lastT>700){lastT=t;try{ensure();}catch(e){console.warn(e);}}requestAnimationFrame(tick);}requestAnimationFrame(tick);
