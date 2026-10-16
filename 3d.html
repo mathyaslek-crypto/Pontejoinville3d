@@ -7032,11 +7032,17 @@ function stats(){const out={n:0,ok:0,and:0,lib:0,pend:0,spans:0,okSpans:0,vc:0,v
 const MAT={};
 function mat(k){if(MAT[k])return MAT[k];const o={ok:{color:0xdcd7cb,roughness:.82,metalness:0},and:{color:0xf0b43c,roughness:.7,metalness:0},lib:{color:0x8fbdea,roughness:.65,metalness:0},pend:{color:0xb9c1c9,roughness:.7,metalness:0,transparent:true,opacity:.72}}[k];return MAT[k]=new ye(o);}
 const GEO=new Pn(1,1,1),group=new De;group.name='Pré-lajes (V1.48)';const meshes=new Map;let built=false;
+// V1.48b: cada ponta do painel é assentada no topo real da malha da viga (raio vertical), não só na cota calculada
+let beamMesh=null;const RC=new Vs,DOWN=new P(0,-1,0);
+function meshOf(b,id){if(!beamMesh){beamMesh=new Map;Xr.traverse(o=>{const u=o.userData;if(o.isMesh&&u&&u.beam&&u.s)beamMesh.set(u.b+'|'+u.s,o);});}return beamMesh.get(b+'|'+id);}
+function snap(q,g){if(!g.mesh)return q;RC.set(new P(q.x,q.y+4,q.z),DOWN);RC.far=10;const h=RC.intersectObject(g.mesh,false)[0];if(h)q.y=h.point.y+TH/2;return q;}
 function geomOf(p){const a=p.angle||0,dx=Math.cos(a),dz=-Math.sin(a),run=p.w;
  // ponta A (apoio p.a) = centro − dir·run/2 com fundo y0; ponta B = centro + dir·run/2 com fundo y1
- return {x:p.x,z:p.z,dx,dz,run,yA:p.y0+p.h,yB:p.y1+p.h};}
-function at(g,s){const t=.5+s/g.run;return new P(g.x+g.dx*s,g.yA+(g.yB-g.yA)*Math.max(0,Math.min(1,t))+TH/2,g.z+g.dz*s);}
-function buildSpan(s){const bs=beams(s);if(bs.length<2)return null;
+ return {x:p.x,z:p.z,dx,dz,run,yA:p.y0+p.h,yB:p.y1+p.h,mesh:meshOf(curB,p.id)};}
+// V1.48b: no Boa Vista o tabuleiro foi reperfilado na V1.42 (as vigas acima de x≈200 são deslocadas na malha); aplica o mesmo deslocamento
+let curB='';const d42=x=>{try{return window.__v42&&curB.startsWith('9.')?window.__v42.delta(curB,x)||0:0;}catch(e){return 0;}};
+function at(g,s){const t=.5+s/g.run,x=g.x+g.dx*s,tc=Math.max(0,Math.min(1,t)),dA=d42(g.x-g.dx*g.run/2),dB=d42(g.x+g.dx*g.run/2);return snap(new P(x,g.yA+(g.yB-g.yA)*tc+TH/2+dA+(dB-dA)*tc,g.z+g.dz*s),g);}
+function buildSpan(s){curB=s.b;const bs=beams(s);if(bs.length<2)return null;
  const ref=geomOf(bs[0]);bs.sort((u,v)=>((u.x-ref.x)*ref.dz-(u.z-ref.z)*ref.dx)-((v.x-ref.x)*ref.dz-(v.z-ref.z)*ref.dx));
  const gs=bs.map(geomOf);if(s.a!==bs[0].a)for(const g of gs){g.dx=-g.dx;g.dz=-g.dz;const y=g.yA;g.yA=g.yB;g.yB=y;}
  const pairs=[];for(let i=0;i+1<gs.length;i++)pairs.push([gs[i],gs[i+1],(gs[i].run+gs[i+1].run)/2]);
@@ -7045,7 +7051,7 @@ function buildSpan(s){const bs=beams(s);if(bs.length<2)return null;
  order.forEach((pi,k)=>rowN[pi]=cnt[k]!=null?cnt[k]:cnt.at(-1));
  const total=rowN.reduce((t,n)=>t+(n||0),0),im=new Vi(GEO,mat('pend'),total),m=new ne,up=new P,zx=new P,sc=new P;let k=0;
  pairs.forEach(([g1,g2,avg],ri)=>{const n=rowN[ri]||0;for(let j=0;j<n;j++){const sa=((j+.5)-n/2)*PW;
-  const A=at(g1,sa*g1.run/avg),B=at(g2,sa*g2.run/avg),t=B.clone().sub(A),L=t.length();t.normalize();
+  const A=at(g1,sa*g1.run/avg),B=at(g2,sa*g2.run/avg);if(j%12===0)(s.samples=s.samples||[]).push(A.clone(),B.clone());const t=B.clone().sub(A),L=t.length();t.normalize();
   const s3=new P(g1.dx+g2.dx,((g1.yB-g1.yA)/g1.run+(g2.yB-g2.yA)/g2.run),g1.dz+g2.dz).normalize();
   up.crossVectors(s3,t).normalize();if(up.y<0)up.negate();zx.crossVectors(t,up).normalize();
   m.makeBasis(t,up,zx);sc.set(Math.max(.4,L-EDGE),TH,PW-GAP);m.scale(sc);m.setPosition(A.add(B).multiplyScalar(.5));im.setMatrixAt(k++,m);}});
@@ -7057,7 +7063,7 @@ function build(){if(built)return;built=true;for(const s of SPEC){try{const im=bu
 function ghostOn(){try{return W('ghost').checked;}catch(e){return true;}}
 function paint(){if(!built)return;const date=Ul(),gh=ghostOn();
  for(const s of SPEC){const im=meshes.get(s.uid);if(!im)continue;const st=status(s,date);im.material=mat(st.k);im.visible=inScope(s);}}
-function ensure(){if(typeof Xr==='undefined'||!Xr)return;if(!built&&typeof tr!=='undefined'&&tr['9.1']){build();paint();}
+function ensure(){if(typeof Xr==='undefined'||!Xr)return;if(!built&&typeof tr!=='undefined'&&tr['9.1']&&Zt==='all'){let ok=false;Xr.traverse(o=>{if(!ok&&o.isMesh&&o.userData&&o.userData.beam)ok=true;});if(ok){Xr.updateMatrixWorld(true);build();paint();}}
  if(group.parent!==Xr)Xr.add(group);let v=false;try{v=show&&Zt==='all';}catch(e){}group.visible=v;}
 let lastT=0;function tick(t){if(t-lastT>700){lastT=t;try{ensure();}catch(e){console.warn(e);}}requestAnimationFrame(tick);}requestAnimationFrame(tick);
 
@@ -7122,9 +7128,9 @@ function renderDlg(){const st=stats(),date=Ul();
  dlg.querySelector('header button').onclick=closeDlg;
  dlg.querySelectorAll('[data-man]').forEach(sl=>sl.onchange=()=>{const u=sl.dataset.man;if(sl.value)manual[u]={k:sl.value,d:Ul()};else delete manual[u];saveManual();inject();paint();renderDlg();});
  dlg.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{closeDlg();goTo(b.dataset.go);});}
-function goTo(u){const s=SPEC.find(x=>x.uid===u);try{if(Zt!=='all'){const b=document.querySelector('[data-view="all"]');if(b)b.click();}}catch(e){}
+function goTo(u,off){const s=SPEC.find(x=>x.uid===u);try{if(Zt!=='all'){const b=document.querySelector('[data-view="all"]');if(b)b.click();}}catch(e){}
  if(!show){show=true;const ck=document.getElementById('av-prelaje');if(ck)ck.checked=true;}
- setTimeout(()=>{ensure();if(!s||!s.center||typeof Ge==='undefined'||!Ge||!Ve)return;const tgt=s.center.clone(),from=Ve.position.clone(),fromT=Ge.target.clone(),to=tgt.clone().add(new P(14,26,s.b.endsWith('.1')?34:-34)),t0=performance.now();
+ setTimeout(()=>{ensure();if(!s||!s.center||typeof Ge==='undefined'||!Ge||!Ve)return;const tgt=s.center.clone(),from=Ve.position.clone(),fromT=Ge.target.clone(),to=tgt.clone().add(off?new P(off[0],off[1],off[2]):new P(14,26,s.b.endsWith('.1')?34:-34)),t0=performance.now();
   (function step(){const k=Math.min(1,(performance.now()-t0)/1100),e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;Ve.position.lerpVectors(from,to,e);Ge.target.lerpVectors(fromT,tgt,e);Ge.update();if(k<1)requestAnimationFrame(step);})();
   const c=document.querySelector('#aduela-v1 canvas');if(c)c.scrollIntoView({behavior:'smooth',block:'center'});},350);}
 
@@ -7140,7 +7146,10 @@ function homeLink(){const b=document.querySelector('#top34 .t34-brand');if(!b||d
  const a=document.createElement('a');a.id='home48';a.href='index.html';a.title='Voltar ao início';a.setAttribute('aria-label','Voltar à página inicial');a.textContent='←';b.prepend(a);}
 const hcss=document.createElement('style');hcss.textContent='#home48{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;margin-right:10px;border-radius:8px;border:1px solid #ffffff26;color:#e8e5de;text-decoration:none;font-size:17px;flex:none}#home48:hover{border-color:#FDB900;color:#FDB900}';document.head.append(hcss);
 setTimeout(homeLink,800);setTimeout(homeLink,3000);
-window.__v48={spec:SPEC,stats,status,build,paint,ensure,meshes,group,open:openDlg,goTo,rdoPieces};
+function probe(){const rc=new Vs,out={};const objs=[];Xr.traverse(o=>{if(o.isMesh&&o.visible&&!o.userData.prelaje48)objs.push(o);});
+ for(const s of SPEC){if(!s.samples)continue;const d=[];for(const q of s.samples){rc.set(new P(q.x,q.y+6,q.z),new P(0,-1,0));const h=rc.intersectObjects(objs,false).filter(i=>!i.object.userData.prelaje48)[0];d.push(h?+(q.y-TH/2-h.point.y).toFixed(2):null);}
+  out[s.uid]=d;}return out;}
+window.__v48={probe,spec:SPEC,stats,status,build,paint,ensure,meshes,group,open:openDlg,goTo,rdoPieces};
 setTimeout(()=>{try{inject();}catch(e){}},1500);
 })();
 
