@@ -1,5 +1,5 @@
 {
-  "name": "pontejoinville3d",
+  "name": "ponte-joinville",
   "compatibility_date": "2026-10-01",
   "main": "worker.js",
   "assets": { "directory": "./", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
