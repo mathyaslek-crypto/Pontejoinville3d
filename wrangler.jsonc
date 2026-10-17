@@ -2,6 +2,6 @@
   "name": "pontejoinville3d",
   "compatibility_date": "2026-10-01",
   "main": "worker.js",
-  "assets": { "directory": "./", "binding": "ASSETS", "run_worker_first": ["/api/*"] }
-  // "kv_namespaces": [{ "binding": "DADOS", "id": "COLE_AQUI_O_ID" }]
+  "assets": { "directory": "./", "binding": "ASSETS", "run_worker_first": ["/api/*"] },
+  "kv_namespaces": [{ "binding": "DADOS", "id": "fd732e53b35d40b082b603e9fcc6a904" }]
 }
