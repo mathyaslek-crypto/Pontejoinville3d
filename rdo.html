@@ -792,13 +792,15 @@ async function shareFiles(d,withPkg){
  save();$('notice').classList.remove('on');
  let all=files.concat(photos),kb=f=>f.size>1e6?fmt(f.size/1e6)+' MB':Math.max(1,Math.round(f.size/1e3))+' KB';
  sheet('Enviar RDO',d?br(d)+' · '+(getDay(d).author||''):'Pacote completo');
- $('sh-body').innerHTML=`<p class="q">Arquivos prontos</p><div class="flist">${all.map(f=>`<div class="fr"><b style="font-weight:500;word-break:break-all">${esc(f.name)}</b><span>${kb(f)}</span></div>`).join('')}</div><p class="alert" style="margin-top:14px">Toque em <b>Compartilhar</b>, escolha <b>OneDrive</b> e salve na pasta do RDO da obra. O arquivo <b>_3D.txt</b> é o que alimenta o 3D e as planilhas.</p>`;
- $('sh-foot').innerHTML=`<button class="btn" type="button" id="dl">Baixar</button><button class="btn primary" type="button" id="go">Compartilhar</button>`;
- $('dl').onclick=()=>{all.forEach(download);
-  $('sh-body').insertAdjacentHTML('beforeend',`<div class="alert" style="margin-top:12px;border-color:#2b6047;background:#12241c;color:#a9e7c7"><b>Arquivos baixados.</b> Agora abra a pasta <b>TESTE RDO</b>, toque em <b>+ › Carregar</b> e escolha os arquivos baixados.</div>`);
-  $('sh-foot').innerHTML=`<a class="btn primary big" href="${PASTA}" target="_blank" rel="noopener" id="openPasta">Abrir pasta TESTE RDO</a>`;note('Arquivos salvos em Downloads.');};
- $('go').onclick=async()=>{for(let set of [all,files]){if(navigator.canShare&&navigator.canShare({files:set})){try{await navigator.share({files:set,title:'RDO '+br(d||today()),text:'RDO '+br(d||today())+' · '+(db.profile||'')});if(set!==all)photos.forEach(download);closeSheet();return note(set===all?'Arquivos enviados. Confira se foram salvos na pasta do RDO no OneDrive.':'PDF e pacote enviados. As fotos foram baixadas para enviar à parte.');}catch(e){if(e.name==='AbortError')return note('Compartilhamento cancelado.');}}}
-  all.forEach(download);note('Este navegador não compartilha arquivos. Foram salvos em Downloads.');};
+ const mobile=!!(navigator.canShare&&navigator.canShare({files:files.length?[files[0]]:[new File(['x'],'x.txt',{type:'text/plain'})]}));
+ $('sh-body').innerHTML=`<p class="q">Arquivos prontos</p><div class="flist">${all.map(f=>`<div class="fr"><b style="font-weight:500;word-break:break-all">${esc(f.name)}</b><span>${kb(f)}</span></div>`).join('')}</div><p class="alert" style="margin-top:14px">${mobile?'Toque no botão, escolha <b>OneDrive</b> e salve na pasta <b>TESTE RDO</b> (o OneDrive lembra a última pasta usada).':'Os arquivos serão baixados e a pasta <b>TESTE RDO</b> abre em outra aba: arraste os arquivos para dentro dela.'}</p>`;
+ $('sh-foot').innerHTML=`<button class="btn primary big" type="button" id="go" style="width:100%">Salvar na pasta do OneDrive</button>`;
+ const done=(msg)=>{closeSheet();note(msg);};
+ $('go').onclick=async()=>{
+  if(mobile){for(let set of [all,files]){if(navigator.canShare({files:set})){try{await navigator.share({files:set,title:'RDO '+br(d||today()),text:'RDO '+br(d||today())+' · '+(db.profile||'')});if(set!==all)photos.forEach(download);return done(set===all?'RDO enviado. Confira na pasta TESTE RDO do OneDrive.':'PDF e pacote enviados. As fotos foram baixadas para enviar à parte.');}catch(e){if(e.name==='AbortError')return note('Envio cancelado. Toque de novo em Salvar na pasta do OneDrive.');}}}}
+  // computador (ou navegador sem compartilhar): abre a pasta e baixa os arquivos no mesmo toque
+  window.open(PASTA,'_blank','noopener');all.forEach(download);
+  done('Arquivos baixados e pasta TESTE RDO aberta em outra aba: arraste os arquivos para dentro dela.');};
 }
 function download(f){let url=URL.createObjectURL(f),a=document.createElement('a');a.href=url;a.download=f.name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);}
 async function downloadPdf(d){download(await pdfFile(d));}
