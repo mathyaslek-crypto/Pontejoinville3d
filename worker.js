@@ -7,6 +7,7 @@ const KEYS = new Set([
   'aduelas-registros-v2',  // 3D: datas lançadas à mão nas aduelas
   'ponte-rdo-v35',         // 3D: pacotes do RDO importados
   'ponte-prelaje-v48',     // 3D: marcação manual das pré-lajes
+  'ponte-plano-v50',       // 3D: cronograma (datas previstas) para planejado × executado
   'alya-pluvio-v1',        // painel de pluviometria
   'alya-paral-v1'          // painel de paralisações
 ]);
