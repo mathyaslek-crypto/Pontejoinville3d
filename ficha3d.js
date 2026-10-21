@@ -32,6 +32,9 @@
     conc.forEach(function (k) { var d = e.dates[k] || {}; if (na(d.start) && na(d.end)) return; if (d.end && d.end <= D) { if (d.end > last) last = d.end; } else allDone = false; });
     for (var k in e.dates) { var d0 = e.dates[k]; if (d0 && d0.start && !na(d0.start) && d0.start <= D) started = true; }
     h += '<span class="st" style="background:' + (allDone ? '#2FB38033' : started ? '#F2C23033' : '#ffffff14') + ';color:' + (allDone ? '#7fe0b5' : started ? '#f6d978' : '#c9d0d8') + '">' + (allDone ? 'Concluída em ' + brs(last) : started ? 'Em execução' : 'Não iniciada') + '</span>';
+    // previsão do cronograma de tendência (as datas realizadas abaixo não mudam)
+    try { var pv = window.__prev53 && window.__prev53.data[b] && window.__prev53.data[b][id];
+      if (pv && !allDone) { var bd = window.__prev53.band(b, id); h += '<span class="st" style="background:' + (bd === 'c1' ? '#8fd3ff33' : bd === 'c2' ? '#f6d34a33' : '#ffffff14') + ';color:' + (bd === 'c1' ? '#bfe6ff' : bd === 'c2' ? '#f8e08a' : '#c9d0d8') + '">Previsão: ' + brs(pv[0]) + ' a ' + brs(pv[1]) + '</span>'; } } catch (x) {}
     // etapas
     var keys = Object.keys(e.dates || {});
     if (keys.length) {
