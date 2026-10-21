@@ -1,4 +1,4 @@
-/* Ponte Joinville — ficha completa também para aduelas, arranques e fechamentos (V1.53)
+/* Ponte Joinville — ficha completa também para aduelas, arranques e fechamentos (V1.53); previsão do cronograma em todas as fichas
    A ficha da peça (#fc50) do 3D só abre para peças do modelo de vigas/blocos; as aduelas do balanço sucessivo ficavam sem ela.
    Este complemento preenche a mesma caixa (mesmo visual) quando a peça selecionada é uma aduela: etapas, concreto, aço e mão de obra do RDO. */
 (function () {
@@ -33,8 +33,8 @@
     for (var k in e.dates) { var d0 = e.dates[k]; if (d0 && d0.start && !na(d0.start) && d0.start <= D) started = true; }
     h += '<span class="st" style="background:' + (allDone ? '#2FB38033' : started ? '#F2C23033' : '#ffffff14') + ';color:' + (allDone ? '#7fe0b5' : started ? '#f6d978' : '#c9d0d8') + '">' + (allDone ? 'Concluída em ' + brs(last) : started ? 'Em execução' : 'Não iniciada') + '</span>';
     // previsão do cronograma de tendência (as datas realizadas abaixo não mudam)
-    try { var pv = window.__prev53 && window.__prev53.data[b] && window.__prev53.data[b][id];
-      if (pv && !allDone) { var bd = window.__prev53.band(b, id); h += '<span class="st" style="background:' + (bd === 'c1' ? '#8fd3ff33' : bd === 'c2' ? '#f6d34a33' : '#ffffff14') + ';color:' + (bd === 'c1' ? '#bfe6ff' : bd === 'c2' ? '#f8e08a' : '#c9d0d8') + '">Previsão: ' + brs(pv[0]) + ' a ' + brs(pv[1]) + '</span>'; } } catch (x) {}
+    try { var pv = window.__prev53 && window.__prev53.get(b, id);
+      if (pv && !allDone) h += chip(b, id, pv).outerHTML; } catch (x) {}
     // etapas
     var keys = Object.keys(e.dates || {});
     if (keys.length) {
@@ -65,6 +65,23 @@
     return h;
   }
 
+  // selo da previsão do cronograma (mesmo visual dos selos de situação)
+  function chip(b, id, pv) {
+    var bd = window.__prev53.band(b, id), sp = document.createElement('span');
+    sp.className = 'st pv53'; sp.title = 'Cronograma: ' + pv[2];
+    sp.style.cssText = 'background:' + (bd === 'c1' ? '#8fd3ff33' : bd === 'c2' ? '#f6d34a33' : '#ffffff14') + ';color:' + (bd === 'c1' ? '#bfe6ff' : bd === 'c2' ? '#f8e08a' : '#c9d0d8');
+    sp.textContent = 'Previsão: ' + brs(pv[0]) + ' a ' + brs(pv[1]);
+    return sp;
+  }
+  // na ficha original (blocos, pilares, travessas, estacas...) acrescenta a previsão logo depois da situação
+  function nativeChip(card, b, id) {
+    if (card.hidden || card.querySelector('.pv53') || !window.__prev53) return;
+    var pv = window.__prev53.get(b, id); if (!pv) return;
+    var st = card.querySelector('span.st'); if (!st || /^Conclu/.test(st.textContent)) return;
+    var last = st; while (last.nextElementSibling && last.nextElementSibling.matches('span.st')) last = last.nextElementSibling;
+    last.after(chip(b, id, pv));
+  }
+
   function check() {
     var v = window.__v22, card = document.getElementById('fc50');
     if (!v || !card) return;
@@ -73,7 +90,7 @@
     var key = sel[0], i = key.indexOf('-'), b = key.slice(0, i), id = key.slice(i + 1);
     if (closed && closed !== key) closed = null;
     var native = false; try { native = !!window.__v40.Ze(b, id); } catch (e) {}
-    if (native) { shown = null; return; }            // a ficha original cuida das outras peças
+    if (native) { shown = null; nativeChip(card, b, id); return; }            // a ficha original cuida das outras peças
     if (key === closed) { card.hidden = true; return; }
     if (shown === key && !card.hidden && card.dataset.ext === key) return;
     card.innerHTML = render(card, key); card.dataset.ext = key; card.hidden = false; card.scrollTop = 0; shown = key;

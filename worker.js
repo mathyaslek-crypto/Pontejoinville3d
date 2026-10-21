@@ -152,6 +152,6 @@ export default {
     }
     if (prof === 'equipe' && isRdo(path)) return blocked('O RDO é usado só pelos apontadores. Você tem acesso ao 3D, à pluviometria e às paralisações.', '/', 'Ir para o início');
     if (path.startsWith('/api/')) return api(req, env, url);
-    return withLoader(await env.ASSETS.fetch(req), path === '/3d' || path === '/3d.html' ? PAD_CSS + '<script src="/clima3d.js?v=2" defer></script><script src="/ficha3d.js?v=2" defer></script><script src="/previsao3d.js?v=1" defer></script>' : '');
+    return withLoader(await env.ASSETS.fetch(req), path === '/3d' || path === '/3d.html' ? PAD_CSS + '<script src="/clima3d.js?v=2" defer></script><script src="/ficha3d.js?v=3" defer></script><script src="/previsao3d.js?v=2" defer></script>' : '');
   }
 };
