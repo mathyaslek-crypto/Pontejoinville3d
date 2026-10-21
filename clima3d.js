@@ -15,7 +15,7 @@
   var live = true; try { live = localStorage.getItem(LIVE_KEY) !== '0'; } catch (e) {}
   var mode = 'sol', wx = null, T = null, root = null, ready = false;
   var clouds = [], rain = null, bolt = null, sun = null, lights = [], flashT = 0, nextBolt = 0, last = 0;
-  var B = { x0: -440, x1: 350, z0: -42, z1: 22, y: 44 };   // faixa da ponte (ajustada pelos dados do 3D)
+  var B = { x0: -440, x1: 350, z0: -42, z1: 22, y: 95 };   // faixa da ponte (ajustada pelos dados do 3D)
   var mobile = !!window.__mobile47;
 
   // ---------- classes do three.js tiradas da própria cena ----------
@@ -41,7 +41,7 @@
     try {
       var tr = window.__v40.tr(), xs = [], zs = [], ys = [];
       for (var k in tr) tr[k].forEach(function (q) { if (/^GB/.test(q.id) && q.x0 != null) { xs.push(q.x0, q.x1); zs.push(q.z); ys.push(q.y); } });
-      if (xs.length) { B.x0 = Math.min.apply(0, xs) - 10; B.x1 = Math.max.apply(0, xs) + 10; B.z0 = Math.min.apply(0, zs) - 14; B.z1 = Math.max.apply(0, zs) + 14; B.y = Math.max.apply(0, ys) + 36; }
+      if (xs.length) { B.x0 = Math.min.apply(0, xs) - 10; B.x1 = Math.max.apply(0, xs) + 10; B.z0 = Math.min.apply(0, zs) - 14; B.z1 = Math.max.apply(0, zs) + 14; B.y = Math.max.apply(0, ys) + 85; }
     } catch (e) {}
   }
 
@@ -93,7 +93,7 @@
     if (!c) { o.x = 0; o.y = -99; o.z = 0; o.v = 30; return o; }
     var s = c.userData.size;
     o.x = c.position.x + (Math.random() - .5) * 30 * s; o.z = c.position.z + (Math.random() - .5) * 14 * s;
-    o.top = c.position.y - 2; o.y = anyY ? -6 + Math.random() * (o.top + 6) : o.top; o.v = 34 + Math.random() * 14; o.l = 2.6 + Math.random() * 1.8;
+    o.top = c.position.y - 2; o.y = anyY ? -6 + Math.random() * (o.top + 6) : o.top; o.v = 48 + Math.random() * 18; o.l = 2.6 + Math.random() * 1.8;
     return o;
   }
   function stepRain(dt) {
@@ -112,9 +112,9 @@
     var c = clouds[Math.floor(Math.random() * clouds.length)]; if (!c) return;
     var segs = [], x = c.position.x + (Math.random() - .5) * 10, z = c.position.z + (Math.random() - .5) * 6, y = c.position.y - 1, ground = -6;
     function branch(x, y, z, len, depth) {
-      var steps = Math.max(3, Math.round(len / 4));
+      var steps = Math.max(3, Math.round(len / 6));
       for (var s = 0; s < steps && y > ground; s++) {
-        var nx = x + (Math.random() - .5) * 5, ny = y - (2.5 + Math.random() * 4), nz = z + (Math.random() - .5) * 3;
+        var nx = x + (Math.random() - .5) * 7, ny = y - (4 + Math.random() * 6), nz = z + (Math.random() - .5) * 3;
         segs.push(x, y, z, nx, ny, nz);
         if (depth < 2 && Math.random() < .18) branch(nx, ny, nz, len * .35, depth + 1);
         x = nx; y = ny; z = nz;

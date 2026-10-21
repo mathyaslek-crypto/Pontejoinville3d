@@ -108,6 +108,8 @@ const LOADER_HTML = `<style id="ldr-css">#ldr{position:fixed;inset:0;z-index:214
 // ---------- controle de setas do 3D no estilo "liquid glass" (inspirado no botão da Uiverse, by shokat_2650) ----------
 // Só muda a aparência do #pad50 (criado pelo 3D); seletores com "html body" vencem o estilo original sem tocar no 3d.html.
 const PAD_CSS = `<style id="pad-glass">
+/* caixa que aparecia ao passar o mouse sobre a peça: substituída pela ficha completa ao clicar */
+#av-tip{display:none!important}
 @property --pg-a1{syntax:"<angle>";inherits:false;initial-value:-75deg}
 @property --pg-a2{syntax:"<angle>";inherits:false;initial-value:-45deg}
 html body #pad50#pad50{gap:10px;filter:drop-shadow(0 10px 18px rgba(0,0,0,.35))}
@@ -150,6 +152,6 @@ export default {
     }
     if (prof === 'equipe' && isRdo(path)) return blocked('O RDO é usado só pelos apontadores. Você tem acesso ao 3D, à pluviometria e às paralisações.', '/', 'Ir para o início');
     if (path.startsWith('/api/')) return api(req, env, url);
-    return withLoader(await env.ASSETS.fetch(req), path === '/3d' || path === '/3d.html' ? PAD_CSS + '<script src="/clima3d.js?v=1" defer></script>' : '');
+    return withLoader(await env.ASSETS.fetch(req), path === '/3d' || path === '/3d.html' ? PAD_CSS + '<script src="/clima3d.js?v=2" defer></script><script src="/ficha3d.js?v=1" defer></script>' : '');
   }
 };
