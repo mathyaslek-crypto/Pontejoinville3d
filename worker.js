@@ -83,6 +83,26 @@ function blocked(msg, link, label) {
   return new Response(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Acesso restrito · Ponte Joinville</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#111215;color:#eceae5;font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;padding:16px}main{max-width:420px;padding:28px;border:1px solid #c7c4bc22;border-radius:12px;background:#17181c}h1{margin:0 0 8px;font-size:19px;color:#fff}p{margin:0 0 18px;color:#b9b6ae}a{display:inline-block;padding:10px 16px;border-radius:8px;background:#FDB900;color:#151515;font-weight:600;text-decoration:none}</style></head><body><main><h1>Acesso restrito</h1><p>${msg}</p>${link ? `<a href="${link}">${label}</a>` : ''}</main></body></html>`, { status: 403, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
 }
 
+// ---------- tela de carregamento (loader da Uiverse, by dexter-st) ----------
+// Entra logo depois do <title> de toda página HTML, antes dos scripts grandes: o navegador já pinta a tela de carregamento
+// em vez de continuar mostrando a página anterior; some quando a página termina de carregar.
+const LOADER_HTML = `<style id="ldr-css">#ldr{position:fixed;inset:0;z-index:2147483646;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;background:#0b0d10;transition:opacity .45s ease}#ldr.out{opacity:0;pointer-events:none}#ldr p{margin:0;font:500 12px/1 system-ui,-apple-system,'Segoe UI',sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#8e8b84}
+.loader-wrapper{position:relative;display:flex;align-items:center;justify-content:center;width:180px;height:180px;font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:1.2em;font-weight:300;color:white;border-radius:50%;background-color:transparent;user-select:none}
+.loader{position:absolute;top:0;left:0;width:100%;aspect-ratio:1/1;border-radius:50%;background-color:transparent;animation:loader-rotate 2s linear infinite;z-index:0}
+@keyframes loader-rotate{0%{transform:rotate(90deg);box-shadow:0 10px 20px 0 #fff inset,0 20px 30px 0 #ad5fff inset,0 60px 60px 0 #471eec inset}50%{transform:rotate(270deg);box-shadow:0 10px 20px 0 #fff inset,0 20px 10px 0 #d60a47 inset,0 40px 60px 0 #311e80 inset}100%{transform:rotate(450deg);box-shadow:0 10px 20px 0 #fff inset,0 20px 30px 0 #ad5fff inset,0 60px 60px 0 #471eec inset}}
+.loader-letter{display:inline-block;opacity:.4;transform:translateY(0);animation:loader-letter-anim 2s infinite;z-index:1;border-radius:50ch;border:none}
+.loader-letter:nth-child(1){animation-delay:0s}.loader-letter:nth-child(2){animation-delay:.1s}.loader-letter:nth-child(3){animation-delay:.2s}.loader-letter:nth-child(4){animation-delay:.3s}.loader-letter:nth-child(5){animation-delay:.4s}.loader-letter:nth-child(6){animation-delay:.5s}.loader-letter:nth-child(7){animation-delay:.6s}.loader-letter:nth-child(8){animation-delay:.7s}.loader-letter:nth-child(9){animation-delay:.8s}.loader-letter:nth-child(10){animation-delay:.9s}
+@keyframes loader-letter-anim{0%,100%{opacity:.4;transform:translateY(0)}20%{opacity:1;transform:scale(1.15)}40%{opacity:.7;transform:translateY(0)}}</style><div id="ldr" role="status" aria-label="Carregando"><div class="loader-wrapper">${[...'Carregando'].map(c => `<span class="loader-letter">${c}</span>`).join('')}<div class="loader"></div></div><p>Ponte Joinville</p></div><script>(function(){var d=document.getElementById('ldr'),t0=Date.now(),done=0;function hide(){if(done)return;done=1;setTimeout(function(){d.classList.add('out');setTimeout(function(){d.remove();var c=document.getElementById('ldr-css');c&&c.remove();},500);},Math.max(0,500-(Date.now()-t0)));}if(document.readyState==='complete')hide();else addEventListener('load',hide);setTimeout(hide,40000);})();</script>`;
+async function withLoader(res) {
+  const ct = res.headers.get('content-type') || '';
+  if (res.status !== 200 || !ct.includes('text/html')) return res;
+  let put = false;
+  return new HTMLRewriter()
+    .on('head > title', { element(e) { if (!put) { put = true; e.after(LOADER_HTML, { html: true }); } } })
+    .on('body', { element(e) { if (!put) { put = true; e.prepend(LOADER_HTML, { html: true }); } } })
+    .transform(res);
+}
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url), path = url.pathname;
@@ -90,12 +110,12 @@ export default {
     if (!email) return blocked('Não foi possível confirmar o seu login. Feche a página e entre de novo pelo link do site.', '/', 'Entrar de novo');
     const prof = profileOf(email);
     if (prof === 'apontador') {
-      if (isRdo(path)) return env.ASSETS.fetch(req);
+      if (isRdo(path)) return withLoader(await env.ASSETS.fetch(req));
       if (path.startsWith('/api/')) return json({ error: 'sem acesso' }, 403);
       return Response.redirect(url.origin + '/rdo', 302);
     }
     if (prof === 'equipe' && isRdo(path)) return blocked('O RDO é usado só pelos apontadores. Você tem acesso ao 3D, à pluviometria e às paralisações.', '/', 'Ir para o início');
     if (path.startsWith('/api/')) return api(req, env, url);
-    return env.ASSETS.fetch(req);
+    return withLoader(await env.ASSETS.fetch(req));
   }
 };
