@@ -93,13 +93,35 @@ const LOADER_HTML = `<style id="ldr-css">#ldr{position:fixed;inset:0;z-index:214
 .loader-letter{display:inline-block;opacity:.4;transform:translateY(0);animation:loader-letter-anim 2s infinite;z-index:1;border-radius:50ch;border:none}
 .loader-letter:nth-child(1){animation-delay:0s}.loader-letter:nth-child(2){animation-delay:.1s}.loader-letter:nth-child(3){animation-delay:.2s}.loader-letter:nth-child(4){animation-delay:.3s}.loader-letter:nth-child(5){animation-delay:.4s}.loader-letter:nth-child(6){animation-delay:.5s}.loader-letter:nth-child(7){animation-delay:.6s}.loader-letter:nth-child(8){animation-delay:.7s}.loader-letter:nth-child(9){animation-delay:.8s}.loader-letter:nth-child(10){animation-delay:.9s}
 @keyframes loader-letter-anim{0%,100%{opacity:.4;transform:translateY(0)}20%{opacity:1;transform:scale(1.15)}40%{opacity:.7;transform:translateY(0)}}</style><div id="ldr" role="status" aria-label="Carregando"><div class="loader-wrapper">${[...'Carregando'].map(c => `<span class="loader-letter">${c}</span>`).join('')}<div class="loader"></div></div><p>Ponte Joinville</p></div><script>(function(){var d=document.getElementById('ldr'),t0=Date.now(),done=0;function hide(){if(done)return;done=1;setTimeout(function(){d.classList.add('out');setTimeout(function(){d.remove();var c=document.getElementById('ldr-css');c&&c.remove();},500);},Math.max(0,500-(Date.now()-t0)));}if(document.readyState==='complete')hide();else addEventListener('load',hide);setTimeout(hide,40000);})();</script>`;
-async function withLoader(res) {
+// ---------- controle de setas do 3D no estilo "liquid glass" (inspirado no botão da Uiverse, by shokat_2650) ----------
+// Só muda a aparência do #pad50 (criado pelo 3D); seletores com "html body" vencem o estilo original sem tocar no 3d.html.
+const PAD_CSS = `<style id="pad-glass">
+@property --pg-a1{syntax:"<angle>";inherits:false;initial-value:-75deg}
+@property --pg-a2{syntax:"<angle>";inherits:false;initial-value:-45deg}
+html body #pad50#pad50{gap:10px;filter:drop-shadow(0 10px 18px rgba(0,0,0,.35))}
+html body #pad50#pad50 .dp,html body #pad50#pad50 .side{gap:6px;padding:8px;border-radius:26px;background:linear-gradient(-75deg,rgba(20,24,30,.28),rgba(255,255,255,.12),rgba(20,24,30,.28));border:0;box-shadow:inset 0 .125em .125em rgba(0,0,0,.08),inset 0 -.125em .125em rgba(255,255,255,.22),0 0 .1em .25em inset rgba(255,255,255,.08),0 .4em .6em -.2em rgba(0,0,0,.45);backdrop-filter:blur(10px) saturate(150%);-webkit-backdrop-filter:blur(10px) saturate(150%);position:relative}
+html body #pad50#pad50 .dp{border-radius:50%;padding:10px}
+html body #pad50#pad50 button{position:relative;border-radius:999px;border:0!important;color:#fff!important;font-weight:600;background:linear-gradient(-75deg,rgba(255,255,255,.1),rgba(255,255,255,.3),rgba(255,255,255,.1))!important;box-shadow:inset 0 .125em .125em rgba(0,0,0,.05),inset 0 -.125em .125em rgba(255,255,255,.45),0 .25em .125em -.125em rgba(0,0,0,.35),0 0 .1em .25em inset rgba(255,255,255,.18)!important;backdrop-filter:blur(3px)!important;-webkit-backdrop-filter:blur(3px)!important;text-shadow:0 .1em .15em rgba(0,0,0,.45);transition:transform .4s cubic-bezier(.25,1,.5,1),box-shadow .4s cubic-bezier(.25,1,.5,1),background .3s,color .3s;-webkit-tap-highlight-color:transparent;overflow:visible}
+html body #pad50#pad50 button::after{content:"";position:absolute;inset:-.5px;border-radius:999px;padding:1px;pointer-events:none;background:conic-gradient(from var(--pg-a1) at 50% 50%,rgba(0,0,0,.32),rgba(0,0,0,0) 5% 40%,rgba(0,0,0,.32) 50%,rgba(0,0,0,0) 60% 95%,rgba(0,0,0,.32)),linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,.5));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);transition:--pg-a1 .5s ease}
+html body #pad50#pad50 button::before{content:"";position:absolute;inset:1px;border-radius:999px;pointer-events:none;mix-blend-mode:screen;background:linear-gradient(var(--pg-a2),rgba(255,255,255,0) 0%,rgba(255,255,255,.45) 40% 50%,rgba(255,255,255,0) 55%);background-size:200% 200%;background-position:0% 50%;background-repeat:no-repeat;transition:background-position .5s cubic-bezier(.25,1,.5,1),--pg-a2 .5s cubic-bezier(.25,1,.5,1)}
+html body #pad50#pad50 button:hover{transform:scale(.975);background:linear-gradient(-75deg,rgba(255,255,255,.08),rgba(255,255,255,.26),rgba(255,255,255,.08))!important}
+html body #pad50#pad50 button:hover::after{--pg-a1:-125deg}
+html body #pad50#pad50 button:hover::before{background-position:25% 50%}
+html body #pad50#pad50 button:active,html body #pad50#pad50 button.on{transform:scale(.94) translateY(1px);color:#1b1404!important;text-shadow:none;background:linear-gradient(-75deg,rgba(253,185,0,.75),rgba(255,212,92,.95),rgba(253,185,0,.75))!important;box-shadow:inset 0 .125em .2em rgba(0,0,0,.18),inset 0 -.125em .125em rgba(255,255,255,.55),0 0 .9em rgba(253,185,0,.55),0 .1em .1em -.05em rgba(0,0,0,.3)!important}
+html body #pad50#pad50 button:active::before,html body #pad50#pad50 button.on::before{background-position:50% 15%;--pg-a2:-15deg}
+html body #pad50#pad50 .c{font-size:10.5px;letter-spacing:.04em;color:#e9e4d6;background:linear-gradient(-75deg,rgba(255,255,255,.02),rgba(255,255,255,.1),rgba(255,255,255,.02));box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+html body #pad50#pad50 .c::after{display:none}
+@media (hover:none) and (pointer:coarse){html body #pad50#pad50 button::after{--pg-a1:-75deg}html body #pad50#pad50 button::before{--pg-a2:-45deg}}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){html body #pad50#pad50 .dp,html body #pad50#pad50 .side{background:#11151be6}}
+</style>`;
+
+async function withLoader(res, extra = '') {
   const ct = res.headers.get('content-type') || '';
   if (res.status !== 200 || !ct.includes('text/html')) return res;
   let put = false;
   return new HTMLRewriter()
-    .on('head > title', { element(e) { if (!put) { put = true; e.after(LOADER_HTML, { html: true }); } } })
-    .on('body', { element(e) { if (!put) { put = true; e.prepend(LOADER_HTML, { html: true }); } } })
+    .on('head > title', { element(e) { if (!put) { put = true; e.after(LOADER_HTML + extra, { html: true }); } } })
+    .on('body', { element(e) { if (!put) { put = true; e.prepend(LOADER_HTML + extra, { html: true }); } } })
     .transform(res);
 }
 
@@ -116,6 +138,6 @@ export default {
     }
     if (prof === 'equipe' && isRdo(path)) return blocked('O RDO é usado só pelos apontadores. Você tem acesso ao 3D, à pluviometria e às paralisações.', '/', 'Ir para o início');
     if (path.startsWith('/api/')) return api(req, env, url);
-    return withLoader(await env.ASSETS.fetch(req));
+    return withLoader(await env.ASSETS.fetch(req), path === '/3d' || path === '/3d.html' ? PAD_CSS : '');
   }
 };
