@@ -13,9 +13,21 @@ const KEYS = new Set([
 ]);
 const json = (o, s = 200) => new Response(JSON.stringify(o), { status: s, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 
+// tempo atual em Joinville (Open-Meteo, sem chave), guardado em cache por 10 minutos
+async function clima() {
+  const u = 'https://api.open-meteo.com/v1/forecast?latitude=-26.3045&longitude=-48.8487&current=temperature_2m,weather_code,cloud_cover,precipitation,rain,showers,is_day,wind_speed_10m&timezone=America%2FSao_Paulo';
+  try {
+    const r = await fetch(u, { cf: { cacheTtl: 600, cacheEverything: true } });
+    if (!r.ok) return json({ error: 'clima indisponível' }, 502);
+    const j = await r.json();
+    return new Response(JSON.stringify({ fonte: 'Open-Meteo', local: 'Joinville/SC', current: j.current }), { headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=300' } });
+  } catch (e) { return json({ error: 'clima indisponível' }, 502); }
+}
+
 async function api(req, env, url) {
   if (!env.DADOS) return json({ error: 'armazenamento não configurado' }, 503);
   const parts = url.pathname.split('/').filter(Boolean); // ['api','state',key?]
+  if (parts[1] === 'clima' && req.method === 'GET') return clima();
   if (parts[1] !== 'state') return json({ error: 'rota desconhecida' }, 404);
   if (req.method === 'GET' && parts.length === 2) {
     const keys = (url.searchParams.get('keys') || '').split(',').filter(k => KEYS.has(k));
@@ -138,6 +150,6 @@ export default {
     }
     if (prof === 'equipe' && isRdo(path)) return blocked('O RDO é usado só pelos apontadores. Você tem acesso ao 3D, à pluviometria e às paralisações.', '/', 'Ir para o início');
     if (path.startsWith('/api/')) return api(req, env, url);
-    return withLoader(await env.ASSETS.fetch(req), path === '/3d' || path === '/3d.html' ? PAD_CSS : '');
+    return withLoader(await env.ASSETS.fetch(req), path === '/3d' || path === '/3d.html' ? PAD_CSS + '<script src="/clima3d.js?v=1" defer></script>' : '');
   }
 };
