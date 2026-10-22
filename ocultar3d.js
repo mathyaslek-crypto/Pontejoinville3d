@@ -10,6 +10,11 @@
   var hidden = new Set(), order = [];
   try { (JSON.parse(localStorage.getItem(KEY) || '[]') || []).forEach(function (k) { if (typeof k === 'string' && !hidden.has(k)) { hidden.add(k); order.push(k); } }); } catch (e) {}
   var mode = false, btn = null, bar = null, canvas = null, down = null, lastSig = '', names = {};
+  // opção "Vigas pré-moldadas" no painel (igual à das pré-lajes): esconde todas as vigas sem apagar nada
+  var KEY_V = 'ponte-vigas-v57', beamsOff = false, beamKeys = new Set();
+  try { beamsOff = localStorage.getItem(KEY_V) === '0'; } catch (e) {}
+  function isBeamKey(k) { return beamKeys.has(k) || /^[\d.]+-GB/.test(k); }
+  function isHid(k) { return hidden.has(k) || (beamsOff && isBeamKey(k)); }
 
   function save() { try { localStorage.setItem(KEY, JSON.stringify(order)); } catch (e) {} }
   function findPx(scene) { var px = null; scene.traverse(function (o) { if (!px && o.name === 'Peças para seleção') px = o; }); return px; }
@@ -56,7 +61,8 @@
     var rn = px.parent, tri = new Set(), seg = new Set(), mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity], any = false;
     px.children.forEach(function (c) {
       var u = c.userData || {}; if (!u.b || !u.s) return;
-      if (hidden.has(u.b + '-' + u.s)) { c.layers.mask = 1 << 30; u.oc54 = 1; if (c.geometry && c.geometry.attributes.position) { collect(c, tri, seg, mn, mx); any = true; } }   // fora do clique
+      if (/^GB/.test(u.s)) beamKeys.add(u.b + '-' + u.s);   // vigas pré-moldadas (GB…)
+      if (isHid(u.b + '-' + u.s)) { c.layers.mask = 1 << 30; u.oc54 = 1; if (c.geometry && c.geometry.attributes.position) { collect(c, tri, seg, mn, mx); any = true; } }   // fora do clique
       else if (u.oc54) { c.layers.mask = 1; delete u.oc54; }
     });
     stats = { tri: tri.size, removed: 0, lines: 0 };
@@ -64,11 +70,22 @@
       if (o === px) return;
       var u = o.userData || {};
       if (u.plate41) return;
-      if (u.b && u.s) { var h = hidden.has(u.b + '-' + u.s); if (h && o.visible) { o.visible = false; u.oc54v = 1; } else if (!h && u.oc54v) { o.visible = true; delete u.oc54v; } return; }
+      if (u.b && u.s) { var h = isHid(u.b + '-' + u.s); if (h && o.visible) { o.visible = false; u.oc54v = 1; } else if (!h && u.oc54v) { o.visible = true; delete u.oc54v; } return; }
       if (!(o.isMesh || o.isLineSegments) || o.isInstancedMesh || !o.geometry || !o.geometry.attributes || !o.geometry.attributes.position) return;
       var r = filter(o, o.isMesh ? tri : seg, any, mn, mx); if (o.isMesh) stats.removed += r; else stats.lines += r;
     });
+    // vigas colocadas pela simulação da treliça lançadeira
+    scene.children.forEach(function (o) { if (o.name === 'Vigas lançadas na simulação') { if (beamsOff && o.visible) { o.visible = false; o.userData.oc57 = 1; } else if (!beamsOff && o.userData.oc57) { o.visible = true; delete o.userData.oc57; } } });
     if (changed && window.__prev53 && window.__prev53.refresh) window.__prev53.refresh();
+  }
+  function addBeamToggle() {
+    if (document.getElementById('av-vigas57')) return;
+    var after = document.getElementById('av-prelaje') || document.getElementById('av-environment'); if (!after) return;
+    var lb = document.createElement('label'); lb.style.cssText = 'flex-direction:row;align-items:center';
+    lb.innerHTML = '<input type="checkbox" id="av-vigas57"> Vigas pré-moldadas';
+    after.closest('label').after(lb);
+    var ck = lb.querySelector('input'); ck.checked = !beamsOff;
+    ck.onchange = function () { beamsOff = !ck.checked; try { localStorage.setItem(KEY_V, beamsOff ? '0' : '1'); } catch (e) {} apply(true); };
   }
 
   function clearSel() { var c = document.getElementById('v22-clear'); if (c && typeof c.onclick === 'function') { try { c.onclick(); } catch (e) {} } }
@@ -142,14 +159,14 @@
 
   function tick() {
     var scene = window.__v40 && window.__v40.scene; if (!scene) return;
-    mountBtn(); bindCanvas();
+    mountBtn(); bindCanvas(); addBeamToggle();
     var px = findPx(scene); if (!px) return;
     var sig = px.uuid + ':' + px.children.length + ':' + (px.children[0] ? px.children[0].uuid : '');
     if (sig !== lastSig) { lastSig = sig; apply(false); }   // o 3D refez as malhas (data, partes não iniciadas, vista...)
   }
   setInterval(tick, 300);
   window.__oc54 = {
-    has: function (k) { return hidden.has(k); }, get list() { return order.slice(); }, get mode() { return mode; }, get stats() { return stats; },
+    has: function (k) { return isHid(k); }, get beamsOff() { return beamsOff; }, setBeams: function (v) { beamsOff = !v; try { localStorage.setItem(KEY_V, beamsOff ? '0' : '1'); } catch (e) {} var c = document.getElementById('av-vigas57'); if (c) c.checked = !!v; apply(true); }, get list() { return order.slice(); }, get mode() { return mode; }, get stats() { return stats; },
     hide: hide, undo: undo, showAll: showAll, setMode: setMode, apply: function () { apply(true); }
   };
 })();
