@@ -67,15 +67,17 @@
 
   // selo da previsão do cronograma (mesmo visual dos selos de situação)
   function chip(b, id, pv) {
-    var bd = window.__prev53.band(b, id), sp = document.createElement('span');
+    var cs = window.__prev53.chipStyle ? window.__prev53.chipStyle(b, id) : { bg: '#ffffff14', fg: '#c9d0d8' }, sp = document.createElement('span');
     sp.className = 'st pv53'; sp.title = 'Cronograma: ' + pv[2];
-    sp.style.cssText = 'background:' + (bd === 'c1' ? '#8fd3ff33' : bd === 'c2' ? '#f6d34a33' : '#ffffff14') + ';color:' + (bd === 'c1' ? '#bfe6ff' : bd === 'c2' ? '#f8e08a' : '#c9d0d8');
+    sp.style.cssText = 'background:' + cs.bg + ';color:' + cs.fg; sp.dataset.sty = cs.bg + cs.fg;
     sp.textContent = 'Previsão: ' + brs(pv[0]) + ' a ' + brs(pv[1]);
     return sp;
   }
   // na ficha original (blocos, pilares, travessas, estacas...) acrescenta a previsão logo depois da situação
   function nativeChip(card, b, id) {
-    if (card.hidden || card.querySelector('.pv53') || !window.__prev53) return;
+    if (card.hidden || !window.__prev53) return;
+    var ex = card.querySelector('.pv53');
+    if (ex) { var c0 = window.__prev53.chipStyle ? window.__prev53.chipStyle(b, id) : null; if (!c0 || ex.dataset.sty === c0.bg + c0.fg) return; ex.remove(); }
     var pv = window.__prev53.get(b, id); if (!pv) return;
     var st = card.querySelector('span.st'); if (!st || /^Conclu/.test(st.textContent)) return;
     var last = st; while (last.nextElementSibling && last.nextElementSibling.matches('span.st')) last = last.nextElementSibling;
@@ -92,7 +94,10 @@
     var native = false; try { native = !!window.__v40.Ze(b, id); } catch (e) {}
     if (native) { shown = null; nativeChip(card, b, id); return; }            // a ficha original cuida das outras peças
     if (key === closed) { card.hidden = true; return; }
-    if (shown === key && !card.hidden && card.dataset.ext === key) return;
+    if (shown === key && !card.hidden && card.dataset.ext === key) {
+      var ex = card.querySelector('.pv53'), c0 = ex && window.__prev53 && window.__prev53.chipStyle ? window.__prev53.chipStyle(b, id) : null;
+      if (!c0 || ex.dataset.sty === c0.bg + c0.fg) return;     // cor da previsão mudou: redesenha
+    }
     card.innerHTML = render(card, key); card.dataset.ext = key; card.hidden = false; card.scrollTop = 0; shown = key;
     var x = card.querySelector('.x'); if (x) x.onclick = function () { closed = key; shown = null; card.hidden = true; };
   }
