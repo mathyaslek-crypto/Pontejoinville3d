@@ -80,7 +80,7 @@
   function hide(key) { if (hidden.has(key)) return; hidden.add(key); order.push(key); save(); apply(true); ui(); }
   function undo() { var k = order.pop(); if (!k) return; hidden.delete(k); save(); apply(true); ui(); }
   function showAll() { hidden.clear(); order = []; save(); apply(true); ui(); }
-  function setMode(v) { mode = !!v; if (canvas) canvas.style.cursor = mode ? 'crosshair' : ''; document.body.classList.toggle('oc54-on', mode); if (mode) clearSel(); ui(); }
+  function setMode(v) { mode = !!v; if (mode && window.__pt55 && window.__pt55.mode) window.__pt55.setMode(false); if (canvas) canvas.style.cursor = mode ? 'crosshair' : ''; document.body.classList.toggle('oc54-on', mode); if (mode) clearSel(); ui(); }
 
   function bindCanvas() {
     var el = window.__v22 && window.__v22.controls && window.__v22.controls.domElement;

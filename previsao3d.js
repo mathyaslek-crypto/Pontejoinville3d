@@ -1,4 +1,4 @@
-/* Ponte Joinville — previsão do cronograma no 3D (V1.54; planilha Cronograma_Ponte_joinville.xlsx, 21/10/2026)
+/* Ponte Joinville — previsão do cronograma no 3D (V1.55; planilha Cronograma_Ponte_joinville.xlsx, 21/10/2026)
    Abas usadas: 9.1, 9.2 e Aduela_10 (aduelas) e "Cronograma" (geral: estacas, blocos, pilares, travessas, pilaretes,
    vigas pré-moldadas e peças das transições). Na aba geral, a partir da linha 85, Início/Término de cada tarefa estão
    uma linha abaixo do nome (a coluna Duração confirma); o gerador corrige esse deslocamento.
@@ -10,7 +10,8 @@
    continuam nas peças iniciadas e nas que estão na previsão; somem os das demais e as pré-lajes ainda não iniciadas.
    Pilaretes não têm linha própria no cronograma: seguem a data da travessa do mesmo apoio e ramo.
    Estacas: o cronograma agrupa por par de blocos ("Iniciar BLxx.1 e BLxx.4"); cada estaca recebe a data do seu grupo.
-   Peças ocultadas no botão "Ocultar peças" (ocultar3d.js) ficam fora da previsão e das placas. */
+   Peças ocultadas no botão "Ocultar peças" (ocultar3d.js) ficam fora da previsão e das placas.
+   Peças pintadas à mão no botão "Pintar peças" (pintar3d.js) usam a pintura no lugar da data do cronograma. */
 (function () {
   'use strict';
   var T = ["Aduela 01-A (aba Aduela_10)","Aduela 10-A (aba Aduela_10)","Aduela 11-A (aba Aduela_10)","Aduela 12-A (aba Aduela_10)","Aduela 13-A (aba Aduela_10)","Aduela 14-A (aba Aduela_10)","Aduela 15-A (aba Aduela_10)","Aduela 16-A (aba Aduela_10)","Aduela 17-A (aba Aduela_10)","Aduela 18-A (aba Aduela_10)","Aduela 19-A (aba Aduela_10)","Aduela 02-A (aba Aduela_10)","Aduela 20-A (aba Aduela_10)","Aduela 03-A (aba Aduela_10)","Aduela 04-A (aba Aduela_10)","Aduela 05-A (aba Aduela_10)","Aduela 06-A (aba Aduela_10)","Aduela 07-A (aba Aduela_10)","Aduela 08-A (aba Aduela_10)","Aduela 09-A (aba Aduela_10)","Aduela de arranque (aba Aduela_10)","Aduela 01-B (aba Aduela_10)","Aduela 10-B (aba Aduela_10)","Aduela 11-B (aba Aduela_10)","Aduela 12-B (aba Aduela_10)","Aduela 13-B (aba Aduela_10)","Aduela 14-B (aba Aduela_10)","Aduela 15-B (aba Aduela_10)","Aduela 16-B (aba Aduela_10)","Aduela 17-B (aba Aduela_10)","Aduela 18-B (aba Aduela_10)","Aduela 19-B (aba Aduela_10)","Aduela 02-B (aba Aduela_10)","Aduela 20-B (aba Aduela_10)","Aduela 03-B (aba Aduela_10)","Aduela 04-B (aba Aduela_10)","Aduela 05-B (aba Aduela_10)","Aduela 06-B (aba Aduela_10)","Aduela 07-B (aba Aduela_10)","Aduela 08-B (aba Aduela_10)","Aduela 09-B (aba Aduela_10)","Bloco 11.1","Bloco 11.2","Bloco do encontro · Apoio 16","Travessa do Apoio 16 · ramo 1000","Pilar 11.1","Pilar 11.2","Lançamento das vigas · vão 12–11 · ramo 1000","Lançamento das vigas · vão 13–12 · ramo 1000","Lançamento das vigas · vão 14–13 · ramo 1000","Lançamento das vigas · vão 15–14 · ramo 1000","Lançamento das vigas · vão 16–15 · ramo 1000","Bloco do Apoio 10 · ramo 1000","Estacas 1 a 8 do Apoio 11 (blocos 11.1 e 11.4)","Estacas 9 a 16 do Apoio 11 (blocos 11.2 e 11.3)","Estacas 1 a 32 do Apoio 10","Bloco 12.1","Bloco 12.2","Pilar 12.1","Pilar 12.2","Estacas 1 a 8 do Apoio 12 (blocos 12.1 e 12.4)","Estacas 9 a 16 do Apoio 12 (blocos 12.2 e 12.3)","Travessa do Apoio 12 · ramo 1000","Pilaretes do Apoio 12 · ramo 1000 (seguem a travessa)","Bloco 13.1","Bloco 13.2","Pilar 13.1","Pilar 13.2","Estacas 1 a 8 do Apoio 13 (blocos 13.1 e 13.4)","Estacas 9 a 16 do Apoio 13 (blocos 13.2 e 13.3)","Travessa do Apoio 13 · ramo 1000","Pilaretes do Apoio 13 · ramo 1000 (seguem a travessa)","Bloco 14.1","Bloco 14.2","Pilar 14.1","Pilar 14.2","Estacas do bloco 14.1","Estacas do bloco 14.2","Travessa do Apoio 14 · ramo 1000","Pilaretes do Apoio 14 · ramo 1000 (seguem a travessa)","Bloco 15.1","Bloco 15.2","Pilar 15.1","Pilar 15.2","Estacas do bloco 15.1","Estacas do bloco 15.2","Travessa do Apoio 15 · ramo 1000","Pilaretes do Apoio 15 · ramo 1000 (seguem a travessa)","Execução de Blocos e Cintas · Módulo 1 · T2","Guarda-Rodas · Módulo 1 · T2","Execução Laje Tabuleiro · Módulo 1 · T2","Execução de Pilares · Módulo 1 · T2","Execução de Vigas in-loco · Módulo 1 · T2","Execução de Blocos e Cintas · Módulo 2 · T2","Guarda-Rodas · Módulo 2 · T2","Execução Laje Tabuleiro · Módulo 2 · T2","Execução de Pilares · Módulo 2 · T2","Execução de Vigas in-loco · Módulo 2 · T2","Execução de Blocos e Cintas · Módulo 3 · T2","Guarda-Rodas · Módulo 3 · T2","Execução Laje Tabuleiro · Módulo 3 · T2","Execução de Pilares · Módulo 3 · T2","Execução de Vigas in-loco · Módulo 3 · T2","Execução de Blocos e Cintas · Módulo 4 · T2","Guarda-Rodas · Módulo 4 · T2","Execução Laje Tabuleiro · Módulo 4 · T2","Execução de Pilares · Módulo 4 · T2","Execução de Vigas in-loco · Módulo 4 · T2","Travessa do Apoio 11 · ramo 1000","Pilaretes do Apoio 11 · ramo 1000 (seguem a travessa)","Bloco 11.3","Bloco 11.4","Travessa do Apoio 16 · ramo 2000","Pilar 11.3","Pilar 11.4","Lançamento das vigas · vão 12–11 · ramo 2000","Lançamento das vigas · vão 13–12 · ramo 2000","Lançamento das vigas · vão 14–13 · ramo 2000","Lançamento das vigas · vão 15–14 · ramo 2000","Lançamento das vigas · vão 16–15 · ramo 2000","Bloco do Apoio 10 · ramo 2000","Bloco 12.3","Bloco 12.4","Pilar 12.3","Pilar 12.4","Travessa do Apoio 12 · ramo 2000","Pilaretes do Apoio 12 · ramo 2000 (seguem a travessa)","Bloco 13.3","Bloco 13.4","Pilar 13.3","Pilar 13.4","Travessa do Apoio 13 · ramo 2000","Pilaretes do Apoio 13 · ramo 2000 (seguem a travessa)","Bloco 14.3","Bloco 14.4","Pilar 14.3","Pilar 14.4","Estacas do bloco 14.3","Estacas do bloco 14.4","Travessa do Apoio 14 · ramo 2000","Pilaretes do Apoio 14 · ramo 2000 (seguem a travessa)","Bloco 15.3","Bloco 15.4","Pilar 15.3","Pilar 15.4","Estacas do bloco 15.3","Estacas do bloco 15.4","Travessa do Apoio 15 · ramo 2000","Pilaretes do Apoio 15 · ramo 2000 (seguem a travessa)","Execução de Blocos e Cintas · Módulo 1 · T4","Guarda-Rodas · Módulo 1 · T4","Execução Laje Tabuleiro · Módulo 1 · T4","Execução de Pilares · Módulo 1 · T4","Execução de Vigas in-loco · Módulo 1 · T4","Execução de Blocos e Cintas · Módulo 2 · T4","Guarda-Rodas · Módulo 2 · T4","Execução Laje Tabuleiro · Módulo 2 · T4","Execução de Pilares · Módulo 2 · T4","Execução de Vigas in-loco · Módulo 2 · T4","Execução de Blocos e Cintas · Módulo 3 · T4","Guarda-Rodas · Módulo 3 · T4","Execução Laje Tabuleiro · Módulo 3 · T4","Execução de Pilares · Módulo 3 · T4","Execução de Vigas in-loco · Módulo 3 · T4","Execução de Blocos e Cintas · Módulo 4 · T4","Guarda-Rodas · Módulo 4 · T4","Execução Laje Tabuleiro · Módulo 4 · T4","Execução de Pilares · Módulo 4 · T4","Execução de Vigas in-loco · Módulo 4 · T4","Travessa do Apoio 11 · ramo 2000","Pilaretes do Apoio 11 · ramo 2000 (seguem a travessa)","Aduela 01-A (aba 9.1)","Aduela 10-A (aba 9.1)","Aduela 11-A (aba 9.1)","Aduela 12-A (aba 9.1)","Aduela 13-A (aba 9.1)","Aduela 14-A (aba 9.1)","Aduela 15-A (aba 9.1)","Aduela 16-A (aba 9.1)","Aduela 17-A (aba 9.1)","Aduela 18-A (aba 9.1)","Aduela 19-A (aba 9.1)","Aduela 02-A (aba 9.1)","Aduela 20-A (aba 9.1)","Aduela 03-A (aba 9.1)","Aduela 04-A (aba 9.1)","Aduela 05-A (aba 9.1)","Aduela 06-A (aba 9.1)","Aduela 07-A (aba 9.1)","Aduela 08-A (aba 9.1)","Aduela 09-A (aba 9.1)","Aduela de arranque (aba 9.1)","Aduela 01-B (aba 9.1)","Aduela 10-B (aba 9.1)","Aduela 11-B (aba 9.1)","Aduela 12-B (aba 9.1)","Aduela 13-B (aba 9.1)","Aduela 14-B (aba 9.1)","Aduela 15-B (aba 9.1)","Aduela 16-B (aba 9.1)","Aduela 17-B (aba 9.1)","Aduela 18-B (aba 9.1)","Aduela 19-B (aba 9.1)","Aduela 02-B (aba 9.1)","Aduela 20-B (aba 9.1)","Aduela 03-B (aba 9.1)","Aduela 04-B (aba 9.1)","Aduela 05-B (aba 9.1)","Aduela 06-B (aba 9.1)","Aduela 07-B (aba 9.1)","Aduela 08-B (aba 9.1)","Aduela 09-B (aba 9.1)","Bloco 08.1","Bloco 08.2","Bloco do encontro · Apoio 01","Travessa do Apoio 01 · ramo 1000","Pilar 08.1","Pilar 08.2","Lançamento das vigas · vão 05–06 · ramo 1000","Lançamento das vigas · vão 06–07 · ramo 1000","Lançamento das vigas · vão 07–08 · ramo 1000","Lançamento das vigas · vão 03–04 · ramo 1000","Lançamento das vigas · vão 02–03 · ramo 1000","Lançamento das vigas · vão 01–02 · ramo 1000","Lançamento das vigas · vão 04–05 · ramo 1000","Bloco do Apoio 09 · ramo 1000","Estacas 1 a 8 do Apoio 08 (blocos 08.1 e 08.4)","Estacas 9 a 16 do Apoio 08 (blocos 08.2 e 08.3)","Estacas 1 a 32 do Apoio 09","Bloco 02.1","Bloco 02.2","Pilar 02.1","Pilar 02.2","Estacas do bloco 02.1","Estacas do bloco 02.2","Travessa do Apoio 02 · ramo 1000","Pilaretes do Apoio 02 · ramo 1000 (seguem a travessa)","Bloco 03.1","Bloco 03.2","Pilar 03.1","Pilar 03.2","Estacas 1 a 8 do Apoio 03","Travessa do Apoio 03 · ramo 1000","Pilaretes do Apoio 03 · ramo 1000 (seguem a travessa)","Bloco 04.1","Bloco 04.2","Pilar 04.1","Pilar 04.2","Estacas 1 a 8 do Apoio 04","Travessa do Apoio 04 · ramo 1000","Pilaretes do Apoio 04 · ramo 1000 (seguem a travessa)","Bloco 05.1","Bloco 05.2","Pilar 05.1","Pilar 05.2","Estacas 1 a 8 do Apoio 05 (blocos 05.1 e 05.4)","Estacas 9 a 16 do Apoio 05 (blocos 05.2 e 05.3)","Travessa do Apoio 05 · ramo 1000","Pilaretes do Apoio 05 · ramo 1000 (seguem a travessa)","Bloco 06.1","Bloco 06.2","Pilar 06.1","Pilar 06.2","Estacas 1 a 8 do Apoio 06 (blocos 06.1 e 06.4)","Estacas 9 a 16 do Apoio 06 (blocos 06.2 e 06.3)","Travessa do Apoio 06 · ramo 1000","Pilaretes do Apoio 06 · ramo 1000 (seguem a travessa)","Bloco 07.1","Bloco 07.2","Pilar 07.1","Pilar 07.2","Estacas 1 a 8 do Apoio 07 (blocos 07.1 e 07.4)","Estacas 9 a 16 do Apoio 07 (blocos 07.2 e 07.3)","Travessa do Apoio 07 · ramo 1000","Pilaretes do Apoio 07 · ramo 1000 (seguem a travessa)","Módulo Transição 1 · T1","Guarda-Rodas Transição 1 · T1","Laje Tabileiro - Transição 1 · T1","Pilares Transição 1 · T1","Vigas Transição 1 · T1","Travessa do Apoio 08 · ramo 1000","Pilaretes do Apoio 08 · ramo 1000 (seguem a travessa)","Aduela 01-A (aba 9.2)","Aduela 10-A (aba 9.2)","Aduela 11-A (aba 9.2)","Aduela 12-A (aba 9.2)","Aduela 13-A (aba 9.2)","Aduela 14-A (aba 9.2)","Aduela 15-A (aba 9.2)","Aduela 16-A (aba 9.2)","Aduela 17-A (aba 9.2)","Aduela 18-A (aba 9.2)","Aduela 19-A (aba 9.2)","Aduela 02-A (aba 9.2)","Aduela 20-A (aba 9.2)","Aduela 03-A (aba 9.2)","Aduela 04-A (aba 9.2)","Aduela 05-A (aba 9.2)","Aduela 06-A (aba 9.2)","Aduela 07-A (aba 9.2)","Aduela 08-A (aba 9.2)","Aduela 09-A (aba 9.2)","Aduela de arranque (aba 9.2)","Aduela 01-B (aba 9.2)","Aduela 10-B (aba 9.2)","Aduela 11-B (aba 9.2)","Aduela 12-B (aba 9.2)","Aduela 13-B (aba 9.2)","Aduela 14-B (aba 9.2)","Aduela 15-B (aba 9.2)","Aduela 16-B (aba 9.2)","Aduela 17-B (aba 9.2)","Aduela 18-B (aba 9.2)","Aduela 19-B (aba 9.2)","Aduela 02-B (aba 9.2)","Aduela 20-B (aba 9.2)","Aduela 03-B (aba 9.2)","Aduela 04-B (aba 9.2)","Aduela 05-B (aba 9.2)","Aduela 06-B (aba 9.2)","Aduela 07-B (aba 9.2)","Aduela 08-B (aba 9.2)","Aduela 09-B (aba 9.2)","Bloco 08.3","Bloco 08.4","Bloco do encontro · Apoio 01A","Travessa do Apoio 01A · ramo 2000","Pilar 08.3","Pilar 08.4","Lançamento das vigas · vão 05–06 · ramo 2000","Lançamento das vigas · vão 06–07 · ramo 2000","Lançamento das vigas · vão 07–08 · ramo 2000","Lançamento das vigas · vão 01A–02A · ramo 2000","Lançamento das vigas · vão 04A–05A · ramo 2000","Lançamento das vigas · vão 02A–03A · ramo 2000","Lançamento das vigas · vão 05–05A · ramo 2000","Lançamento das vigas · vão 03A–04A · ramo 2000","Bloco do Apoio 09 · ramo 2000","Bloco 02A.1","Bloco 02A.2","Pilar 02A.1","Pilar 02A.2","Estacas do bloco 02A.1","Estacas do bloco 02A.2","Travessa do Apoio 02A · ramo 2000","Pilaretes do Apoio 02A · ramo 2000 (seguem a travessa)","Bloco 03A.1","Bloco 03A.2","Pilar 03A.1","Pilar 03A.2","Estacas do bloco 03A.1","Estacas do bloco 03A.2","Travessa do Apoio 03A · ramo 2000","Pilaretes do Apoio 03A · ramo 2000 (seguem a travessa)","Bloco 04A.3","Bloco 04A.4","Pilar 04A.3","Pilar 04A.4","Estacas 1 a 8 do Apoio 04A","Travessa do Apoio 04A · ramo 2000","Pilaretes do Apoio 04A · ramo 2000 (seguem a travessa)","Bloco 05A.3","Bloco 05A.4","Pilar 05A.3","Pilar 05A.4","Estacas 1 a 8 do Apoio 05A","Travessa do Apoio 05A · ramo 2000","Pilaretes do Apoio 05A · ramo 2000 (seguem a travessa)","Bloco 05.3","Bloco 05.4","Pilar 05.3","Pilar 05.4","Travessa do Apoio 05 · ramo 2000","Pilaretes do Apoio 05 · ramo 2000 (seguem a travessa)","Bloco 06.3","Bloco 06.4","Pilar 06.3","Pilar 06.4","Travessa do Apoio 06 · ramo 2000","Pilaretes do Apoio 06 · ramo 2000 (seguem a travessa)","Bloco 07.3","Bloco 07.4","Pilar 07.3","Pilar 07.4","Travessa do Apoio 07 · ramo 2000","Pilaretes do Apoio 07 · ramo 2000 (seguem a travessa)","Módulo Transição 3 · T3","Guarda-Rodas Transição 3 · T3","Laje Tabileiro - Transição 3 · T3","Pilares Transição 3 · T3","Vigas Transição 3 · T3","Travessa do Apoio 08 · ramo 2000","Pilaretes do Apoio 08 · ramo 2000 (seguem a travessa)"];
@@ -26,7 +27,7 @@
   var root = null, mats = null, lmats = null, Mesh = null, Group = null, Lines = null, Geo = null, Attr = null, Box3 = null, Vec3 = null;
   var TexC = null, PlateMat = null, plateRoot = null, myPlates = {}, texCache = {};
   var btn = null, cbtn = null, pan = null, leg = null;
-  var counts = { c1: 0, c2: 0 }, cache = null, layoutOK = true, lastPx = null, lastGhost = null, lastPlates = -1, lastPre = 0, listening = false;
+  var lastPxObj = null, counts = { c1: 0, c2: 0 }, cache = null, layoutOK = true, lastPx = null, lastGhost = null, lastPlates = -1, lastPre = 0, listening = false;
 
   function loadStyle() {
     var s = null; try { s = JSON.parse(localStorage.getItem(KEY_STYLE) || 'null'); } catch (e) {}
@@ -41,6 +42,9 @@
   function get(b, s) { var r = D[b + '-' + s]; return r ? [r[0], r[1], T[r[2]]] : null; }
   function bandOf(end) { return end <= CUT1 ? 'c1' : end <= CUT2 ? 'c2' : null; }
   function band(b, s) { var r = D[b + '-' + s]; return r ? bandOf(r[1]) : null; }
+  function manual(b, s) { try { return window.__pt55 ? window.__pt55.get(b + '-' + s) : null; } catch (e) { return null; } }
+  // cor usada na peça: pintura manual ('c1', 'c2', '#cor' ou 'none' = sem cor) ou, sem pintura, a faixa do cronograma
+  function eff(b, s) { var m = manual(b, s); if (m === 'none') return null; return m || band(b, s); }
   function hid(b, s) { try { return !!(window.__oc54 && window.__oc54.has(b + '-' + s)); } catch (e) { return false; } }
   // etapa ainda não iniciada: as cores "fantasma" do 3D (nenhuma atividade) e, nas vigas pré-moldadas, as ainda não lançadas
   function isGhost(c) {
@@ -55,10 +59,20 @@
   function keyOf(u) { return u.b + '|' + u.s + '|' + u.k; }
 
   // ---------- materiais: até dezembro = mesmo material das concluídas; março = cor escolhida ----------
+  var cmats = {}, clmats = {};
+  function customMat(c) {
+    if (!cmats[c]) { cmats[c] = mats.c2.clone(); if (lmats) clmats[c] = lmats.c2.clone(); }
+    var m = cmats[c], op = style.opacity, solid = op >= 0.999;
+    m.color.setHex(hex(c)); m.opacity = solid ? 1 : op; m.transparent = !solid; m.depthWrite = solid; m.side = 2;
+    if (m.emissive) m.emissive.setHex(hex(mix(c, 0, 0.72))); m.needsUpdate = true;
+    if (clmats[c]) { var l = clmats[c]; l.color.setHex(hex(mix(c, 0, 0.28))); l.opacity = solid ? 0.55 : 0.7; l.transparent = true; l.depthWrite = false; l.needsUpdate = true; }
+    return m;
+  }
   function applyStyle() {
     if (!mats) return;
+    for (var c in cmats) customMat(c);
     var m = mats.c2, op = style.opacity, solid = op >= 0.999;
-    m.color.setHex(hex(style.color)); m.opacity = solid ? 1 : op; m.transparent = !solid; m.depthWrite = solid;
+    m.color.setHex(hex(style.color)); m.opacity = solid ? 1 : op; m.transparent = !solid; m.depthWrite = solid; m.side = 2;   // os dois lados: algumas peças do 3D têm faces com a frente virada para dentro
     if (m.emissive) m.emissive.setHex(hex(mix(style.color, 0, 0.72)));
     m.needsUpdate = true;
     if (lmats) { var l = lmats.c2; l.color.setHex(hex(mix(style.color, 0, 0.28))); l.opacity = solid ? 0.55 : 0.7; l.transparent = true; l.depthWrite = false; l.needsUpdate = true; }
@@ -71,7 +85,7 @@
     var m = mats.c1;
     if (src && m.userData.src53 !== src.uuid) { m.copy(src); m.userData.src53 = src.uuid; }
     else if (!src && !m.userData.src53) { m.color.setHex(DONE); m.roughness = 0.85; m.metalness = 0; m.side = 2; }
-    m.transparent = false; m.opacity = 1; m.depthWrite = true; m.map = null; m.vertexColors = false; m.needsUpdate = true;
+    m.transparent = false; m.opacity = 1; m.depthWrite = true; m.side = 2; m.map = null; m.vertexColors = false; m.needsUpdate = true;
     if (lmats) { var l = lmats.c1; l.color.setHex(DONE_EDGE); l.opacity = 0.38; l.transparent = true; l.depthWrite = false; l.needsUpdate = true; }
   }
 
@@ -85,8 +99,7 @@
       if (!centers[key]) centers[key] = bx.getCenter(new Vec3());
       if (PLATE_IDS.test(u.s)) plates.push({ b: u.b, s: u.s, x0: bx.min.x - 0.15, x1: bx.max.x + 0.15, z0: bx.min.z - 0.15, z1: bx.max.z + 0.15, y0: bx.min.y - 0.1, y1: bx.max.y + 4 });
       if (ADUELA.test(u.s)) { var a = adu[u.b + '|' + u.s]; if (!a) adu[u.b + '|' + u.s] = a = { b: u.b, s: u.s, box: bx.clone() }; else a.box.union(bx); }
-      var k = band(u.b, u.s); if (!k) return;
-      items.push({ key: key, b: u.b, s: u.s, band: k, geo: c.geometry, mw: c.matrixWorld.clone(), c: bx.getCenter(new Vec3()), box: bx, ghost: isGhost(c) });
+      items.push({ key: key, b: u.b, s: u.s, geo: c.geometry, mw: c.matrixWorld.clone(), c: bx.getCenter(new Vec3()), box: bx, ghost: isGhost(c) });
     });
     return { items: items, centers: centers, plates: plates, adu: adu };
   }
@@ -108,7 +121,7 @@
   var PREP = {};
   function prep(it) {
     if (it.tp) return;
-    var sig = it.band + (it.geo.index ? it.geo.index.count : it.geo.attributes.position.count) + '@' + it.c.x.toFixed(3) + ',' + it.c.y.toFixed(3) + ',' + it.c.z.toFixed(3), pc = PREP[it.key + '#' + sig];
+    var sig = (it.band === 'c1' ? 'c1' : 'cx') + (it.geo.index ? it.geo.index.count : it.geo.attributes.position.count) + '@' + it.c.x.toFixed(3) + ',' + it.c.y.toFixed(3) + ',' + it.c.z.toFixed(3), pc = PREP[it.key + '#' + sig];
     if (pc) { it.tp = pc.tp; it.tn = pc.tn; it.te = pc.te; return; }
     var g = it.geo, pos = g.attributes.position, ix = g.index, n = ix ? ix.count : pos.count, e = it.mw.elements, s = 1.006, lim = it.band === 'c1' ? 0.978 : 0.94;
     var tp = new Float32Array(n * 3), tn = new Float32Array(n * 3), i, j, k, v, x, y, z;
@@ -144,29 +157,32 @@
     return a;
   }
 
-  var cur = null, shown = [], shownItems = [];
+  var cur = null, shown = [], shownItems = [], ccounts = {};
   function rebuild(scene, px, g) {
     while (root.children.length) { var old = root.children[0]; root.remove(old); if (old.geometry) old.geometry.dispose(); }
-    counts = { c1: 0, c2: 0 }; cur = null; shown = []; shownItems = [];
+    counts = { c1: 0, c2: 0 }; ccounts = {}; cur = null; shown = []; shownItems = [];
     syncDone(px.parent);
     if (g) { cache = snapshot(px); layoutOK = true; }
     else if (cache) { cur = current(px); layoutOK = cur.ok; }
     if (cache && layoutOK) {
       var seen = {}, by = { c1: [], c2: [] };
       cache.items.forEach(function (it) {
+        var k = eff(it.b, it.s); if (!k) return;
+        if (it.band !== k) { if ((it.band === 'c1') !== (k === 'c1')) it.tp = null; it.band = k; }
         if (g ? !it.ghost : (cur.present[it.key] || !cur.bset[it.b])) return;
         // blocos dos apoios 9 e 10: sem as partes não iniciadas, o 3D junta as camadas na mesma situação num sólido só
         if (!g && it.s === 'MBL' && cur.mbl[it.b + '|MBL'] && cur.mbl[it.b + '|MBL'].clone().expandByScalar(0.05).containsPoint(it.c)) return;
         if (hid(it.b, it.s)) return;
         try { prep(it); } catch (e) { return; }
-        by[it.band].push(it); shownItems.push(it);
-        var pk = it.b + '-' + it.s; if (!seen[pk]) { seen[pk] = 1; counts[it.band]++; shown.push(pk); }
+        (by[k] = by[k] || []).push(it); shownItems.push(it);
+        var pk = it.b + '-' + it.s; if (!seen[pk]) { seen[pk] = 1; if (k === 'c1' || k === 'c2') counts[k]++; else ccounts[k] = (ccounts[k] || 0) + 1; shown.push(pk); }
       });
-      ['c1', 'c2'].forEach(function (k) {
+      Object.keys(by).forEach(function (k) {
         if (!by[k].length) return;
+        var mt = k === 'c1' || k === 'c2' ? mats[k] : customMat(k), lm = k === 'c1' || k === 'c2' ? (lmats && lmats[k]) : clmats[k];
         var geo = new Geo(); geo.setAttribute('position', new Attr(merged(by[k], 'tp'), 3)); geo.setAttribute('normal', new Attr(merged(by[k], 'tn'), 3)); geo.computeBoundingSphere();
-        var mesh = new Mesh(geo, mats[k]); mesh.renderOrder = k === 'c1' ? 0 : 2; mesh.name = 'Previsão ' + k; mesh.userData.prev53 = k; root.add(mesh);
-        if (Lines) { var lg = new Geo(); lg.setAttribute('position', new Attr(merged(by[k], 'te'), 3)); lg.computeBoundingSphere(); var ln = new Lines(lg, lmats[k]); ln.renderOrder = 3; ln.userData.prev53 = k; root.add(ln); }
+        var mesh = new Mesh(geo, mt); mesh.renderOrder = k === 'c1' ? 0 : 2; mesh.name = 'Previsão ' + k; mesh.userData.prev53 = k; root.add(mesh);
+        if (Lines && lm) { var lg = new Geo(); lg.setAttribute('position', new Attr(merged(by[k], 'te'), 3)); lg.computeBoundingSphere(); var ln = new Lines(lg, lm); ln.renderOrder = 3; ln.userData.prev53 = k; root.add(ln); }
       });
     }
     if (root.parent !== scene) scene.add(root);
@@ -222,7 +238,7 @@
         for (var i = 0; i < cache.plates.length; i++) {
           var a = cache.plates[i];
           // continua o nome da peça iniciada/concluída e da peça que está na previsão (até 30/03/2027)
-          if (inBox(wp, a)) { vis = !!started[a.b + '|' + a.s] || (on && !!band(a.b, a.s)); if (vis) break; }
+          if (inBox(wp, a)) { vis = !!started[a.b + '|' + a.s] || (on && !!eff(a.b, a.s)); if (vis) break; }
         }
       }
       if (!vis && p.visible) { p.visible = false; p.userData.hid53 = 1; }
@@ -257,7 +273,7 @@
   function adPlates(scene, started) {
     var want = {};
     if (started && TexC && PlateMat && cache && platesOn() && on) {
-      for (var k in cache.adu) { var a = cache.adu[k]; if (!started[k] && band(a.b, a.s) && !hid(a.b, a.s)) want[k] = a; }
+      for (var k in cache.adu) { var a = cache.adu[k]; if (!started[k] && eff(a.b, a.s) && !hid(a.b, a.s)) want[k] = a; }
     }
     if (!plateRoot) { plateRoot = new Group(); plateRoot.name = 'Placas da previsão (V1.54)'; }
     for (var k1 in myPlates) if (!want[k1]) { var o = myPlates[k1]; plateRoot.remove(o); o.geometry.dispose(); o.material.dispose(); delete myPlates[k1]; }
@@ -304,7 +320,8 @@
     if (leg.parentElement !== host) host.append(leg);
     var g = ghostOn(), note = !g && cache && !layoutOK ? '<small>Volte à vista geral da ponte para ver a previsão sem as partes não iniciadas.</small>' : '';
     var sm = innerWidth < 760;
-    leg.innerHTML = '<b>Previsão do cronograma</b><div><i style="background:#969ba0"></i><span>' + (sm ? 'Concluída ou prev. até 31/12/26' : 'Concluída ou prevista até 31/12/2026') + '</span><em>' + counts.c1 + (sm ? '' : ' prev.') + '</em></div><div><i style="background:' + rgba(style.color, Math.max(0.35, style.opacity)) + ';border-color:' + mix(style.color, 0, 0.28) + '"></i><span>' + (sm ? 'Prevista até 30/03/27' : 'Prevista de 01/01 a 30/03/2027') + '</span><em>' + counts.c2 + '</em></div>' + note;
+    leg.innerHTML = '<b>Previsão do cronograma</b><div><i style="background:#969ba0"></i><span>' + (sm ? 'Concluída ou prev. até 31/12/26' : 'Concluída ou prevista até 31/12/2026') + '</span><em>' + counts.c1 + (sm ? '' : ' prev.') + '</em></div><div><i style="background:' + rgba(style.color, Math.max(0.35, style.opacity)) + ';border-color:' + mix(style.color, 0, 0.28) + '"></i><span>' + (sm ? 'Prevista até 30/03/27' : 'Prevista de 01/01 a 30/03/2027') + '</span><em>' + counts.c2 + '</em></div>' +
+      Object.keys(ccounts).map(function (c) { return '<div><i style="background:' + rgba(c, Math.max(0.35, style.opacity)) + ';border-color:' + mix(c, 0, 0.28) + '"></i><span>Pintura livre</span><em>' + ccounts[c] + '</em></div>'; }).join('') + note;
   }
   function mountBtn() {
     var f = document.getElementById('v23-focus'); if (!f) return false;
@@ -384,6 +401,7 @@
     mountBtn();
     if (!listening) { var gb = document.getElementById('av-ghost'); if (gb) { listening = true; gb.addEventListener('change', function () { setTimeout(function () { prelajePass(ghostOn()); }, 30); setTimeout(tick, 60); }); } }
     var px = findProxies(scene), g = ghostOn() || prazoOn(), sig = px ? px.uuid + ':' + px.children.length + ':' + (px.children[0] ? px.children[0].uuid : '') : '';
+    if (px) lastPxObj = px;
     if (px && (sig !== lastPx || g !== lastGhost)) { lastPx = sig; lastGhost = g; rebuild(scene, px, g); platePass(scene, px, g); prelajePass(g); lastPre = Date.now(); }
     else if (px) {
       var n = 0; scene.traverse(function (o) { if (o.userData && o.userData.plate41) n++; });
@@ -398,9 +416,15 @@
   setInterval(tick, 700);
   setInterval(flipPlates, 250);
   window.__prev53 = {
-    get: get, band: band, pick: pick,
+    get: get, band: band, eff: eff, manual: manual, pick: pick,
+    // etapas ainda não iniciadas da peça na situação atual (0 = peça já toda executada ou fora da vista)
+    pending: function (b, s) {
+      if (!cache) return 0; var g = ghostOn() || prazoOn(), cu = !g && lastPxObj ? current(lastPxObj) : null, n = 0;
+      cache.items.forEach(function (it) { if (it.b === b && it.s === s && (g ? it.ghost : !!cu && !cu.present[it.key] && !!cu.bset[it.b])) n++; });
+      return n; },
+    get customCounts() { return ccounts; },
     refresh: function () { lastPx = null; tick(); },
-    chipStyle: function (b, s) { var k = band(b, s); return k === 'c1' ? { bg: '#969ba033', fg: '#dfe3e7' } : k === 'c2' ? { bg: rgba(style.color, 0.22), fg: mix(style.color, 255, 0.45) } : { bg: '#ffffff14', fg: '#c9d0d8' }; },
+    chipStyle: function (b, s) { var k = eff(b, s); if (k && k[0] === '#') return { bg: rgba(k, 0.22), fg: mix(k, 255, 0.45) }; return k === 'c1' ? { bg: '#969ba033', fg: '#dfe3e7' } : k === 'c2' ? { bg: rgba(style.color, 0.22), fg: mix(style.color, 255, 0.45) } : { bg: '#ffffff14', fg: '#c9d0d8' }; },
     get style() { return { color: style.color, opacity: style.opacity }; },
     setStyle: function (c, o) { if (c) style.color = c; if (o != null) style.opacity = Math.max(0.1, Math.min(1, o)); saveStyle(); applyStyle(); state(); },
     get data() { var o = {}; for (var k in D) { var i = k.indexOf('-'), b = k.slice(0, i); (o[b] = o[b] || {})[k.slice(i + 1)] = [D[k][0], D[k][1]]; } return o; },
