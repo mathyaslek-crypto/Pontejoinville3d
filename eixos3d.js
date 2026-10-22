@@ -10,7 +10,7 @@
   'use strict';
   var KEY = 'ponte-eixos-v56', BLUE = '#2f45e0', NAVY = '#14205c', R0 = 3.0, KMAX = 2.5, WATER = -6.65, ROT0 = 0;
   var show = true; try { show = localStorage.getItem(KEY) !== '0'; } catch (e) {}
-  var T = null, root = null, items = [], lastSig = '', timer = null;
+  var T = null, root = null, items = [], lastSig = '', timer = null, lastCam = '';
 
   // vãos: [apoio de onde vem, apoio para onde vai (número na bolinha), ramo] — ramo 'both' atravessa os dois ramos
   var SPANS = [
@@ -20,7 +20,39 @@
     ['AP05A', 'AP05', '2000'], ['AP04A', 'AP05A', '2000'], ['AP03A', 'AP04A', '2000'], ['AP02A', 'AP03A', '2000'], ['AP01A', 'AP02A', '2000']
   ];
 
-  function ground(x, z) { var g = null; try { g = window.__v50geo.ground(x, z); } catch (e) {} return Math.max(isFinite(g) ? g : WATER, WATER); }
+  // Altura do terreno: lida direto da malha do "Terreno" (grade regular) com interpolação — sem lançar raio na malha
+  // inteira a cada consulta (era isso que pesava). Se a malha não for uma grade, usa o cálculo do 3D com memória.
+  var HF = null, memo = new Map();
+  function heightfield() {
+    if (HF && HF.mesh.parent) return HF; HF = null;
+    var scene = window.__v40 && window.__v40.scene, t = null; if (!scene) return null;
+    scene.traverse(function (o) { if (!t && o.isMesh && /^Terreno/.test(o.name || '')) t = o; });
+    if (!t || !t.geometry || !t.geometry.attributes.position) return null;
+    t.updateMatrixWorld(true);
+    var pos = t.geometry.attributes.position, n = pos.count, e = t.matrixWorld.elements, X = new Float32Array(n), Y = new Float32Array(n), Z = new Float32Array(n);
+    for (var i = 0; i < n; i++) { var x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i); X[i] = e[0] * x + e[4] * y + e[8] * z + e[12]; Y[i] = e[1] * x + e[5] * y + e[9] * z + e[13]; Z[i] = e[2] * x + e[6] * y + e[10] * z + e[14]; }
+    var rowX = Math.abs(Z[1] - Z[0]) < 1e-3, A = rowX ? Z : X, nx = 1; while (nx < n && Math.abs(A[nx] - A[0]) < 1e-3) nx++;
+    var nz = n / nx; if (nx < 2 || nz < 2 || nz !== Math.floor(nz)) return null;
+    var U = rowX ? X : Z, V = rowX ? Z : X, u0 = U[0], du = (U[nx - 1] - U[0]) / (nx - 1), v0 = V[0], dv = (V[n - 1] - V[0]) / (nz - 1);
+    for (var k = 0; k < 40; k++) { var j = Math.floor(Math.random() * n); if (Math.abs(U[j] - (u0 + (j % nx) * du)) > 0.05 || Math.abs(V[j] - (v0 + Math.floor(j / nx) * dv)) > 0.05) return null; }
+    return (HF = { mesh: t, rowX: rowX, nx: nx, nz: nz, u0: u0, du: du, v0: v0, dv: dv, Y: Y });
+  }
+  function ground(x, z) {
+    var h = heightfield(), g = null;
+    if (h) {
+      var u = h.rowX ? x : z, v = h.rowX ? z : x, fu = (u - h.u0) / h.du, fv = (v - h.v0) / h.dv;
+      if (fu >= 0 && fv >= 0 && fu <= h.nx - 1 && fv <= h.nz - 1) {
+        var i = Math.min(h.nx - 2, Math.floor(fu)), j = Math.min(h.nz - 2, Math.floor(fv)), a = fu - i, b = fv - j, Y = h.Y, r = j * h.nx + i;
+        g = (Y[r] * (1 - a) + Y[r + 1] * a) * (1 - b) + (Y[r + h.nx] * (1 - a) + Y[r + h.nx + 1] * a) * b;
+      }
+    }
+    if (g == null) {
+      var key = Math.round(x * 2) + ',' + Math.round(z * 2);
+      if (memo.has(key)) g = memo.get(key);
+      else { try { g = window.__v50geo.ground(x, z); } catch (e) {} memo.set(key, g); }
+    }
+    return Math.max(isFinite(g) && g != null ? g : WATER, WATER);
+  }
   function ctors(scene) {
     if (T) return T;
     var C = {};
@@ -137,10 +169,12 @@
   function update(force) {
     if (!root || !items.length || !window.__v22 || !window.__v22.camera) return;
     var cm = window.__v22.camera, cam = cm.position, ce = cm.matrixWorld.elements, ux = ce[4], uz = ce[6];   // "para cima" da tela projetado no chão
+    var sig = ce[0] + ',' + ce[4] + ',' + ce[6] + ',' + ce[12] + ',' + ce[13] + ',' + ce[14];
+    if (!force && sig === lastCam) return; lastCam = sig;                                                       // câmera parada: nada a refazer
     if (Math.hypot(ux, uz) < 1e-3) { ux = -ce[8]; uz = -ce[10]; }
     items.forEach(function (it) {
-      var bx = it.bx, bz = it.bz;
-      var k = Math.round(Math.max(1, Math.min(it.kmax || KMAX, Math.hypot(cam.x - bx, cam.y - ground(bx, bz), cam.z - bz) / 130)) * 20) / 20;
+      var bx = it.bx, bz = it.bz; if (it.by == null) it.by = ground(bx, bz);
+      var k = Math.round(Math.max(1, Math.min(it.kmax || KMAX, Math.hypot(cam.x - bx, cam.y - it.by, cam.z - bz) / 130)) * 20) / 20;
       if (force || k !== it.k) {
         it.k = k; var R = R0 * k, d = it.e + 1.5 + R, cx = it.S.x + it.n.x * d, cz = it.S.z + it.n.z * d, y = ground(cx, cz);
         for (var i = 0; i < 8; i++) { var a = i / 8 * Math.PI * 2; y = Math.max(y, ground(cx + Math.cos(a) * R * 0.8, cz + Math.sin(a) * R * 0.8)); }
@@ -205,5 +239,5 @@
   }
   setInterval(tick, 700);
   setInterval(function () { if (root && root.visible) update(false); }, 120);
-  window.__eixos56 = { setRot0: function (v) { ROT0 = v; update(true); }, get items() { return items.map(function (i) { return { label: i.label, x: i.disc.position.x, z: i.disc.position.z, k: i.k }; }); }, rebuild: function () { lastSig = ''; tick(); } };
+  window.__eixos56 = { ground: ground, get hf() { return !!heightfield(); }, setRot0: function (v) { ROT0 = v; update(true); }, get items() { return items.map(function (i) { return { label: i.label, x: i.disc.position.x, z: i.disc.position.z, k: i.k }; }); }, rebuild: function () { lastSig = ''; tick(); } };
 })();
