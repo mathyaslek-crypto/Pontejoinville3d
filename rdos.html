@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0e12">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; base-uri 'none'; form-action 'none'">
+<title>Pasta do RDO · Ponte Joinville</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0e12;--panel:#0f151b;--panel2:#121a21;--ink:#eef1f3;--ink2:#b9c2ca;--muted:#7d8893;--line:#1d262e;--line2:#2a3540;--amber:#f2b33d;--ok:#3fb37f;--err:#ef6b62;
+ --serif:"Instrument Serif",Georgia,"Times New Roman",serif;--sans:Manrope,"Segoe UI Variable Text","Segoe UI",Roboto,Arial,sans-serif;color-scheme:dark}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:14.5px/1.55 var(--sans);min-height:100vh}
+a{color:inherit}
+button,input,select{font:inherit;color:inherit}
+.wrap{max-width:1100px;margin:0 auto;padding:26px 28px 60px}
+.top{display:flex;align-items:center;gap:12px}
+.back{display:grid;place-items:center;width:36px;height:36px;border:1px solid var(--line2);border-radius:10px;text-decoration:none;color:var(--ink2)}
+.back:hover{border-color:var(--amber);color:var(--amber)}
+.mk{width:22px;height:22px;background:var(--amber);clip-path:polygon(50% 0,100% 100%,72% 100%,50% 52%,28% 100%,0 100%)}
+.top b{font-weight:600;letter-spacing:.18em;font-size:12.5px}
+.top span{color:var(--muted);font-size:12.5px;margin-left:auto}
+h1{font:400 clamp(44px,6vw,72px)/.95 var(--serif);margin-top:26px}
+h1 em{font-style:italic;color:var(--ink2)}
+.lead{color:var(--ink2);max-width:640px;margin-top:12px}
+.stats{display:flex;flex-wrap:wrap;gap:28px;margin-top:22px}
+.stats div{border-top:1px solid var(--line2);padding-top:8px;min-width:96px}
+.stats b{display:block;font:400 30px/1 var(--serif)}
+.stats span{font-size:12px;color:var(--muted);letter-spacing:.05em}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:26px 0 8px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.bar input,.bar select{height:38px;border-radius:10px;border:1px solid var(--line2);background:#0b1015;padding:0 12px}
+.bar input{flex:1;min-width:180px}
+.bar input:focus,.bar select:focus{outline:none;border-color:var(--amber)}
+.btn{height:38px;padding:0 14px;border-radius:10px;border:1px solid var(--line2);background:#121a21;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--amber)}
+.day{margin-top:26px}
+.day h2{font:600 12px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:flex;gap:10px;align-items:center}
+.day h2::after{content:"";flex:1;height:1px;background:var(--line)}
+.card{margin-top:12px;border:1px solid var(--line2);border-radius:14px;background:linear-gradient(180deg,#10161c,#0d1217);padding:16px 18px}
+.card.old{opacity:.62}
+.hd{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:baseline}
+.hd b{font-size:16px;font-weight:600}
+.tag{font-size:11.5px;padding:2px 9px;border-radius:999px;border:1px solid var(--line2);color:var(--ink2)}
+.tag.cur{border-color:#3fb37f88;color:#8ee0b5}
+.hd .meta{color:var(--muted);font-size:12.5px;margin-left:auto}
+.files{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.fl{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-radius:9px;border:1px solid var(--line2);background:#0b1015;text-decoration:none;font-size:13px}
+.fl:hover{border-color:var(--amber)}
+.fl i{font-style:normal;color:var(--muted);font-size:11.5px}
+.fl svg{width:16px;height:16px;stroke:var(--amber);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;margin-top:12px}
+.ph a{position:relative;display:block;aspect-ratio:4/3;border-radius:9px;overflow:hidden;border:1px solid var(--line2);background:#0b1015}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph a span{position:absolute;left:4px;bottom:4px;font-size:10.5px;padding:1px 6px;border-radius:6px;background:#000a;color:#fff}
+.ph a:hover{border-color:var(--amber)}
+.del{margin-left:8px;height:30px;padding:0 10px;border-radius:8px;border:1px solid #ef6b6255;background:none;color:#ffb1aa;cursor:pointer;font-size:12px}
+.del:hover{border-color:var(--err)}
+.empty,.msg{margin-top:30px;padding:28px;border:1px dashed var(--line2);border-radius:14px;color:var(--ink2);text-align:center}
+.msg.err{border-color:#ef6b6266;color:#ffb1aa}
+.foot{margin-top:34px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:14px}
+.more{display:block;margin:18px auto 0}
+@media(max-width:720px){.wrap{padding:18px 16px 50px}.hd .meta{margin-left:0;flex-basis:100%}.top span{display:none}h1{margin-top:18px}.stats{gap:18px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <div class="top"><a class="back" href="./" title="Voltar ao início" aria-label="Voltar ao início">←</a><div class="mk"></div><b>ALYA</b><span>Obra 70.578 · Joinville · SC</span></div>
+ <h1>Pasta do <em>RDO</em></h1>
+ <p class="lead">Os RDOs que os apontadores finalizam no app chegam aqui direto, com o PDF, as fotos e o pacote do 3D. O Modelo 3D, a Pluviometria e as Paralisações leem os pacotes desta pasta sozinhos.</p>
+ <div class="stats" id="stats"></div>
+ <div class="bar"><input id="q" type="search" placeholder="Buscar apontador, data ou arquivo" aria-label="Buscar"><select id="mes" aria-label="Mês"></select><select id="turno" aria-label="Turno"><option value="">Dia e noite</option><option value="dia">Dia</option><option value="noite">Noite</option></select><button class="btn" id="upd" type="button">Atualizar</button></div>
+ <div id="list"><p class="msg">Carregando a pasta…</p></div>
+ <p class="foot">Os arquivos ficam guardados no site. As revisões anteriores do mesmo dia continuam na pasta, mais apagadas; a mais nova aparece como "atual".</p>
+</div>
+<script>
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id);};
+var ITENS=[],podeExcluir=false,limit=40,armed=null;
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
+var br=function(d){return /^\d{4}-\d{2}-\d{2}/.test(d||'')?d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'—';};
+var wk=function(d){try{return new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long'});}catch(e){return '';}};
+var hora=function(iso){try{return new Date(iso).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return '';}};
+var mb=function(n){return n>=1e6?(n/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+' MB':Math.max(1,Math.round(n/1e3))+' KB';};
+var url=function(e,f,dl){return '/api/rdo/arquivo/'+encodeURIComponent(e.id)+'/'+f.n+(dl?'?baixar=1':'');};
+var MES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+var IC={pdf:'<svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>',
+ pacote:'<svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg>',
+ outro:'<svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>'};
+function load(){
+ $('list').innerHTML='<p class="msg">Carregando a pasta…</p>';
+ fetch('/api/rdo/lista',{cache:'no-store'}).then(function(r){if(!r.ok||!/json/.test(r.headers.get('content-type')||''))throw Error(r.status===403?'Sem acesso à pasta do RDO.':'Não consegui abrir a pasta agora.');return r.json();})
+  .then(function(j){ITENS=(j.itens||[]).slice().sort(function(a,b){return String(b.data).localeCompare(String(a.data))||String(b.at).localeCompare(String(a.at));});podeExcluir=!!j.podeExcluir;months();draw();})
+  .catch(function(e){$('list').innerHTML='<p class="msg err">'+esc(e.message)+' Tente de novo em instantes.</p>';});
+}
+function months(){var sel=$('mes'),cur=sel.value,ms={};ITENS.forEach(function(e){if(e.data)ms[e.data.slice(0,7)]=1;});
+ sel.innerHTML='<option value="">Todos os meses</option>'+Object.keys(ms).sort().reverse().map(function(m){return '<option value="'+m+'">'+MES[+m.slice(5,7)-1]+'/'+m.slice(0,4)+'</option>';}).join('');sel.value=cur;}
+function filtered(){var q=($('q').value||'').toLowerCase().trim(),m=$('mes').value,t=$('turno').value;
+ return ITENS.filter(function(e){if(m&&String(e.data).slice(0,7)!==m)return false;if(t&&e.turno!==t)return false;if(!q)return true;
+  return [e.autor,br(e.data),e.data,e.por,e.turno].concat((e.arquivos||[]).map(function(f){return f.nome;})).join(' ').toLowerCase().indexOf(q)>=0;});}
+function draw(){
+ var L=filtered(),tot=0,people={},last=null,cur={};
+ ITENS.forEach(function(e){(e.arquivos||[]).forEach(function(f){tot+=f.tam||0;});if(e.autor)people[e.autor]=1;if(!last||String(e.at)>String(last.at))last=e;var k=e.data+'|'+e.autor+'|'+e.turno;if(!cur[k]||String(e.at)>String(cur[k].at))cur[k]=e;});
+ $('stats').innerHTML='<div><b>'+ITENS.length+'</b><span>RDOs na pasta</span></div><div><b>'+Object.keys(people).length+'</b><span>apontadores</span></div><div><b>'+(last?esc(br(last.data)):'—')+'</b><span>último RDO'+(last?' · '+esc(last.autor||''):'')+'</span></div><div><b>'+mb(tot)+'</b><span>espaço usado</span></div>';
+ if(!ITENS.length){$('list').innerHTML='<p class="empty">Nenhum RDO na pasta ainda. Quando o apontador finalizar o RDO no app, ele aparece aqui.</p>';return;}
+ if(!L.length){$('list').innerHTML='<p class="empty">Nada encontrado com esse filtro.</p>';return;}
+ var h='',lastDay=null;
+ L.slice(0,limit).forEach(function(e){
+  if(e.data!==lastDay){lastDay=e.data;h+='<section class="day"><h2>'+esc(wk(e.data))+' · '+esc(br(e.data))+'</h2>';}
+  var k=e.data+'|'+e.autor+'|'+e.turno,isCur=cur[k]===e,A=e.arquivos||[],docs=A.filter(function(f){return f.kind!=='foto'&&f.kind!=='pluvio';}),fotos=A.filter(function(f){return f.kind==='foto'||f.kind==='pluvio';}),size=A.reduce(function(s,f){return s+(f.tam||0);},0);
+  h+='<article class="card'+(isCur?'':' old')+'"><div class="hd"><b>'+esc(e.autor||'Apontador')+'</b><span class="tag">'+(e.turno==='noite'?'Noite':e.turno==='dia'?'Dia':'Pacote')+'</span>'+(e.rev!=null?'<span class="tag'+(isCur?' cur':'')+'">Rev. '+esc(e.rev)+(isCur?' · atual':'')+'</span>':'')+
+   '<span class="meta">enviado '+esc(hora(e.at))+(e.por?' · '+esc(e.por):'')+' · '+mb(size)+(podeExcluir?'<button class="del" type="button" data-del="'+esc(e.id)+'">'+(armed===e.id?'Confirmar exclusão':'Excluir')+'</button>':'')+'</span></div>';
+  h+='<div class="files">'+docs.map(function(f){var dl=f.kind==='pacote';return '<a class="fl" href="'+url(e,f,dl)+'" '+(dl?'download':'target="_blank" rel="noopener"')+'>'+(IC[f.kind]||IC.outro)+(f.kind==='pdf'?'RDO em PDF':f.kind==='pacote'?'Pacote do 3D':esc(f.nome))+'<i>'+mb(f.tam||0)+'</i></a>';}).join('')+'</div>';
+  if(fotos.length)h+='<div class="ph">'+fotos.map(function(f){var lb=f.kind==='pluvio'?((f.nome||'').match(/_(\d\d)h\./)||[])[1]:'';return '<a href="'+url(e,f)+'" target="_blank" rel="noopener" title="'+esc(f.nome)+'"><img loading="lazy" alt="'+esc(f.nome)+'" src="'+url(e,f)+'">'+(lb?'<span>Pluviômetro '+lb+'h</span>':'')+'</a>';}).join('')+'</div>';
+  h+='</article>';
+  var nx=L[L.indexOf(e)+1];if(!nx||nx.data!==e.data)h+='</section>';
+ });
+ if(L.length>limit)h+='<button class="btn more" type="button" id="more">Mostrar mais ('+(L.length-limit)+')</button>';
+ $('list').innerHTML=h;
+ var mo=$('more');if(mo)mo.onclick=function(){limit+=40;draw();};
+ Array.prototype.forEach.call(document.querySelectorAll('[data-del]'),function(b){b.onclick=function(){var id=b.getAttribute('data-del');
+  if(armed!==id){armed=id;draw();setTimeout(function(){if(armed===id){armed=null;draw();}},5000);return;}
+  armed=null;b.disabled=true;b.textContent='Excluindo…';
+  fetch('/api/rdo/item/'+encodeURIComponent(id),{method:'DELETE'}).then(function(r){return r.json();}).then(function(j){if(!j.ok)throw Error(j.error||'erro');ITENS=ITENS.filter(function(e){return e.id!==id;});months();draw();})
+   .catch(function(e){alertMsg('Não consegui excluir: '+e.message);draw();});};});
+}
+function alertMsg(t){var p=document.createElement('p');p.className='msg err';p.textContent=t;$('list').prepend(p);setTimeout(function(){p.remove();},5000);}
+$('q').oninput=function(){limit=40;draw();};$('mes').onchange=function(){limit=40;draw();};$('turno').onchange=function(){limit=40;draw();};$('upd').onclick=load;
+document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')load();});
+load();
+})();
+</script>
+</body>
+</html>

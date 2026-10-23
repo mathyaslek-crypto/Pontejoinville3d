@@ -484,7 +484,7 @@ function pageToday(){
   <label class="f" style="margin-top:10px">Turno${w.he?'<span class="he" style="margin:0">HORA EXTRA</span>':''}<div class="seg" id="shift">${[['dia','Dia',ICON.sun],['noite','Noite',ICON.moon]].map(([k,t,ic])=>`<button type="button" data-v="${k}" aria-pressed="${x.shift===k}" ${dis}><span class="row" style="gap:6px">${ic}${t}</span><small>${winLabel(day,k)}</small></button>`).join('')}</div></label>
  </section>
  <nav class="steps" aria-label="Seções do RDO">${[['01','Turno','s1',ok.t],['02','Pluviômetro','s2',ok.p],['03','Equipes','s3',ok.e],['04','Atividades','s4',ok.a],['05','Paralisações','s5',ok.a]].map(([n,t,id,k])=>`<a href="#${id}" class="${k?'ok':''}"><b>${k?'✓':n}</b><span>${t}</span></a>`).join('')}</nav>
- ${fin?`<div class="final"><div><b>RDO finalizado · Rev. ${fin.rev}</b>${br(fin.at)} às ${new Date(fin.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}. Para corrigir, reabra o dia.</div><button class="btn sm ghost" type="button" id="reshare">Compartilhar</button><button class="btn sm ghost" type="button" id="reopen">Reabrir</button></div>`:''}
+ ${fin?`<div class="final"><div><b>RDO finalizado · Rev. ${fin.rev}</b>${br(fin.at)} às ${new Date(fin.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}. Para corrigir, reabra o dia.</div><button class="btn sm ghost" type="button" id="reshare">${siteOk(x)?'Enviar de novo':'Enviar para a pasta'}</button><button class="btn sm ghost" type="button" id="reopen">Reabrir</button></div>`:''}
 
  <section class="card sec" id="s2"><div class="sh"><span class="ix">02</span><h2>Pluviômetro</h2><span class="pill ${ok.p?'ok':'warn'}">${ok.p?'Completo':nWx+'/'+ownP(x).length+' períodos'}</span></div>
   <div class="wx">${[['Manhã','07h–12h'],['Tarde','12h–18h'],['Noite','18h–07h']].map(([t,s],i)=>{let mine=ownP(x).includes(i),dd=dis||(mine?'':'disabled');return `<div class="p ${mine?'':'off'}"><b>${t}<small>${mine?s:'outro turno'}</small></b><div class="opt" data-wx="${i}"><button type="button" data-v="0" aria-pressed="${mine&&x.rainP[i]===false}" ${dd}>${ICON.sun}Não</button><button type="button" data-v="1" aria-pressed="${mine&&x.rainP[i]===true}" ${dd}>${ICON.rain}Choveu</button></div></div>`;}).join('')}</div>
@@ -520,7 +520,7 @@ function pageToday(){
   <h3>Equipamentos na frente</h3><p class="hint" style="margin-top:0">Prefixos ou placas separados por vírgula.</p>
   <div class="eq">${EQUIP.map((t,i)=>`<label class="f">${t}<input id="eq${i}" value="${esc(x.equipment[t]||'')}" ${dis}><small id="eqn${i}">${count(x.equipment[t])} un.</small></label>`).join('')}</div>
  </div></details>
- ${fin?'':`<button class="btn go big" type="button" id="finish">Finalizar RDO do dia</button><div id="finmsg"></div><p class="hint" style="text-align:center">Gera o PDF com seu nome e a data, o pacote do 3D e as fotos do pluviômetro. Na tela de compartilhar, escolha <b>OneDrive</b> e salve na pasta do RDO.</p>`}`;
+ ${fin?'':`<button class="btn go big" type="button" id="finish">Finalizar RDO do dia</button><div id="finmsg"></div><p class="hint" style="text-align:center">Gera o PDF com seu nome e a data, o pacote do 3D e as fotos, e envia tudo direto para a <b>Pasta do RDO</b> do site.</p>`}`;
  bindToday();
 }
 let tool='c';
@@ -762,14 +762,15 @@ function pageOpen(){
 // ---------- Enviar ----------
 function pageSend(){
  let n=unsent(),days=Object.keys(db.days).filter(d=>listActs(d).length||db.days[d].finalized||db.days[d].crews.length).sort().reverse();
- $('content').innerHTML=`<section class="card"><h2>Enviar</h2><p class="hint" style="margin-top:-4px">${live().length} atividades do 3D neste aparelho · ${n} alterações não enviadas${db.sentAt?' · último envio '+br(db.sentAt):''}</p><button class="btn primary big" type="button" id="send" style="margin-top:10px">Enviar pacote (3D e planilhas)</button><a class="btn big" href="${PASTA}" target="_blank" rel="noopener" style="margin-top:8px;text-decoration:none">Abrir pasta TESTE RDO no SharePoint</a><p class="hint">Normalmente o envio acontece ao finalizar o RDO. Use aqui para reenviar tudo.</p></section>
- <section class="card days"><h2>Dias registrados</h2>${days.length?days.map(d=>{let f=db.days[d].finalized;return `<div class="drow"><span><b>${br(d)}</b> · ${listActs(d).length} ativ. · ${esc(db.days[d].author||'')} · ${db.days[d].shift==='noite'?'noite':'dia'}</span><span class="row"><span class="tag ${f?'ok':''}">${f?'Finalizado · Rev. '+f.rev:'Aberto'}</span><button class="btn sm ghost" type="button" data-open="${d}">Abrir</button>${f?`<button class="btn sm ghost" type="button" data-pdf="${d}">PDF</button>`:''}</span></div>`;}).join(''):'<p class="hint">Nenhum dia registrado ainda.</p>'}</section>
+ $('content').innerHTML=`<section class="card"><h2>Enviar</h2><p class="hint" style="margin-top:-4px">${live().length} atividades do 3D neste aparelho · ${n} alterações não enviadas${db.sentAt?' · último envio '+br(db.sentAt):''}</p><button class="btn primary big" type="button" id="send" style="margin-top:10px">Enviar pacote (3D e planilhas)</button><p class="hint">Normalmente o envio acontece ao finalizar o RDO: o PDF, as fotos e o pacote vão direto para a Pasta do RDO do site. Use aqui para reenviar o pacote.</p>${sitePending().length?`<p class="alert" style="margin-top:10px">${sitePending().length} RDO${sitePending().length>1?'s finalizados ainda não chegaram':' finalizado ainda não chegou'} à pasta. Eles são reenviados sozinhos quando a internet voltar.</p>`:''}</section>
+ <section class="card days"><h2>Dias registrados</h2>${days.length?days.map(d=>{let f=db.days[d].finalized;return `<div class="drow"><span><b>${br(d)}</b> · ${listActs(d).length} ativ. · ${esc(db.days[d].author||'')} · ${db.days[d].shift==='noite'?'noite':'dia'}</span><span class="row"><span class="tag ${f?'ok':''}">${f?'Finalizado · Rev. '+f.rev+(siteOk(db.days[d])?' · na pasta':''):'Aberto'}</span><button class="btn sm ghost" type="button" data-open="${d}">Abrir</button>${f?`<button class="btn sm ghost" type="button" data-pdf="${d}">PDF</button>${siteOk(db.days[d])?'':`<button class="btn sm" type="button" data-up="${d}">Enviar</button>`}`:''}</span></div>`;}).join(''):'<p class="hint">Nenhum dia registrado ainda.</p>'}</section>
  <section class="card"><h2>Encarregados</h2><p class="hint" style="margin-top:-4px">${allForemen().length} encarregados e líderes com as funções das equipes.</p><div class="flist" style="margin-top:8px">${allForemen().map(f=>`<div class="fr"><b>${esc(title(f.n))}</b><span>${esc(title(f.c))}</span></div>`).join('')}</div>
   <details style="margin-top:10px"><summary class="muted" style="cursor:pointer">Cadastrar outro encarregado</summary><div style="margin-top:10px"><label class="f">Nome<input id="nfn"></label><label class="f" style="margin-top:8px">Cargo<input id="nfc" placeholder="Ex.: ENCARREGADO FRENTE II"></label><label class="f" style="margin-top:8px">Funções da equipe (separe por vírgula)<input id="nff" placeholder="AJUDANTE, PEDREIRO, CARPINTEIRO"></label><button class="btn sm" type="button" id="nfs" style="margin-top:10px">Cadastrar</button></div></details></section>
  <section class="card"><h2>Receber arquivos</h2><p class="hint" style="margin-top:-4px">RDO de outro apontador ou catálogo de peças atualizado pelo 3D.</p><button class="btn" type="button" id="recv" style="margin-top:10px">Abrir arquivo</button><p class="hint">Catálogo: ${catalog.pieces.length} peças, de ${br(String(catalog.generated))}.</p></section>`;
  $('send').onclick=()=>shareFiles(null,true);$('recv').onclick=()=>$('file').click();
  document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{day=b.dataset.open;tab='Hoje';render();scrollTo(0,0);});
  document.querySelectorAll('[data-pdf]').forEach(b=>b.onclick=()=>downloadPdf(b.dataset.pdf));
+ document.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>shareFiles(b.dataset.up,true));
  $('nfs').onclick=()=>{let n=$('nfn').value.trim().toUpperCase(),c=$('nfc').value.trim().toUpperCase()||'ENCARREGADO',f=$('nff').value.split(',').map(s=>s.trim().toUpperCase()).filter(Boolean);if(n.length<3||!f.length)return note('Informe nome e pelo menos uma função.',true);if(allForemen().some(x=>x.n===n))return note('Este encarregado já está cadastrado.',true);db.customForemen.push({n,c,f});save();render();note(title(n)+' cadastrado.');};
 }
 
@@ -800,23 +801,51 @@ function pkg(){for(let d of Object.keys(db.days))refreshWorkers(d);return {schem
 async function pdfFile(d){let x=getDay(d),f=x.finalized,bytes=await buildPdf(d);return new File([bytes],`RDO_${d}_${slug(x.author)}_${x.shift==='noite'?'Noite':'Dia'}_Rev${f?f.rev:0}.pdf`,{type:'application/pdf'});}
 async function photoFiles(d){let x=getDay(d),out=[],acts=listActs(d),n=0;for(let k of ['07','17']){let b=await getPhoto(x['ph'+k]);if(b)out.push(new File([b],fotoName(d,x,k),{type:'image/jpeg'}));}
  for(let g of x.photos){let a=acts.find(k=>k.key===g.act);for(let id of g.items){let b=await getPhoto(id);if(b)out.push(new File([b],`FOTO_${d}_${slug(x.author)}_${String(++n).padStart(2,'0')}_${slug(a?.label||'atividade').slice(0,22)}.jpg`,{type:'image/jpeg'}));}}return out;}
-// Gera os arquivos e mostra a tela de envio: o compartilhar abre no toque seguinte (exigência do iPhone).
+// Envio do RDO (V1.60): os arquivos vão direto para a "Pasta do RDO" do site, sem OneDrive nem outro aplicativo.
+// O 3D, a pluviometria e as paralisações leem o pacote dessa pasta sozinhos. Sem internet, o RDO fica pendente e é
+// reenviado quando a conexão voltar (ou pelo botão "Enviar" em Dias registrados).
+const SITE_FROM='2026-10-23T00:00';
+const siteOk=x=>!!(x&&x.finalized&&x.site&&x.site.rev===x.finalized.rev);
+const sitePending=()=>Object.entries(db.days).filter(([d,x])=>x.finalized&&String(x.finalized.at)>=SITE_FROM&&!siteOk(x)).map(([d])=>d).sort();
+async function rdoFiles(d,withPkg){let list=[];
+ if(d){list.push({f:await pdfFile(d),kind:'pdf'});for(let f of await photoFiles(d))list.push({f,kind:/^PLUV_/.test(f.name)?'pluvio':'foto'});}
+ if(withPkg){let p=pkg();list.push({f:new File([JSON.stringify(p)],`RDO_${d||today()}_${slug(db.profile)}_3D.txt`,{type:'text/plain'}),kind:'pacote',exported:p.exported});}
+ return list;}
+async function okJson(r){let j=null;try{if(/json/.test(r.headers.get('content-type')||''))j=await r.json();}catch(e){}if(!r.ok||!j)throw Error(j&&j.error?j.error:r.status===403?'sem permissão (entre de novo no site)':'sem conexão com o site');return j;}
+async function uploadRdo(d,list,onp){
+ let x=d?getDay(d):null,id=[d||today(),slug(x?x.author:db.profile)||'apontador',x?(x.shift==='noite'?'noite':'dia'):'pacote',x&&x.finalized?'rev'+x.finalized.rev:'',Date.now().toString(36)].filter(Boolean).join('_').replace(/[^A-Za-z0-9_.-]/g,'_').slice(0,140);
+ for(let i=0;i<list.length;i++){onp&&onp(i,list.length);let it=list[i];
+  await okJson(await fetch('/api/rdo/arquivo/'+encodeURIComponent(id)+'/'+i,{method:'PUT',headers:{'content-type':it.f.type||'application/octet-stream','x-nome':encodeURIComponent(it.f.name)},body:it.f}));}
+ onp&&onp(list.length,list.length);
+ await okJson(await fetch('/api/rdo/fim/'+encodeURIComponent(id),{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({data:d||today(),autor:x?x.author:db.profile,turno:x?x.shift:'',rev:x&&x.finalized?x.finalized.rev:null,app:APP,arquivos:list.map((it,i)=>({n:i,nome:it.f.name,kind:it.kind}))})}));
+ let pk=list.find(i=>i.kind==='pacote');if(pk)db.sentAt=pk.exported;if(x&&x.finalized)x.site={rev:x.finalized.rev,at:new Date().toISOString(),id};save();
+ return id;}
+let sending=false;
 async function shareFiles(d,withPkg){
- let files=[],photos=[];note('Gerando os arquivos…');
- try{if(d){files.push(await pdfFile(d));photos=await photoFiles(d);}if(withPkg){let p=pkg();files.push(new File([JSON.stringify(p)],`RDO_${d||today()}_${slug(db.profile)}_3D.txt`,{type:'text/plain'}));db.sentAt=p.exported;}}catch(e){console.error(e);return note('Não foi possível gerar os arquivos: '+e.message,true);}
- save();$('notice').classList.remove('on');
- let all=files.concat(photos),kb=f=>f.size>1e6?fmt(f.size/1e6)+' MB':Math.max(1,Math.round(f.size/1e3))+' KB';
- sheet('Enviar RDO',d?br(d)+' · '+(getDay(d).author||''):'Pacote completo');
- const mobile=!!(navigator.canShare&&navigator.canShare({files:files.length?[files[0]]:[new File(['x'],'x.txt',{type:'text/plain'})]}));
- $('sh-body').innerHTML=`<p class="q">Arquivos prontos</p><div class="flist">${all.map(f=>`<div class="fr"><b style="font-weight:500;word-break:break-all">${esc(f.name)}</b><span>${kb(f)}</span></div>`).join('')}</div><p class="alert" style="margin-top:14px">${mobile?'Toque no botão, escolha <b>OneDrive</b> e salve na pasta <b>TESTE RDO</b> (o OneDrive lembra a última pasta usada).':'Os arquivos serão baixados e a pasta <b>TESTE RDO</b> abre em outra aba: arraste os arquivos para dentro dela.'}</p>`;
- $('sh-foot').innerHTML=`<button class="btn primary big" type="button" id="go" style="width:100%">Salvar na pasta do OneDrive</button>`;
- const done=(msg)=>{closeSheet();note(msg);};
- $('go').onclick=async()=>{
-  if(mobile){for(let set of [all,files]){if(navigator.canShare({files:set})){try{await navigator.share({files:set,title:'RDO '+br(d||today()),text:'RDO '+br(d||today())+' · '+(db.profile||'')});if(set!==all)photos.forEach(download);return done(set===all?'RDO enviado. Confira na pasta TESTE RDO do OneDrive.':'PDF e pacote enviados. As fotos foram baixadas para enviar à parte.');}catch(e){if(e.name==='AbortError')return note('Envio cancelado. Toque de novo em Salvar na pasta do OneDrive.');}}}}
-  // computador (ou navegador sem compartilhar): abre a pasta e baixa os arquivos no mesmo toque
-  window.open(PASTA,'_blank','noopener');all.forEach(download);
-  done('Arquivos baixados e pasta TESTE RDO aberta em outra aba: arraste os arquivos para dentro dela.');};
+ if(sending)return note('Já tem um envio em andamento.');
+ let list;note('Gerando os arquivos…');
+ try{list=await rdoFiles(d,withPkg);}catch(e){console.error(e);return note('Não foi possível gerar os arquivos: '+e.message,true);}
+ $('notice').classList.remove('on');
+ const kb=f=>f.size>1e6?fmt(f.size/1e6)+' MB':Math.max(1,Math.round(f.size/1e3))+' KB';
+ sheet('Enviar RDO',d?br(d)+' · '+(getDay(d).author||''):'Pacote completo',0);
+ const show=(q,alert,foot)=>{$('sh-body').innerHTML=`<p class="q">${q}</p><div class="flist">${list.map(i=>`<div class="fr"><b style="font-weight:500;word-break:break-all">${esc(i.f.name)}</b><span>${kb(i.f)}</span></div>`).join('')}</div>${alert||''}`;$('sh-foot').innerHTML=foot||'';};
+ const go=async()=>{
+  sending=true;show('Enviando para a pasta do RDO…','<p class="hint" style="margin-top:12px">Deixe esta tela aberta até terminar.</p>');
+  try{await uploadRdo(d,list,(i,n)=>{$('sh-bar').style.width=Math.round(i/n*100)+'%';let q=$('sh-body').querySelector('.q');if(q)q.textContent=i<n?'Enviando '+(i+1)+' de '+n+'…':'Conferindo…';});
+   sending=false;closeSheet();note('RDO enviado para a pasta do RDO do site. Pronto!');}
+  catch(e){sending=false;console.warn(e);$('sh-bar').style.width='0%';
+   show('Não deu para enviar agora',`<p class="alert err" style="margin-top:14px">${esc(e.message)}. ${d?'O RDO continua salvo neste aparelho e é reenviado sozinho quando a internet voltar.':''}</p>`,
+    `<button class="btn primary big" type="button" id="go" style="width:100%">Tentar de novo</button><button class="btn big" type="button" id="dl" style="width:100%;margin-top:8px">Baixar os arquivos neste aparelho</button>`);
+   $('go').onclick=go;$('dl').onclick=()=>{list.forEach(i=>download(i.f));note('Arquivos baixados.');};}
+ };
+ go();
 }
+// pendentes: reenviados quando a internet volta (e ao abrir o RDO)
+let retrying=false;
+async function retryPending(){if(retrying||sending||!navigator.onLine)return;let L=sitePending();if(!L.length)return;retrying=true;let ok=0;
+ for(let d of L){try{await uploadRdo(d,await rdoFiles(d,true));ok++;}catch(e){console.warn('reenvio',d,e);break;}}
+ retrying=false;if(ok){note(ok===1?'RDO pendente enviado para a pasta do site.':ok+' RDOs pendentes enviados para a pasta do site.');try{render();}catch(e){}}}
+addEventListener('online',()=>setTimeout(retryPending,1500));setTimeout(retryPending,4000);
 function download(f){let url=URL.createObjectURL(f),a=document.createElement('a');a.href=url;a.download=f.name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);}
 async function downloadPdf(d){download(await pdfFile(d));}
 

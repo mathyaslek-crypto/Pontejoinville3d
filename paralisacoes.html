@@ -144,6 +144,17 @@ if(canDir){$('folder').hidden=false;$('folder').onclick=async()=>{if(dir){await 
  getH().then(h=>{if(h){dir=h;$('folder').textContent='Ler pasta '+h.name;setTimeout(()=>scan(false),800);}});
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&dir)scan(false);});}
 
+// Pasta do RDO no site (V1.60): os RDOs que os apontadores enviam pelo app caem nessa pasta e são lidos aqui sozinhos.
+let siteBusy=false;
+async function siteScan(){if(siteBusy||location.protocol==='file:')return;siteBusy=true;db.files=db.files||{};
+ try{let r=await fetch('/api/rdo/lista',{cache:'no-store'});if(!r.ok||!/json/.test(r.headers.get('content-type')||'')){siteBusy=false;return;}
+  let L=((await r.json()).itens||[]).slice().sort((a,b)=>String(a.at).localeCompare(String(b.at))),out=[],n=0;
+  for(let e of L)for(let f of (e.arquivos||[])){if(f.kind!=='pacote')continue;let k='site:'+e.id+':'+f.n;if(db.files[k])continue;
+   try{let q=await fetch('/api/rdo/arquivo/'+encodeURIComponent(e.id)+'/'+f.n,{cache:'no-store'});if(!q.ok)continue;let o=JSON.parse(await q.text());db.files[k]=1;if(o&&o.schema==='alya-rdo-pacote-1'){out.push(importPkg(o,f.nome||e.id,e.at));n++;}}catch(err){db.files[k]=1;}}
+  if(n){save();demo=null;render();toast(n+(n>1?' RDOs novos':' RDO novo')+' da Pasta do RDO · '+out.join(' · '));}
+ }catch(e){}siteBusy=false;}
+setTimeout(siteScan,600);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')siteScan();});setInterval(()=>{if(document.visibilityState==='visible')siteScan();},5*60e3);
+
 // ---------- Filtros ----------
 let st={tab:'dash',per:'30',from:'',to:'',turno:'todos',sort:['data',-1]};
 try{Object.assign(st,JSON.parse(localStorage.getItem(KEY+'-ui')||'{}'));}catch(e){}

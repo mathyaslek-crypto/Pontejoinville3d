@@ -25,6 +25,90 @@ async function clima() {
   } catch (e) { return json({ error: 'clima indisponível' }, 502); }
 }
 
+// ---------- pasta do RDO (V1.60): os apontadores enviam o RDO finalizado direto para o site ----------
+// Cada envio = um item com os arquivos (PDF, pacote do 3D e fotos), guardados no KV:
+//   rdo:f:<id>:<n>  arquivo (com nome, tipo e tamanho nos metadados)      rdo:m:<id>  ficha do envio
+//   rdo:index       lista de todos os envios (lida pela pasta da página inicial, 3D, pluviometria e paralisações)
+// Apontador e perfil completo enviam; perfil completo e equipe leem; só o perfil completo exclui.
+const RDO_ID = /^[A-Za-z0-9_.-]{6,140}$/, RDO_MAX = 24 * 1024 * 1024;
+const KINDS = new Set(['pdf', 'pacote', 'foto', 'pluvio', 'outro']);
+async function rdoIndex(env) {
+  let idx = await env.DADOS.get('rdo:index', 'json').catch(() => null);
+  if (!idx || !Array.isArray(idx.itens)) idx = { itens: [], chk: 0 };
+  // a lista é refeita a partir das fichas de vez em quando (cobre dois envios gravados ao mesmo tempo)
+  if (Date.now() - (idx.chk || 0) > 15 * 60e3) {
+    const ids = new Set(); let cur;
+    do { const r = await env.DADOS.list({ prefix: 'rdo:m:', cursor: cur }); r.keys.forEach(k => ids.add(k.name.slice(6))); cur = r.list_complete ? null : r.cursor; } while (cur);
+    const have = new Map(idx.itens.map(e => [e.id, e])), itens = [];
+    for (const id of ids) { let e = have.get(id); if (!e) e = await env.DADOS.get('rdo:m:' + id, 'json').catch(() => null); if (e) itens.push(e); }
+    itens.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+    idx = { itens, chk: Date.now() };
+    await env.DADOS.put('rdo:index', JSON.stringify(idx));
+  }
+  return idx;
+}
+async function rdoApi(req, env, url, prof, email) {
+  const parts = url.pathname.split('/').filter(Boolean);   // ['api','rdo',acao,id?,n?]
+  const acao = parts[2], id = parts[3] ? decodeURIComponent(parts[3]) : '', n = parts[4];
+  const canSend = prof === 'apontador' || prof === 'completo', canRead = prof === 'completo' || prof === 'equipe';
+  if (acao === 'arquivo' && req.method === 'PUT') {
+    if (!canSend) return json({ error: 'sem acesso' }, 403);
+    if (!RDO_ID.test(id) || !/^\d{1,3}$/.test(n || '')) return json({ error: 'endereço inválido' }, 400);
+    const body = await req.arrayBuffer();
+    if (!body.byteLength || body.byteLength > RDO_MAX) return json({ error: 'arquivo vazio ou grande demais' }, 413);
+    let nome = ''; try { nome = decodeURIComponent(req.headers.get('x-nome') || ''); } catch (e) {}
+    nome = nome.replace(/[\\/:*?"<>|\u0000-\u001f]+/g, '_').slice(0, 160) || ('arquivo_' + n);
+    const tipo = (req.headers.get('content-type') || 'application/octet-stream').split(';')[0].slice(0, 80);
+    await env.DADOS.put('rdo:f:' + id + ':' + n, body, { metadata: { nome, tipo, tam: body.byteLength } });
+    return json({ ok: true, tam: body.byteLength });
+  }
+  if (acao === 'fim' && req.method === 'POST') {
+    if (!canSend) return json({ error: 'sem acesso' }, 403);
+    if (!RDO_ID.test(id)) return json({ error: 'endereço inválido' }, 400);
+    let b; try { b = await req.json(); } catch (e) { return json({ error: 'corpo inválido' }, 400); }
+    const arquivos = [];
+    for (const f of (Array.isArray(b.arquivos) ? b.arquivos : []).slice(0, 200)) {
+      const k = 'rdo:f:' + id + ':' + (+f.n);
+      const m = await env.DADOS.getWithMetadata(k, 'stream'); if (!m || m.value == null) return json({ error: 'arquivo ' + f.n + ' não chegou' }, 409);
+      try { m.value.cancel(); } catch (e) {}
+      arquivos.push({ n: +f.n, nome: (m.metadata && m.metadata.nome) || String(f.nome || ''), tipo: (m.metadata && m.metadata.tipo) || '', tam: (m.metadata && m.metadata.tam) || 0, kind: KINDS.has(f.kind) ? f.kind : 'outro' });
+    }
+    if (!arquivos.length) return json({ error: 'nenhum arquivo' }, 400);
+    const s = v => String(v == null ? '' : v).slice(0, 120);
+    const e = { id, data: /^\d{4}-\d{2}-\d{2}$/.test(b.data) ? b.data : '', autor: s(b.autor), turno: s(b.turno), rev: Number.isFinite(+b.rev) ? +b.rev : null, app: s(b.app), por: email, at: new Date().toISOString(), arquivos };
+    await env.DADOS.put('rdo:m:' + id, JSON.stringify(e));
+    const idx = await rdoIndex(env); idx.itens = [e].concat(idx.itens.filter(x => x.id !== id));
+    await env.DADOS.put('rdo:index', JSON.stringify(idx));
+    return json({ ok: true, item: e });
+  }
+  if (acao === 'lista' && req.method === 'GET') {
+    if (!canRead) return json({ error: 'sem acesso' }, 403);
+    const idx = await rdoIndex(env);
+    return json({ itens: idx.itens, podeExcluir: prof === 'completo' });
+  }
+  if (acao === 'arquivo' && req.method === 'GET') {
+    if (!canRead) return json({ error: 'sem acesso' }, 403);
+    if (!RDO_ID.test(id) || !/^\d{1,3}$/.test(n || '')) return json({ error: 'endereço inválido' }, 400);
+    const m = await env.DADOS.getWithMetadata('rdo:f:' + id + ':' + n, 'stream');
+    if (!m || m.value == null) return json({ error: 'arquivo não encontrado' }, 404);
+    const md = m.metadata || {}, nome = md.nome || 'arquivo';
+    // só PDF, foto e texto abrem no navegador; qualquer outro tipo é baixado (nada enviado roda como página do site)
+    const safe = /^(application\/pdf|image\/(jpeg|png|webp)|text\/plain)$/.test(md.tipo || ''), baixar = url.searchParams.get('baixar') === '1' || !safe;
+    const tipo = safe ? (md.tipo === 'text/plain' ? 'text/plain; charset=utf-8' : md.tipo) : 'application/octet-stream';
+    return new Response(m.value, { headers: { 'content-type': tipo, 'content-disposition': (baixar ? 'attachment' : 'inline') + "; filename*=UTF-8''" + encodeURIComponent(nome), 'cache-control': 'private, max-age=86400', 'x-content-type-options': 'nosniff' } });
+  }
+  if (acao === 'item' && req.method === 'DELETE') {
+    if (prof !== 'completo') return json({ error: 'só o perfil completo pode excluir' }, 403);
+    if (!RDO_ID.test(id)) return json({ error: 'endereço inválido' }, 400);
+    const e = await env.DADOS.get('rdo:m:' + id, 'json').catch(() => null);
+    let cur; do { const r = await env.DADOS.list({ prefix: 'rdo:f:' + id + ':', cursor: cur }); for (const k of r.keys) await env.DADOS.delete(k.name); cur = r.list_complete ? null : r.cursor; } while (cur);
+    await env.DADOS.delete('rdo:m:' + id);
+    const idx = await rdoIndex(env); idx.itens = idx.itens.filter(x => x.id !== id); await env.DADOS.put('rdo:index', JSON.stringify(idx));
+    return json({ ok: true, removido: !!e });
+  }
+  return json({ error: 'rota desconhecida' }, 404);
+}
+
 async function api(req, env, url) {
   if (!env.DADOS) return json({ error: 'armazenamento não configurado' }, 503);
   const parts = url.pathname.split('/').filter(Boolean); // ['api','state',key?]
@@ -146,6 +230,7 @@ export default {
     const email = await verifiedEmail(req).catch(() => null);
     if (!email) return blocked('Não foi possível confirmar o seu login. Feche a página e entre de novo pelo link do site.', '/', 'Entrar de novo');
     const prof = profileOf(email);
+    if (path.startsWith('/api/rdo/')) return env.DADOS ? rdoApi(req, env, url, prof, email) : json({ error: 'armazenamento não configurado' }, 503);
     if (prof === 'apontador') {
       if (isRdo(path)) return withLoader(await env.ASSETS.fetch(req));
       if (path.startsWith('/api/')) return json({ error: 'sem acesso' }, 403);
@@ -153,6 +238,6 @@ export default {
     }
     if (prof === 'equipe' && isRdo(path)) return blocked('O RDO é usado só pelos apontadores. Você tem acesso ao 3D, à pluviometria e às paralisações.', '/', 'Ir para o início');
     if (path.startsWith('/api/')) return api(req, env, url);
-    return withLoader(await env.ASSETS.fetch(req), path === '/3d' || path === '/3d.html' ? PAD_CSS + '<script src="/ajustes3d.js?v=2" defer></script><script src="/cena3d.js?v=1" defer></script><script src="/eixos3d.js?v=4" defer></script><script src="/clima3d.js?v=3" defer></script><script src="/ficha3d.js?v=5" defer></script><script src="/cronogramas3d.js?v=1" defer></script><script src="/cenarios3d.js?v=1" defer></script><script src="/previsao3d.js?v=6" defer></script><script src="/ocultar3d.js?v=4" defer></script><script src="/pintar3d.js?v=3" defer></script><script src="/batch3d.js?v=1" defer></script><script src="/publicar3d.js?v=2" defer></script>' : '');
+    return withLoader(await env.ASSETS.fetch(req), path === '/3d' || path === '/3d.html' ? PAD_CSS + '<script src="/ajustes3d.js?v=2" defer></script><script src="/cena3d.js?v=1" defer></script><script src="/eixos3d.js?v=4" defer></script><script src="/clima3d.js?v=3" defer></script><script src="/ficha3d.js?v=5" defer></script><script src="/cronogramas3d.js?v=1" defer></script><script src="/cenarios3d.js?v=1" defer></script><script src="/previsao3d.js?v=6" defer></script><script src="/ocultar3d.js?v=4" defer></script><script src="/pintar3d.js?v=3" defer></script><script src="/batch3d.js?v=1" defer></script><script src="/rdopasta3d.js?v=1" defer></script><script src="/publicar3d.js?v=2" defer></script>' : '');
   }
 };
