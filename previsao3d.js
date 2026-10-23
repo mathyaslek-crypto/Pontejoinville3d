@@ -22,7 +22,8 @@
   var DEF = { color: '#f6d34a', opacity: 0.46 };
   var SWATCHES = [['Amarelo', '#f6d34a'], ['Laranja', '#ff9a3c'], ['Vermelho', '#ef5350'], ['Rosa', '#f06292'], ['Roxo', '#9575cd'], ['Azul', '#42a5f5'], ['Ciano', '#26c6da'], ['Verde', '#66bb6a'], ['Limão', '#c6d63a']];
   var PLATE_IDS = /(?:^|_)(MBL|EB[12]|BASE|LAJE)$/, ADUELA = /^(ARR|FEC|[AB]\d+)$/;
-  var on = true; try { on = localStorage.getItem(KEY) !== '0'; } catch (e) {}
+  var PUB = window.__pub58 || null;   // painel publicado (V1.58): previsão e cores gravadas no arquivo
+  var on = true; try { on = PUB && PUB.prev ? PUB.prev.on !== false : localStorage.getItem(KEY) !== '0'; } catch (e) {}
   var style = loadStyle();
   var root = null, mats = null, lmats = null, Mesh = null, Group = null, Lines = null, Geo = null, Attr = null, Box3 = null, Vec3 = null;
   var TexC = null, PlateMat = null, plateRoot = null, myPlates = {}, texCache = {};
@@ -30,11 +31,11 @@
   var lastPxObj = null, counts = { c1: 0, c2: 0 }, cache = null, layoutOK = true, lastPx = null, lastGhost = null, lastPlates = -1, lastPre = 0, listening = false;
 
   function loadStyle() {
-    var s = null; try { s = JSON.parse(localStorage.getItem(KEY_STYLE) || 'null'); } catch (e) {}
+    var s = null; try { s = PUB && PUB.prev && PUB.prev.style ? PUB.prev.style : JSON.parse(localStorage.getItem(KEY_STYLE) || 'null'); } catch (e) {}
     if (!s || !/^#[0-9a-f]{6}$/i.test(s.color || '') || !(s.opacity >= 0.1 && s.opacity <= 1)) s = { color: DEF.color, opacity: DEF.opacity };
     return s;
   }
-  function saveStyle() { try { localStorage.setItem(KEY_STYLE, JSON.stringify(style)); } catch (e) {} }
+  function saveStyle() { if (PUB) return; try { localStorage.setItem(KEY_STYLE, JSON.stringify(style)); } catch (e) {} }
   function hex(c) { return parseInt(c.slice(1), 16); }
   function mix(c, t, f) { var a = hex(c), r = (a >> 16) & 255, g = (a >> 8) & 255, b = a & 255; r = Math.round(r + (t - r) * f); g = Math.round(g + (t - g) * f); b = Math.round(b + (t - b) * f); return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1); }
   function rgba(c, a) { var x = hex(c); return 'rgba(' + ((x >> 16) & 255) + ',' + ((x >> 8) & 255) + ',' + (x & 255) + ',' + a + ')'; }
@@ -289,7 +290,7 @@
   // pré-lajes ainda não iniciadas somem junto (ficam só as concluídas e em execução)
   function prelajePass(g) {
     var v = window.__v48; if (!v || !v.meshes || !v.spec || !v.status) return;
-    var restore = false, hideAll = !g && !prazoOn();
+    var restore = false, plOff = !!(window.__oc54 && window.__oc54.prelajeOff), hideAll = (!g && !prazoOn()) || plOff;
     v.spec.forEach(function (s) {
       var im = v.meshes.get(s.uid); if (!im) return;
       var k = ''; try { k = v.status(s).k; } catch (e) { return; }
@@ -328,7 +329,7 @@
     var made = false;
     if (!btn || !btn.isConnected) { made = true;
       btn = document.createElement('button'); btn.type = 'button'; btn.id = 'pv53-btn'; btn.className = f.className; btn.title = 'Mostrar a previsão do cronograma (aduelas, estacas, blocos, pilares, travessas e pilaretes)';
-      btn.onclick = function () { on = !on; try { localStorage.setItem(KEY, on ? '1' : '0'); } catch (e) {} state(); lastPx = null; };
+      btn.onclick = function () { on = !on; if (!PUB) { try { localStorage.setItem(KEY, on ? '1' : '0'); } catch (e) {} } state(); lastPx = null; };
       var after = document.getElementById('pl50-btn') || f; after.after(btn);
     }
     if (!cbtn || !cbtn.isConnected) { made = true;
@@ -400,7 +401,8 @@
     }
     mountBtn();
     if (!listening) { var gb = document.getElementById('av-ghost'); if (gb) { listening = true; gb.addEventListener('change', function () { setTimeout(function () { prelajePass(ghostOn()); }, 30); setTimeout(tick, 60); }); } }
-    var px = findProxies(scene), g = ghostOn() || prazoOn(), sig = px ? px.uuid + ':' + px.children.length + ':' + (px.children[0] ? px.children[0].uuid : '') : '';
+    var px = findProxies(scene); try { if (px && window.__aj55 && window.__aj55.fix) window.__aj55.fix(px); } catch (e) {}
+    var g = ghostOn() || prazoOn(), sig = px ? px.uuid + ':' + px.children.length + ':' + (px.children[0] ? px.children[0].uuid : '') : '';
     if (px) lastPxObj = px;
     if (px && (sig !== lastPx || g !== lastGhost)) { lastPx = sig; lastGhost = g; rebuild(scene, px, g); platePass(scene, px, g); prelajePass(g); lastPre = Date.now(); }
     else if (px) {
@@ -430,6 +432,8 @@
     get data() { var o = {}; for (var k in D) { var i = k.indexOf('-'), b = k.slice(0, i); (o[b] = o[b] || {})[k.slice(i + 1)] = [D[k][0], D[k][1]]; } return o; },
     get counts() { return counts; }, get shown() { return shown.slice(); }, get ready() { return !!cache; }, get layoutOK() { return layoutOK; },
     get adPlates() { return Object.keys(myPlates); },
-    toggle: function (v) { on = v == null ? !on : !!v; state(); lastPx = null; }
+    toggle: function (v) { on = v == null ? !on : !!v; state(); lastPx = null; },
+    get on() { return on; },
+    prelajes: function () { prelajePass(ghostOn() || prazoOn()); }
   };
 })();

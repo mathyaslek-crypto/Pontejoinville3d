@@ -1,4 +1,4 @@
-/* Ponte Joinville — "Ocultar peças" no 3D (V1.54)
+/* Ponte Joinville — "Ocultar peças" no 3D (V1.54; opções de vigas, pré-lajes e aduelas na V1.58)
    Liga o modo, clica em quantas peças quiser e elas somem da tela (nada é apagado: os dados, o RDO e os
    painéis continuam iguais). "Desfazer" traz de volta a última; "Mostrar todas" traz todas.
    As peças ocultas continuam ocultas ao fechar e abrir o site neste aparelho.
@@ -6,17 +6,25 @@
    triângulos e arestas; também sai da seleção por clique, das placas e da previsão (previsao3d.js). */
 (function () {
   'use strict';
-  var KEY = 'ponte-ocultas-v54';
+  var KEY = 'ponte-ocultas-v54', PUB = window.__pub58 || null;
   var hidden = new Set(), order = [];
-  try { (JSON.parse(localStorage.getItem(KEY) || '[]') || []).forEach(function (k) { if (typeof k === 'string' && !hidden.has(k)) { hidden.add(k); order.push(k); } }); } catch (e) {}
+  try { ((PUB && PUB.oc ? PUB.oc.hidden : JSON.parse(localStorage.getItem(KEY) || '[]')) || []).forEach(function (k) { if (typeof k === 'string' && !hidden.has(k)) { hidden.add(k); order.push(k); } }); } catch (e) {}
   var mode = false, btn = null, bar = null, canvas = null, down = null, lastSig = '', names = {};
-  // opção "Vigas pré-moldadas" no painel (igual à das pré-lajes): esconde todas as vigas sem apagar nada
-  var KEY_V = 'ponte-vigas-v57', beamsOff = false, beamKeys = new Set();
-  try { beamsOff = localStorage.getItem(KEY_V) === '0'; } catch (e) {}
+  // opções do painel (V1.58): desligadas, escondem só o que ainda não foi feito e não tem previsão
+  //   Vigas não lançadas · Aduelas não concretadas · Pré-lajes não lançadas (a das pré-lajes é a do próprio 3D)
+  var KEY_V = 'ponte-vigas-v57', KEY_A = 'ponte-aduelas-v58', KEY_P = 'ponte-prelajes-v58', beamsOff = false, adOff = false, plOff = null, beamKeys = new Set(), exec = new Set();
+  function rdb(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  if (PUB && PUB.oc) { beamsOff = !!PUB.oc.beamsOff; adOff = !!PUB.oc.adOff; plOff = !!PUB.oc.plOff; }
+  else { beamsOff = rdb(KEY_V) === '0'; adOff = rdb(KEY_A) === '0'; var pv = rdb(KEY_P); if (pv != null) plOff = pv === '0'; }
+  function wrb(k, off) { if (PUB) return; try { localStorage.setItem(k, off ? '0' : '1'); } catch (e) {} }
+  var ADU = /^(ARR|FEC|[AB]\d+)$/;
   function isBeamKey(k) { return beamKeys.has(k) || /^[\d.]+-GB/.test(k); }
-  function isHid(k) { return hidden.has(k) || (beamsOff && isBeamKey(k)); }
+  function isAdKey(k) { var i = k.indexOf('-'); return i > 0 && ADU.test(k.slice(i + 1)); }
+  function forecast(k) { try { var i = k.indexOf('-'); return !!(window.__prev53 && window.__prev53.eff(k.slice(0, i), k.slice(i + 1))); } catch (e) { return false; } }
+  function keep(k) { return exec.has(k) || forecast(k); }    // lançada/concretada ou com previsão: continua aparecendo
+  function isHid(k) { return hidden.has(k) || (beamsOff && isBeamKey(k) && !keep(k)) || (adOff && isAdKey(k) && !keep(k)); }
 
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(order)); } catch (e) {} }
+  function save() { if (PUB) return; try { localStorage.setItem(KEY, JSON.stringify(order)); } catch (e) {} }
   function findPx(scene) { var px = null; scene.traverse(function (o) { if (!px && o.name === 'Peças para seleção') px = o; }); return px; }
   function q(x, y, z) { return Math.round(x * 1000) + ',' + Math.round(y * 1000) + ',' + Math.round(z * 1000); }
   function ident(e) { return e[0] === 1 && e[5] === 1 && e[10] === 1 && e[15] === 1 && !e[1] && !e[2] && !e[4] && !e[6] && !e[8] && !e[9] && !e[12] && !e[13] && !e[14]; }
@@ -58,7 +66,11 @@
   function apply(changed) {
     var scene = window.__v40 && window.__v40.scene; if (!scene) return;
     var px = findPx(scene); if (!px) return;
+    try { if (window.__aj55 && window.__aj55.fix) window.__aj55.fix(px); } catch (e) {}
     var rn = px.parent, tri = new Set(), seg = new Set(), mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity], any = false;
+    // peças já feitas (alguma parte desenhada cheia: viga lançada, aduela concretada…)
+    exec = new Set();
+    px.children.forEach(function (c) { var u = c.userData || {}, m = c.material; if (u.b && u.s && m && m.color && !m.transparent && !(m.opacity < 0.99) && m.color.getHex() !== 0xf2cd31) exec.add(u.b + '-' + u.s); });
     px.children.forEach(function (c) {
       var u = c.userData || {}; if (!u.b || !u.s) return;
       if (/^GB/.test(u.s)) beamKeys.add(u.b + '-' + u.s);   // vigas pré-moldadas (GB…)
@@ -74,18 +86,47 @@
       if (!(o.isMesh || o.isLineSegments) || o.isInstancedMesh || !o.geometry || !o.geometry.attributes || !o.geometry.attributes.position) return;
       var r = filter(o, o.isMesh ? tri : seg, any, mn, mx); if (o.isMesh) stats.removed += r; else stats.lines += r;
     });
-    // vigas colocadas pela simulação da treliça lançadeira
-    scene.children.forEach(function (o) { if (o.name === 'Vigas lançadas na simulação') { if (beamsOff && o.visible) { o.visible = false; o.userData.oc57 = 1; } else if (!beamsOff && o.userData.oc57) { o.visible = true; delete o.userData.oc57; } } });
+    // (V1.58) as vigas da simulação da treliça já estão lançadas: continuam sempre à mostra
+    scene.children.forEach(function (o) { if (o.name === 'Vigas lançadas na simulação' && o.userData.oc57) { o.visible = true; delete o.userData.oc57; } });
     if (changed && window.__prev53 && window.__prev53.refresh) window.__prev53.refresh();
   }
+  function prelajes() { try { window.__prev53 && window.__prev53.prelajes && window.__prev53.prelajes(); } catch (e) {} }
   function addBeamToggle() {
-    if (document.getElementById('av-vigas57')) return;
-    var after = document.getElementById('av-prelaje') || document.getElementById('av-environment'); if (!after) return;
-    var lb = document.createElement('label'); lb.style.cssText = 'flex-direction:row;align-items:center';
-    lb.innerHTML = '<input type="checkbox" id="av-vigas57"> Vigas pré-moldadas';
-    after.closest('label').after(lb);
-    var ck = lb.querySelector('input'); ck.checked = !beamsOff;
-    ck.onchange = function () { beamsOff = !ck.checked; try { localStorage.setItem(KEY_V, beamsOff ? '0' : '1'); } catch (e) {} apply(true); };
+    // pré-lajes: a opção é do próprio 3D; o grupo fica ligado e a escolha passa a esconder só as não lançadas
+    var pl = document.getElementById('av-prelaje');
+    if (pl && !pl.dataset.h58) {
+      pl.dataset.h58 = '1';
+      var orig = pl.onchange, wasOff = !pl.checked;
+      if (plOff == null) plOff = wasOff;
+      if (!pl.checked) { pl.checked = true; try { orig && orig.call(pl); } catch (e) {} }
+      pl.checked = !plOff;
+      pl.onchange = function () { plOff = !pl.checked; wrb(KEY_P, plOff); prelajes(); };
+      relabel(pl, 'Pré-lajes não lançadas', 'Desligado: mostra só as pré-lajes já lançadas');
+      prelajes();
+    }
+    if (!document.getElementById('av-vigas57')) {
+      var after = document.getElementById('av-prelaje') || document.getElementById('av-environment'); if (!after) return;
+      var lb = document.createElement('label'); lb.style.cssText = 'flex-direction:row;align-items:center';
+      lb.innerHTML = '<input type="checkbox" id="av-vigas57"> Vigas não lançadas';
+      lb.title = 'Desligado: mostra só as vigas lançadas e as que têm previsão';
+      after.closest('label').after(lb);
+      var ck = lb.querySelector('input'); ck.checked = !beamsOff;
+      ck.onchange = function () { beamsOff = !ck.checked; wrb(KEY_V, beamsOff); apply(true); };
+    }
+    if (!document.getElementById('av-aduelas58')) {
+      var v = document.getElementById('av-vigas57'); if (!v) return;
+      var la = document.createElement('label'); la.style.cssText = 'flex-direction:row;align-items:center';
+      la.innerHTML = '<input type="checkbox" id="av-aduelas58"> Aduelas não concretadas';
+      la.title = 'Desligado: mostra só as aduelas concretadas e as que têm previsão';
+      v.closest('label').after(la);
+      var ca = la.querySelector('input'); ca.checked = !adOff;
+      ca.onchange = function () { adOff = !ca.checked; wrb(KEY_A, adOff); apply(true); };
+    }
+  }
+  function relabel(input, text, title) {
+    var lb = input.closest('label'); if (!lb) return; lb.title = title;
+    for (var i = lb.childNodes.length - 1; i >= 0; i--) { var n = lb.childNodes[i]; if (n.nodeType === 3 && n.textContent.trim()) { n.textContent = ' ' + text; return; } }
+    lb.append(' ' + text);
   }
 
   function clearSel() { var c = document.getElementById('v22-clear'); if (c && typeof c.onclick === 'function') { try { c.onclick(); } catch (e) {} } }
@@ -166,7 +207,12 @@
   }
   setInterval(tick, 300);
   window.__oc54 = {
-    has: function (k) { return isHid(k); }, get beamsOff() { return beamsOff; }, setBeams: function (v) { beamsOff = !v; try { localStorage.setItem(KEY_V, beamsOff ? '0' : '1'); } catch (e) {} var c = document.getElementById('av-vigas57'); if (c) c.checked = !!v; apply(true); }, get list() { return order.slice(); }, get mode() { return mode; }, get stats() { return stats; },
+    has: function (k) { return isHid(k); }, get beamsOff() { return beamsOff; }, get adOff() { return adOff; }, get prelajeOff() { return !!plOff; },
+    setBeams: function (v) { beamsOff = !v; wrb(KEY_V, beamsOff); var c = document.getElementById('av-vigas57'); if (c) c.checked = !!v; apply(true); },
+    setAduelas: function (v) { adOff = !v; wrb(KEY_A, adOff); var c = document.getElementById('av-aduelas58'); if (c) c.checked = !!v; apply(true); },
+    setPrelajes: function (v) { plOff = !v; wrb(KEY_P, plOff); var c = document.getElementById('av-prelaje'); if (c) c.checked = !!v; prelajes(); },
+    refreshKeep: function () { if (beamsOff || adOff) apply(true); },
+    get list() { return order.slice(); }, get mode() { return mode; }, get stats() { return stats; },
     hide: hide, undo: undo, showAll: showAll, setMode: setMode, apply: function () { apply(true); }
   };
 })();

@@ -18,21 +18,25 @@
     { k: null, l: 'Cronograma', t: 'Apaga a pintura e volta a usar a data da planilha' }
   ];
   var data = {}, undo = [], mode = false, tool = 'c2', custom = '#9575cd', btn = null, bar = null, canvas = null, down = null, msg = '', serverT = 0, pushing = false, again = false;
-  try { var o = JSON.parse(localStorage.getItem(KEY) || '{}'); if (o && o.items && typeof o.items === 'object') data = o.items; if (o && /^#[0-9a-f]{6}$/i.test(o.custom || '')) custom = o.custom; } catch (e) {}
+  // painel publicado (V1.58): a pintura vem gravada no próprio arquivo, sem nuvem e sem editar
+  var PUB = window.__pub58 || null;
+  try { var o = PUB && PUB.paint ? PUB.paint : JSON.parse(localStorage.getItem(KEY) || '{}'); if (o && o.items && typeof o.items === 'object') data = o.items; if (o && /^#[0-9a-f]{6}$/i.test(o.custom || '')) custom = o.custom; } catch (e) {}
 
   function val(key) { var e = data[key]; return e && e.c ? e.c : null; }
-  function saveLocal() { try { localStorage.setItem(KEY, JSON.stringify({ items: data, custom: custom })); } catch (e) {} }
+  function saveLocal() { if (PUB) return; try { localStorage.setItem(KEY, JSON.stringify({ items: data, custom: custom })); } catch (e) {} }
   function count() { var n = 0; for (var k in data) if (data[k] && data[k].c) n++; return n; }
-  function refresh() { try { window.__prev53 && window.__prev53.refresh(); } catch (e) {} ui(); }
+  function refresh() { try { window.__prev53 && window.__prev53.refresh(); } catch (e) {} try { window.__oc54 && window.__oc54.refreshKeep && window.__oc54.refreshKeep(); } catch (e) {} ui(); }
 
   // ---------- nuvem ----------
   function merge(items) { var ch = false; for (var k in items) { var b = items[k], a = data[k]; if (!b || typeof b.t !== 'number') continue; if (!a || b.t > a.t) { data[k] = b; ch = true; } } return ch; }
   function pull() {
+    if (PUB) return Promise.resolve(false);
     return fetch(API + '?full=1&keys=' + KEY, { cache: 'no-store' }).then(function (r) { return r.ok && /json/.test(r.headers.get('content-type') || '') ? r.json() : null; })
       .then(function (j) { var s = j && j[KEY]; if (!s || s.v == null) return false; serverT = s.t || 0; var o = {}; try { o = JSON.parse(s.v) || {}; } catch (e) {} var ch = merge(o.items || {}); if (ch) saveLocal(); return ch; })
       .catch(function () { return false; });
   }
   function push() {
+    if (PUB) return;
     if (pushing) { again = true; return; }
     pushing = true;
     pull().then(function () {
@@ -108,7 +112,7 @@
     document.head.append(s);
   }
   function mount() {
-    var f = document.getElementById('v23-focus'); if (!f) return;
+    var f = document.getElementById('v23-focus'); if (!f || PUB) return;
     if (!btn || !btn.isConnected) {
       btn = document.createElement('button'); btn.type = 'button'; btn.id = 'pt55-btn'; btn.className = f.className;
       btn.title = 'Pintar peças à mão para completar a previsão';
@@ -140,5 +144,5 @@
   }
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && mode && !/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '')) setMode(false); });
   setInterval(function () { if (window.__v40 && window.__v40.scene) { mount(); bindCanvas(); } }, 400);
-  window.__pt55 = { get: val, get mode() { return mode; }, setMode: setMode, get items() { return JSON.parse(JSON.stringify(data)); }, setTool: function (k) { tool = k; ui(); }, paint: paint, undo: undoLast, pull: pull };
+  window.__pt55 = { get: val, get mode() { return mode; }, setMode: setMode, get items() { return JSON.parse(JSON.stringify(data)); }, get custom() { return custom; }, setTool: function (k) { tool = k; ui(); }, paint: paint, undo: undoLast, pull: pull };
 })();

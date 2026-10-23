@@ -1,4 +1,5 @@
-/* Ponte Joinville — eixos no chão do 3D (V1.57: bolinha menor e com acabamento de prancha; linha de eixo traço-ponto)
+/* Ponte Joinville — eixos no chão do 3D (V1.57: bolinha menor e com acabamento de prancha; linha de eixo traço-ponto;
+   V1.58: tudo em 3 malhas — faixas, sombras e bolinhas numa imagem só — para pesar menos)
    Para achar os apoios de longe sem mexer nas placas das peças: em cada vão, uma faixa azul no chão
    atravessando a ponte e, na ponta (do lado de fora), uma bolinha com o número do apoio (AP.xx).
    Como no exemplo (faixa entre o 12 e o 11 com AP.11): o número é o do apoio do vão no sentido do encontro
@@ -84,11 +85,13 @@
     return out;
   }
 
-  function canvasTex(cv) { var t = new T.Tex(cv); t.colorSpace = 'srgb'; t.anisotropy = window.__mobile47 ? 2 : 8; t.center.set(0.5, 0.5); return t; }
-  function tex(text) {
-    var S = 512, cv = document.createElement('canvas'); cv.width = cv.height = S;
-    var c = cv.getContext('2d'), num = text.replace(/^AP\.?/, ''), F = 'Arial, Helvetica, sans-serif';
-    // anel externo azul, fundo branco levemente acinzentado nas bordas, filete interno
+  function canvasTex(cv) { var t = new T.Tex(cv); t.colorSpace = 'srgb'; t.anisotropy = window.__mobile47 ? 2 : 8; return t; }
+  // V1.58: as 19 bolinhas ficam numa só imagem (5 × 4 quadros de 512 px, mesma resolução de antes) e as faixas,
+  // sombras e bolinhas viram 3 malhas no total (antes eram 57 pedidos de desenho)
+  var COLS = 5, ROWS = 4, TS = 512;
+  function drawBadge(c, ox, oy, text) {
+    var num = text.replace(/^AP\.?/, ''), F = 'Arial, Helvetica, sans-serif';
+    c.save(); c.translate(ox, oy);
     c.beginPath(); c.arc(256, 256, 244, 0, Math.PI * 2); c.fillStyle = BLUE; c.fill();
     var g = c.createRadialGradient(256, 236, 40, 256, 256, 222); g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#eef1f8');
     c.beginPath(); c.arc(256, 256, 222, 0, Math.PI * 2); c.fillStyle = g; c.fill();
@@ -98,6 +101,11 @@
     c.beginPath(); c.moveTo(196, 202); c.lineTo(316, 202); c.lineWidth = 5; c.strokeStyle = 'rgba(47,69,224,.55)'; c.stroke();
     var fs = 196; c.font = 'bold ' + fs + 'px ' + F; while (c.measureText(num).width > 320 && fs > 80) { fs -= 6; c.font = 'bold ' + fs + 'px ' + F; }
     c.fillStyle = NAVY; c.fillText(num, 256, 206 + fs * 0.74);
+    c.restore();
+  }
+  function atlasTex(labels) {
+    var cv = document.createElement('canvas'); cv.width = COLS * TS; cv.height = ROWS * TS; var c = cv.getContext('2d');
+    labels.forEach(function (t, i) { drawBadge(c, (i % COLS) * TS, Math.floor(i / COLS) * TS, t); });
     return canvasTex(cv);
   }
   function shadowTex() {   // sombra suave da bolinha no chão
@@ -110,25 +118,23 @@
     c.fillStyle = BLUE; c.fillRect(0, 4, 150, 24); c.beginPath(); c.arc(196, 16, 12, 0, Math.PI * 2); c.fill();
     var t = canvasTex(cv); t.wrapS = 1000; t.wrapT = 1001; return t;    // repetir ao longo / prender nas bordas
   }
-  function disc() {
-    var n = 56, pos = [0, 0, 0], uv = [0.5, 0.5], ix = [];
-    for (var i = 0; i <= n; i++) { var a = i / n * Math.PI * 2, x = Math.cos(a), z = Math.sin(a); pos.push(x, 0, z); uv.push(0.5 + x / 2, 0.5 - z / 2); if (i) ix.push(0, i + 1, i); }
-    var g = new T.BG(); g.setAttribute('position', new T.Attr(new Float32Array(pos), 3)); g.setAttribute('uv', new T.Attr(new Float32Array(uv), 2));
-    g.setAttribute('normal', new T.Attr(new Float32Array(pos.length).map(function (v, i) { return i % 3 === 1 ? 1 : 0; }), 3)); g.setIndex(ix);
-    return g;
-  }
+  var NSEG = 56;
   function mat(opts) {
     var m = new T.Std(opts); m.roughness = 1; m.metalness = 0; m.side = 2; m.polygonOffset = true; m.polygonOffsetFactor = -4; m.polygonOffsetUnits = -4; return m;
+  }
+  var stripMesh = null, shadowMesh = null, badgeMesh = null, lastRot = null;
+  function setGeo(mesh, pos, uv, ix) {
+    var g = new T.BG(); g.setAttribute('position', new T.Attr(new Float32Array(pos), 3)); g.setAttribute('uv', new T.Attr(new Float32Array(uv), 2));
+    g.setAttribute('normal', new T.Attr(new Float32Array(pos.length).map(function (v, i) { return i % 3 === 1 ? 1 : 0; }), 3)); g.setIndex(ix); g.computeBoundingSphere();
+    var old = mesh.geometry; mesh.geometry = g; if (old) old.dispose();
   }
 
   function build(scene) {
     if (!ctors(scene)) return false;
     if (!root) { root = new T.Group(); root.name = 'Eixos no chão (V1.56)'; }
-    while (root.children.length) { var o = root.children[0]; root.remove(o); if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map && o.material.map.userData.keep !== 1) o.material.map.dispose(); o.material.dispose(); } }
-    items = [];
+    while (root.children.length) { var o = root.children[0]; root.remove(o); if (o.geometry) o.geometry.dispose(); if (o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); } }
+    items = []; lastRot = null;
     var P = piers(), dash = dashTex(), shTex = shadowTex();
-    var stripMat = mat({ color: 0xffffff, map: dash, emissive: 0xffffff, emissiveMap: dash, emissiveIntensity: 0.6, transparent: true, alphaTest: 0.35, depthWrite: false });
-    var shMat = mat({ color: 0x000000, map: shTex, transparent: true, depthWrite: false }); shMat.emissive.setHex(0); 
     SPANS.forEach(function (sp) {
       var r = sp[2], ka = r === '2000' ? '2000' : '1000', a = P[sp[0] + '|' + ka] || P[sp[0] + '|' + (ka === '1000' ? '2000' : '1000')], b = P[sp[1] + '|' + ka] || P[sp[1] + '|' + (ka === '1000' ? '2000' : '1000')];
       if (!a || !b) return;
@@ -140,13 +146,15 @@
         S = { x: mx - n.x * 7.5, z: mz - n.z * 7.5 }; e = 15;
       }
       var txt = sp[1].replace(/^AP/, 'AP.');
-      var dm = new T.Mesh(disc(), mat({ color: 0xffffff, map: null, emissive: 0xffffff, emissiveIntensity: 0.8, transparent: true, depthWrite: false }));
-      var tx = tex(txt); dm.material.map = tx; dm.material.emissiveMap = tx; dm.material.needsUpdate = true; dm.renderOrder = 4;
-      var g = new T.BG(); var sm = new T.Mesh(g, stripMat); sm.renderOrder = 3;
-      var sh = new T.Mesh(disc(), shMat); sh.renderOrder = 3;
-      root.add(sm); root.add(sh); root.add(dm);
-      items.push({ S: S, n: n, e: e, strip: sm, disc: dm, shadow: sh, k: 0, label: txt, bx: S.x + n.x * (e + 1.5 + R0), bz: S.z + n.z * (e + 1.5 + R0) });
+      items.push({ S: S, n: n, e: e, k: 0, label: txt, tile: items.length, bx: S.x + n.x * (e + 1.5 + R0), bz: S.z + n.z * (e + 1.5 + R0), cx: 0, cy: 0, cz: 0, R: R0 });
     });
+    var atl = atlasTex(items.map(function (it) { return it.label; }));
+    stripMesh = new T.Mesh(new T.BG(), mat({ color: 0xffffff, map: dash, emissive: 0xffffff, emissiveMap: dash, emissiveIntensity: 0.6, transparent: true, alphaTest: 0.35, depthWrite: false }));
+    shadowMesh = new T.Mesh(new T.BG(), mat({ color: 0x000000, map: shTex, transparent: true, depthWrite: false })); shadowMesh.material.emissive.setHex(0);
+    badgeMesh = new T.Mesh(new T.BG(), mat({ color: 0xffffff, map: atl, emissive: 0xffffff, emissiveMap: atl, emissiveIntensity: 0.8, transparent: true, depthWrite: false }));
+    stripMesh.renderOrder = 3; shadowMesh.renderOrder = 3; badgeMesh.renderOrder = 4;
+    stripMesh.name = 'Eixos · faixas'; shadowMesh.name = 'Eixos · sombras'; badgeMesh.name = 'Eixos · bolinhas';
+    root.add(stripMesh); root.add(shadowMesh); root.add(badgeMesh);
     // tamanho máximo de cada bolinha: não encostar na vizinha
     items.forEach(function (it) { var nn = 80; items.forEach(function (o) { if (o !== it) nn = Math.min(nn, Math.hypot(o.bx - it.bx, o.bz - it.bz)); }); it.kmax = Math.max(1, Math.min(KMAX, 0.4 * nn / R0)); });
     if (root.parent !== scene) scene.add(root);
@@ -154,38 +162,58 @@
     return true;
   }
 
-  function stripGeo(it, len, w) {
-    var segs = Math.max(2, Math.ceil(len / 2)), pos = [], uv = [], ix = [], px = -it.n.z, pz = it.n.x, P = 4.2 * Math.max(1, w / 0.5);   // px,pz: lado da faixa
+  function stripPart(it, len, w, pos, uv, ix) {
+    var segs = Math.max(2, Math.ceil(len / 2)), px = -it.n.z, pz = it.n.x, P = 4.2 * Math.max(1, w / 0.5), base = pos.length / 3;   // px,pz: lado da faixa
     for (var i = 0; i <= segs; i++) {
       var t = i / segs * len, cx = it.S.x + it.n.x * t, cz = it.S.z + it.n.z * t;
       var x1 = cx + px * w / 2, z1 = cz + pz * w / 2, x2 = cx - px * w / 2, z2 = cz - pz * w / 2;
       pos.push(x1, ground(x1, z1) + 0.16, z1, x2, ground(x2, z2) + 0.16, z2); uv.push(t / P, 1, t / P, 0);
-      if (i) { var a = (i - 1) * 2; ix.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+      if (i) { var a = base + (i - 1) * 2; ix.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
     }
-    var g = it.strip.geometry; g.setAttribute('position', new T.Attr(new Float32Array(pos), 3)); g.setAttribute('uv', new T.Attr(new Float32Array(uv), 2));
-    g.setAttribute('normal', new T.Attr(new Float32Array(pos.length).map(function (v, i) { return i % 3 === 1 ? 1 : 0; }), 3));
-    g.setIndex(ix); g.computeBoundingSphere();
+  }
+  function discPart(cx, cy, cz, R, pos, ix) {
+    var base = pos.length / 3; pos.push(cx, cy, cz);
+    for (var i = 0; i <= NSEG; i++) { var a = i / NSEG * Math.PI * 2; pos.push(cx + Math.cos(a) * R, cy, cz + Math.sin(a) * R); if (i) ix.push(base, base + i + 1, base + i); }
+  }
+  function discUV(uv, rot, tile) {      // UV do disco girada (número de frente para quem olha) e levada ao quadro da bolinha
+    var c = Math.cos(rot), s = Math.sin(rot), col = tile === null ? 0 : tile % COLS, row = tile === null ? 0 : Math.floor(tile / COLS);
+    for (var i = -1; i <= NSEG; i++) {
+      var u0 = 0.5, v0 = 0.5; if (i >= 0) { var a = i / NSEG * Math.PI * 2; u0 = 0.5 + Math.cos(a) / 2; v0 = 0.5 - Math.sin(a) / 2; }
+      if (tile === null) { uv.push(u0, v0); continue; }
+      var u = c * (u0 - 0.5) + s * (v0 - 0.5) + 0.5, v = -s * (u0 - 0.5) + c * (v0 - 0.5) + 0.5;
+      uv.push((col + u) / COLS, (ROWS - 1 - row + v) / ROWS);
+    }
   }
   function update(force) {
-    if (!root || !items.length || !window.__v22 || !window.__v22.camera) return;
+    if (!root || !items.length || !window.__v22 || !window.__v22.camera || !badgeMesh) return;
     var cm = window.__v22.camera, cam = cm.position, ce = cm.matrixWorld.elements, ux = ce[4], uz = ce[6];   // "para cima" da tela projetado no chão
     var sig = ce[0] + ',' + ce[4] + ',' + ce[6] + ',' + ce[12] + ',' + ce[13] + ',' + ce[14];
     if (!force && sig === lastCam) return; lastCam = sig;                                                       // câmera parada: nada a refazer
     if (Math.hypot(ux, uz) < 1e-3) { ux = -ce[8]; uz = -ce[10]; }
+    var changed = !!force;
     items.forEach(function (it) {
       var bx = it.bx, bz = it.bz; if (it.by == null) it.by = ground(bx, bz);
       var k = Math.round(Math.max(1, Math.min(it.kmax || KMAX, Math.hypot(cam.x - bx, cam.y - it.by, cam.z - bz) / 130)) * 20) / 20;
       if (force || k !== it.k) {
         it.k = k; var R = R0 * k, d = it.e + 1.5 + R, cx = it.S.x + it.n.x * d, cz = it.S.z + it.n.z * d, y = ground(cx, cz);
         for (var i = 0; i < 8; i++) { var a = i / 8 * Math.PI * 2; y = Math.max(y, ground(cx + Math.cos(a) * R * 0.8, cz + Math.sin(a) * R * 0.8)); }
-        it.disc.position.set(cx, y + 0.24, cz); it.disc.scale.set(R, 1, R);
-        it.shadow.position.set(cx + R * 0.06, y + 0.18, cz + R * 0.08); it.shadow.scale.set(R * 1.22, 1, R * 1.22);
-        stripGeo(it, d - R * 0.9, 0.5 * k);
+        it.cx = cx; it.cy = y; it.cz = cz; it.R = R; it.d = d; changed = true;
       }
-      // número sempre de frente para quem olha
-      var m = it.disc.material.map;
-      if (m) { var rot = Math.atan2(-ux, -uz) + ROT0; if (Math.abs(m.rotation - rot) > 0.01) { m.rotation = rot; } }
     });
+    var rot = Math.atan2(-ux, -uz) + ROT0;
+    if (changed) {
+      var sp = [], su = [], si = [], hp = [], hu = [], hi = [], bp = [], bi = [];
+      items.forEach(function (it) {
+        stripPart(it, it.d - it.R * 0.9, 0.5 * it.k, sp, su, si);
+        discPart(it.cx + it.R * 0.06, it.cy + 0.18, it.cz + it.R * 0.08, it.R * 1.22, hp, hi); discUV(hu, 0, null);
+        discPart(it.cx, it.cy + 0.24, it.cz, it.R, bp, bi);
+      });
+      setGeo(stripMesh, sp, su, si); setGeo(shadowMesh, hp, hu, hi);
+      var bu = []; items.forEach(function (it) { discUV(bu, rot, it.tile); }); setGeo(badgeMesh, bp, bu, bi); lastRot = rot;
+    } else if (lastRot === null || Math.abs(rot - lastRot) > 0.01) {
+      var uv2 = []; items.forEach(function (it) { discUV(uv2, rot, it.tile); });
+      var at = badgeMesh.geometry.attributes.uv; at.array.set(uv2); at.needsUpdate = true; lastRot = rot;
+    }
   }
 
   // abre uma clareira nas árvores ilustrativas em volta de cada bolinha (senão as copas cobrem o número)
@@ -239,5 +267,5 @@
   }
   setInterval(tick, 700);
   setInterval(function () { if (root && root.visible) update(false); }, 120);
-  window.__eixos56 = { ground: ground, get hf() { return !!heightfield(); }, setRot0: function (v) { ROT0 = v; update(true); }, get items() { return items.map(function (i) { return { label: i.label, x: i.disc.position.x, z: i.disc.position.z, k: i.k }; }); }, rebuild: function () { lastSig = ''; tick(); } };
+  window.__eixos56 = { ground: ground, get hf() { return !!heightfield(); }, setRot0: function (v) { ROT0 = v; update(true); }, get items() { return items.map(function (i) { return { label: i.label, x: i.cx, z: i.cz, k: i.k }; }); }, rebuild: function () { lastSig = ''; tick(); } };
 })();
