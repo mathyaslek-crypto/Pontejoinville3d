@@ -30,7 +30,7 @@ async function clima() {
 //   rdo:f:<id>:<n>  arquivo (com nome, tipo e tamanho nos metadados)      rdo:m:<id>  ficha do envio
 //   rdo:index       lista de todos os envios (lida pela pasta da página inicial, 3D, pluviometria e paralisações)
 // Apontador e perfil completo enviam; perfil completo e equipe leem; só o perfil completo exclui.
-const RDO_ID = /^[A-Za-z0-9_.-]{6,140}$/, RDO_MAX = 24 * 1024 * 1024;
+const RDO_ID = /^[A-Za-z0-9_.-]{6,140}$/, RDO_MAX = 24 * 1024 * 1024, RDO_VER = '1.60';   // RDO_VER igual ao do rdo.html
 const KINDS = new Set(['pdf', 'pacote', 'foto', 'pluvio', 'outro']);
 async function rdoIndex(env) {
   let idx = await env.DADOS.get('rdo:index', 'json').catch(() => null);
@@ -51,6 +51,8 @@ async function rdoApi(req, env, url, prof, email) {
   const parts = url.pathname.split('/').filter(Boolean);   // ['api','rdo',acao,id?,n?]
   const acao = parts[2], id = parts[3] ? decodeURIComponent(parts[3]) : '', n = parts[4];
   const canSend = prof === 'apontador' || prof === 'completo', canRead = prof === 'completo' || prof === 'equipe';
+  // versão atual do app do RDO: os celulares que estão com a página antiga aberta se atualizam sozinhos
+  if (acao === 'versao' && req.method === 'GET') return json({ rdo: RDO_VER });
   if (acao === 'arquivo' && req.method === 'PUT') {
     if (!canSend) return json({ error: 'sem acesso' }, 403);
     if (!RDO_ID.test(id) || !/^\d{1,3}$/.test(n || '')) return json({ error: 'endereço inválido' }, 400);
