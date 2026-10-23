@@ -17,22 +17,36 @@
     { k: 'none', l: 'Sem cor', t: 'Tira a cor da peça, inclusive a do cronograma' },
     { k: null, l: 'Cronograma', t: 'Apaga a pintura e volta a usar a data da planilha' }
   ];
-  var data = {}, undo = [], mode = false, tool = 'c2', custom = '#9575cd', btn = null, bar = null, canvas = null, down = null, msg = '', serverT = 0, pushing = false, again = false;
+  var synced = false, data = {}, undo = [], mode = false, tool = 'c2', custom = '#9575cd', btn = null, bar = null, canvas = null, down = null, msg = '', serverT = 0, pushing = false, again = false;
   // painel publicado (V1.58): a pintura vem gravada no próprio arquivo, sem nuvem e sem editar
   var PUB = window.__pub58 || null;
   try { var o = PUB && PUB.paint ? PUB.paint : JSON.parse(localStorage.getItem(KEY) || '{}'); if (o && o.items && typeof o.items === 'object') data = o.items; if (o && /^#[0-9a-f]{6}$/i.test(o.custom || '')) custom = o.custom; } catch (e) {}
 
-  function val(key) { var e = data[key]; return e && e.c ? e.c : null; }
+  // V1.59 — cada cenário tem a sua pintura. As chaves levam o cenário na frente ("cenário~b-peça"); o cenário "original"
+  // (cronograma anterior) usa as chaves sem prefixo, que são as da pintura feita até a V1.58. Os cenários criados no site
+  // ficam nesta mesma lista, em "@cen~id" (nome e cronograma-base), e assim vão para a nuvem junto com a pintura.
+  function scen() { if (PUB) return ''; var C = window.__cen59; return C ? C.active() : 'original'; }
+  function pfxOf(id) { return !id || id === 'original' || PUB ? '' : id + '~'; }
+  function pfx() { return pfxOf(scen()); }
+  function own(k, p) { return k.charAt(0) !== '@' && (p ? k.indexOf(p) === 0 : k.indexOf('~') < 0); }
+  function val(key) { var e = data[pfx() + key]; return e && e.c ? e.c : null; }
   function saveLocal() { if (PUB) return; try { localStorage.setItem(KEY, JSON.stringify({ items: data, custom: custom })); } catch (e) {} }
-  function count() { var n = 0; for (var k in data) if (data[k] && data[k].c) n++; return n; }
-  function refresh() { try { window.__prev53 && window.__prev53.refresh(); } catch (e) {} try { window.__oc54 && window.__oc54.refreshKeep && window.__oc54.refreshKeep(); } catch (e) {} ui(); }
+  function countFor(id) { var p = pfxOf(id), n = 0; for (var k in data) if (data[k] && data[k].c && own(k, p)) n++; return n; }
+  function count() { return countFor(scen()); }
+  function userScens() {
+    var o = {};
+    for (var k in data) if (k.indexOf('@cen~') === 0 && data[k] && data[k].c) { try { var m = JSON.parse(data[k].c); if (m && m.nome) o[k.slice(5)] = { nome: m.nome, base: m.base, t: data[k].t }; } catch (e) {} }
+    return o;
+  }
+  function pubScens() { try { if (window.__cen59 && !PUB) window.__cen59.setUser(userScens()); } catch (e) {} }
+  function refresh() { pubScens(); try { window.__prev53 && window.__prev53.refresh(); } catch (e) {} try { window.__oc54 && window.__oc54.refreshKeep && window.__oc54.refreshKeep(); } catch (e) {} ui(); }
 
   // ---------- nuvem ----------
   function merge(items) { var ch = false; for (var k in items) { var b = items[k], a = data[k]; if (!b || typeof b.t !== 'number') continue; if (!a || b.t > a.t) { data[k] = b; ch = true; } } return ch; }
   function pull() {
     if (PUB) return Promise.resolve(false);
     return fetch(API + '?full=1&keys=' + KEY, { cache: 'no-store' }).then(function (r) { return r.ok && /json/.test(r.headers.get('content-type') || '') ? r.json() : null; })
-      .then(function (j) { var s = j && j[KEY]; if (!s || s.v == null) return false; serverT = s.t || 0; var o = {}; try { o = JSON.parse(s.v) || {}; } catch (e) {} var ch = merge(o.items || {}); if (ch) saveLocal(); return ch; })
+      .then(function (j) { if (j) synced = true; var s = j && j[KEY]; if (!s || s.v == null) return false; serverT = s.t || 0; var o = {}; try { o = JSON.parse(s.v) || {}; } catch (e) {} var ch = merge(o.items || {}); if (ch) saveLocal(); return ch; })
       .catch(function () { return false; });
   }
   function push() {
@@ -45,33 +59,58 @@
         .then(function (r) { if (r.ok) serverT = t; else if (r.status === 409) again = true; });
     }).catch(function () { setTimeout(push, 30000); }).then(function () { pushing = false; if (again) { again = false; setTimeout(push, 400); } });
   }
-  pull().then(function (ch) { if (ch) refresh(); });
+  pull().then(function (ch) { if (ch) refresh(); else pubScens(); });
   setInterval(function () { if (document.visibilityState === 'visible' && !pushing) pull().then(function (ch) { if (ch) refresh(); }); }, 90000);
 
   // ---------- pintar ----------
   function nameOf(key) { try { var r = (window.__v22.rows || []).filter(function (x) { return x.key === key; })[0]; if (r && r.name) return r.name; } catch (e) {} return key; }
   function label(k) { return k === 'c1' ? 'até 31/12/2026' : k === 'c2' ? 'até 30/03/2027' : k === 'none' ? 'sem cor' : k === null ? 'volta ao cronograma' : 'cor livre'; }
   function paint(key) {
-    var i = key.indexOf('-'), b = key.slice(0, i), s = key.slice(i + 1), k = tool === 'custom' ? custom : tool;
+    var i = key.indexOf('-'), b = key.slice(0, i), s = key.slice(i + 1), k = tool === 'custom' ? custom : tool, fk = pfx() + key;
     if (k !== null && k !== 'none' && window.__prev53 && window.__prev53.pending && window.__prev53.pending(b, s) === 0) { msg = nameOf(key) + ' já está executada'; ui(); return; }
-    var prev = data[key] ? { c: data[key].c, t: data[key].t } : null;
+    var prev = data[fk] ? { c: data[fk].c, t: data[fk].t } : null;
     if ((prev && prev.c || null) === k) { msg = nameOf(key) + ' já está assim'; ui(); return; }
-    undo.push({ key: key, prev: prev });
-    data[key] = { c: k, t: Date.now() };
+    undo.push({ key: fk, prev: prev });
+    data[fk] = { c: k, t: Date.now() };
     msg = nameOf(key) + ' → ' + label(k);
     saveLocal(); refresh(); push();
   }
   function undoLast() {
     var u = undo.pop(); if (!u) return;
     data[u.key] = u.prev ? { c: u.prev.c, t: Date.now() } : { c: null, t: Date.now() };
-    msg = 'Desfeito: ' + nameOf(u.key); saveLocal(); refresh(); push();
+    msg = 'Desfeito: ' + nameOf(u.key.slice(u.key.indexOf('~') + 1)); saveLocal(); refresh(); push();
   }
   var armed = 0;
   function clearAll() {
-    if (Date.now() - armed > 4000) { armed = Date.now(); msg = 'Clique de novo em "Limpar" para apagar todas as pinturas'; ui(); return; }
-    armed = 0; var t = Date.now(); for (var k in data) if (data[k] && data[k].c) data[k] = { c: null, t: t };
-    undo = []; msg = 'Pinturas apagadas: tudo segue o cronograma'; saveLocal(); refresh(); push();
+    if (Date.now() - armed > 4000) { armed = Date.now(); msg = 'Clique de novo em "Limpar" para apagar as pinturas deste cenário'; ui(); return; }
+    armed = 0; var t = Date.now(), p = pfx(); for (var k in data) if (data[k] && data[k].c && own(k, p)) data[k] = { c: null, t: t };
+    undo = []; msg = 'Pinturas deste cenário apagadas: tudo segue o cronograma'; saveLocal(); refresh(); push();
   }
+  // ---------- cenários criados no site ----------
+  function newId() { return 'u' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36); }
+  function createScen(nome, from, base) {      // novo cenário: mesmo cronograma-base e cópia da pintura de "from"
+    var id = newId(), t = Date.now(), pf = pfxOf(from), pt = pfxOf(id), n = 0;
+    data['@cen~' + id] = { c: JSON.stringify({ nome: String(nome).slice(0, 60), base: base }), t: t };
+    for (var k in data) if (data[k] && data[k].c && own(k, pf)) { data[pt + k.slice(pf.length)] = { c: data[k].c, t: t }; n++; }
+    saveLocal(); pubScens(); push(); return id;
+  }
+  function renameScen(id, nome) {
+    var m = userScens()[id]; if (!m) return false;
+    data['@cen~' + id] = { c: JSON.stringify({ nome: String(nome).slice(0, 60), base: m.base }), t: Date.now() };
+    saveLocal(); pubScens(); push(); return true;
+  }
+  function deleteScen(id) {
+    if (!userScens()[id]) return false;
+    var t = Date.now(), p = pfxOf(id); data['@cen~' + id] = { c: null, t: t };
+    for (var k in data) if (data[k] && data[k].c && own(k, p)) data[k] = { c: null, t: t };
+    saveLocal(); pubScens(); push(); return true;
+  }
+  function copyPaint(from) {                    // traz a pintura de outro cenário para o ativo (as peças em comum ficam com a de lá)
+    var pf = pfxOf(from), pt = pfx(), t = Date.now(), n = 0; if (pf === pt) return 0;
+    for (var k in data) if (data[k] && data[k].c && own(k, pf)) { data[pt + k.slice(pf.length)] = { c: data[k].c, t: t }; n++; }
+    undo = []; saveLocal(); refresh(); push(); return n;
+  }
+  function itemsOf(id) { var p = pfxOf(id), o = {}; for (var k in data) if (data[k] && data[k].c && own(k, p)) o[k.slice(p.length)] = { c: data[k].c, t: data[k].t }; return o; }
   function setMode(v) {
     mode = !!v; if (mode && window.__oc54 && window.__oc54.mode) window.__oc54.setMode(false);
     if (canvas) canvas.style.cursor = mode ? 'cell' : ''; document.body.classList.toggle('pt55-on', mode);
@@ -144,5 +183,9 @@
   }
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && mode && !/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '')) setMode(false); });
   setInterval(function () { if (window.__v40 && window.__v40.scene) { mount(); bindCanvas(); } }, 400);
-  window.__pt55 = { get: val, get mode() { return mode; }, setMode: setMode, get items() { return JSON.parse(JSON.stringify(data)); }, get custom() { return custom; }, setTool: function (k) { tool = k; ui(); }, paint: paint, undo: undoLast, pull: pull };
+  window.__pt55 = { get: val, get mode() { return mode; }, setMode: setMode, get items() { return itemsOf(scen()); }, get all() { return JSON.parse(JSON.stringify(data)); }, get custom() { return custom; }, setTool: function (k) { tool = k; ui(); }, paint: paint, undo: undoLast, pull: pull,
+    scenarios: userScens, countFor: countFor, itemsOf: itemsOf, create: createScen, rename: renameScen, remove: deleteScen, copyFrom: copyPaint,
+    switched: function () { undo = []; msg = ''; refresh(); }, get synced() { return synced; } };
+  pubScens();
+  (function hookScen() { var C = window.__cen59; if (!C) { setTimeout(hookScen, 300); return; } C.on(function () { undo = []; msg = ''; ui(); }); pubScens(); })();
 })();

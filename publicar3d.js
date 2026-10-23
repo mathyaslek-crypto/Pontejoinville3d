@@ -18,12 +18,13 @@
   };
 
   function scenario() {
-    var paint = { items: {}, custom: null }, prev = { on: true, style: null }, oc = { hidden: [], beamsOff: false, adOff: false, plOff: false }, cena = {};
+    var paint = { items: {}, custom: null }, prev = { on: true, style: null }, oc = { hidden: [], beamsOff: false, adOff: false, plOff: false }, cena = {}, cen = null;
+    try { var C = window.__cen59; if (C) cen = C.info(); } catch (e) {}
     try { var pt = window.__pt55; if (pt) { var it = pt.items || {}; for (var k in it) if (it[k] && it[k].c) paint.items[k] = { c: it[k].c, t: it[k].t || 0 }; paint.custom = pt.custom || null; } } catch (e) {}
     try { var pv = window.__prev53; if (pv) { prev.on = pv.on !== false; prev.style = pv.style; } } catch (e) {}
     try { var o = window.__oc54; if (o) { oc.hidden = o.list || []; oc.beamsOff = !!o.beamsOff; oc.adOff = !!o.adOff; oc.plOff = !!o.prelajeOff; } } catch (e) {}
     try { var c = window.__cena58; if (c) { cena['ponte-bonecos-v58'] = !!c.workers; cena['ponte-barco-v58'] = !!c.boat; } } catch (e) {}
-    return { at: new Date().toISOString(), paint: paint, prev: prev, oc: oc, cena: cena };
+    return { at: new Date().toISOString(), paint: paint, prev: prev, oc: oc, cena: cena, cen: cen };
   }
   function safe(js) { return String(js).replace(/<\/script/gi, '<\\/script').replace(/<!--/g, '<\\!--'); }
 
@@ -38,7 +39,7 @@
       tags.forEach(function (t, i) { html = html.split(t.full).join(codes[i]); });
       var sc = scenario(), when = new Date(sc.at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
       var head = '<script>window.__pub58=' + safe(JSON.stringify(sc)) + ';<\/script>' +
-        '<script>document.addEventListener("DOMContentLoaded",function(){setInterval(function(){var l=document.getElementById("pv53-leg");if(l&&!l.querySelector(".pub58")){var d=document.createElement("small");d.className="pub58";d.style.cssText="display:block;margin-top:6px;color:#FDB900";d.textContent=' + JSON.stringify('Cenário publicado em ' + when) + ';l.appendChild(d);}},1000);});<\/script>';
+        '<script>document.addEventListener("DOMContentLoaded",function(){setInterval(function(){var l=document.getElementById("pv53-leg");if(l&&!l.querySelector(".pub58")){var d=document.createElement("small");d.className="pub58";d.style.cssText="display:block;margin-top:6px;color:#FDB900";d.textContent=' + JSON.stringify('Publicado em ' + when) + ';l.appendChild(d);}},1000);});<\/script>';
       var i = html.indexOf('<head>');
       return i >= 0 ? html.slice(0, i + 6) + head + html.slice(i + 6) : head + html;
     });
