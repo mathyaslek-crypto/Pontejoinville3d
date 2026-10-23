@@ -47,6 +47,13 @@ async function rdoIndex(env) {
   }
   return idx;
 }
+async function rdoDelete(env, id, meta) {      // apaga os arquivos e a ficha de um envio
+  const e = meta || await env.DADOS.get('rdo:m:' + id, 'json').catch(() => null);
+  const ns = e && Array.isArray(e.arquivos) ? e.arquivos.map(f => f.n) : null;
+  if (ns) { for (const n of ns) await env.DADOS.delete('rdo:f:' + id + ':' + n); }
+  else { let cur; do { const r = await env.DADOS.list({ prefix: 'rdo:f:' + id + ':', cursor: cur }); for (const k of r.keys) await env.DADOS.delete(k.name); cur = r.list_complete ? null : r.cursor; } while (cur); }
+  await env.DADOS.delete('rdo:m:' + id);
+}
 async function rdoApi(req, env, url, prof, email) {
   const parts = url.pathname.split('/').filter(Boolean);   // ['api','rdo',acao,id?,n?]
   const acao = parts[2], id = parts[3] ? decodeURIComponent(parts[3]) : '', n = parts[4];
@@ -79,9 +86,14 @@ async function rdoApi(req, env, url, prof, email) {
     const s = v => String(v == null ? '' : v).slice(0, 120);
     const e = { id, data: /^\d{4}-\d{2}-\d{2}$/.test(b.data) ? b.data : '', autor: s(b.autor), turno: s(b.turno), rev: Number.isFinite(+b.rev) ? +b.rev : null, app: s(b.app), por: email, at: new Date().toISOString(), arquivos };
     await env.DADOS.put('rdo:m:' + id, JSON.stringify(e));
-    const idx = await rdoIndex(env); idx.itens = [e].concat(idx.itens.filter(x => x.id !== id));
+    const idx = await rdoIndex(env);
+    // mesmo dia, apontador, turno e revisão enviados de novo: fica só o envio mais novo (não duplica a pasta)
+    const dup = idx.itens.filter(x => x.id !== id && e.rev != null && x.rev === e.rev && x.data === e.data && x.turno === e.turno && x.autor === e.autor);
+    for (const x of dup) await rdoDelete(env, x.id);
+    const gone = new Set(dup.map(x => x.id));
+    idx.itens = [e].concat(idx.itens.filter(x => x.id !== id && !gone.has(x.id)));
     await env.DADOS.put('rdo:index', JSON.stringify(idx));
-    return json({ ok: true, item: e });
+    return json({ ok: true, item: e, substituidos: dup.length });
   }
   if (acao === 'lista' && req.method === 'GET') {
     if (!canRead) return json({ error: 'sem acesso' }, 403);
@@ -103,8 +115,7 @@ async function rdoApi(req, env, url, prof, email) {
     if (prof !== 'completo') return json({ error: 'só o perfil completo pode excluir' }, 403);
     if (!RDO_ID.test(id)) return json({ error: 'endereço inválido' }, 400);
     const e = await env.DADOS.get('rdo:m:' + id, 'json').catch(() => null);
-    let cur; do { const r = await env.DADOS.list({ prefix: 'rdo:f:' + id + ':', cursor: cur }); for (const k of r.keys) await env.DADOS.delete(k.name); cur = r.list_complete ? null : r.cursor; } while (cur);
-    await env.DADOS.delete('rdo:m:' + id);
+    await rdoDelete(env, id, e);
     const idx = await rdoIndex(env); idx.itens = idx.itens.filter(x => x.id !== id); await env.DADOS.put('rdo:index', JSON.stringify(idx));
     return json({ ok: true, removido: !!e });
   }

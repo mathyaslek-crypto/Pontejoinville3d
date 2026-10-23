@@ -822,7 +822,7 @@ async function uploadRdo(d,list,onp){
  return id;}
 let sending=false;
 async function shareFiles(d,withPkg){
- if(sending)return note('Já tem um envio em andamento.');
+ if(sending||retrying)return note('Já tem um envio em andamento. Aguarde terminar.');
  let list;note('Gerando os arquivos…');
  try{list=await rdoFiles(d,withPkg);}catch(e){console.error(e);return note('Não foi possível gerar os arquivos: '+e.message,true);}
  $('notice').classList.remove('on');

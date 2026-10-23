@@ -57,6 +57,12 @@ h1 em{font-style:italic;color:var(--ink2)}
 .ph a:hover{border-color:var(--amber)}
 .del{margin-left:8px;height:30px;padding:0 10px;border-radius:8px;border:1px solid #ef6b6255;background:none;color:#ffb1aa;cursor:pointer;font-size:12px}
 .del:hover{border-color:var(--err)}
+.dl{margin-left:8px;height:30px;padding:0 12px;border-radius:8px;border:1px solid #f2b33d88;background:#f2b33d14;color:#ffd27a;cursor:pointer;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.dl:hover{border-color:var(--amber);background:#f2b33d26}.dl:disabled{opacity:.6;cursor:default}.dl.ok{border-color:#3fb37f88;color:#8ee0b5;background:#3fb37f14}
+.dl svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.dest{display:flex;flex-wrap:wrap;align-items:center;gap:8px;color:var(--muted);font-size:12.5px;flex-basis:100%}
+.dest b{color:var(--ink2);font-weight:600}.dest button{height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--line2);background:#0b1015;cursor:pointer;font-size:12px}.dest button:hover{border-color:var(--amber)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:20;max-width:calc(100% - 32px);padding:10px 16px;border-radius:10px;background:#16202a;border:1px solid var(--line2);color:var(--ink);font-size:13px;box-shadow:0 10px 30px #0008}
 .empty,.msg{margin-top:30px;padding:28px;border:1px dashed var(--line2);border-radius:14px;color:var(--ink2);text-align:center}
 .msg.err{border-color:#ef6b6266;color:#ffb1aa}
 .foot{margin-top:34px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:14px}
@@ -70,7 +76,7 @@ h1 em{font-style:italic;color:var(--ink2)}
  <h1>Pasta do <em>RDO</em></h1>
  <p class="lead">Os RDOs que os apontadores finalizam no app chegam aqui direto, com o PDF, as fotos e o pacote do 3D. O Modelo 3D, a Pluviometria e as Paralisações leem os pacotes desta pasta sozinhos.</p>
  <div class="stats" id="stats"></div>
- <div class="bar"><input id="q" type="search" placeholder="Buscar apontador, data ou arquivo" aria-label="Buscar"><select id="mes" aria-label="Mês"></select><select id="turno" aria-label="Turno"><option value="">Dia e noite</option><option value="dia">Dia</option><option value="noite">Noite</option></select><button class="btn" id="upd" type="button">Atualizar</button></div>
+ <div class="bar"><input id="q" type="search" placeholder="Buscar apontador, data ou arquivo" aria-label="Buscar"><select id="mes" aria-label="Mês"></select><select id="turno" aria-label="Turno"><option value="">Dia e noite</option><option value="dia">Dia</option><option value="noite">Noite</option></select><button class="btn" id="upd" type="button">Atualizar</button><div class="dest" id="dest" hidden></div></div>
  <div id="list"><p class="msg">Carregando a pasta…</p></div>
  <p class="foot">Os arquivos ficam guardados no site. As revisões anteriores do mesmo dia continuam na pasta, mais apagadas; a mais nova aparece como "atual".</p>
 </div>
@@ -111,7 +117,7 @@ function draw(){
   if(e.data!==lastDay){lastDay=e.data;h+='<section class="day"><h2>'+esc(wk(e.data))+' · '+esc(br(e.data))+'</h2>';}
   var k=e.data+'|'+e.autor+'|'+e.turno,isCur=cur[k]===e,A=e.arquivos||[],docs=A.filter(function(f){return f.kind!=='foto'&&f.kind!=='pluvio';}),fotos=A.filter(function(f){return f.kind==='foto'||f.kind==='pluvio';}),size=A.reduce(function(s,f){return s+(f.tam||0);},0);
   h+='<article class="card'+(isCur?'':' old')+'"><div class="hd"><b>'+esc(e.autor||'Apontador')+'</b><span class="tag">'+(e.turno==='noite'?'Noite':e.turno==='dia'?'Dia':'Pacote')+'</span>'+(e.rev!=null?'<span class="tag'+(isCur?' cur':'')+'">Rev. '+esc(e.rev)+(isCur?' · atual':'')+'</span>':'')+
-   '<span class="meta">enviado '+esc(hora(e.at))+(e.por?' · '+esc(e.por):'')+' · '+mb(size)+(podeExcluir?'<button class="del" type="button" data-del="'+esc(e.id)+'">'+(armed===e.id?'Confirmar exclusão':'Excluir')+'</button>':'')+'</span></div>';
+   '<span class="meta">enviado '+esc(hora(e.at))+(e.por?' · '+esc(e.por):'')+' · '+mb(size)+'<button class="dl'+(saved[e.id]?' ok':'')+'" type="button" data-dl="'+esc(e.id)+'" title="'+(FS?'Salva o PDF, as fotos e o pacote numa pasta do computador':'Baixa um .zip com o PDF, as fotos e o pacote')+'">'+DL_IC+(saved[e.id]?'Baixado · baixar de novo':'Baixar tudo')+'</button>'+(podeExcluir?'<button class="del" type="button" data-del="'+esc(e.id)+'">'+(armed===e.id?'Confirmar exclusão':'Excluir')+'</button>':'')+'</span></div>';
   h+='<div class="files">'+docs.map(function(f){var dl=f.kind==='pacote';return '<a class="fl" href="'+url(e,f,dl)+'" '+(dl?'download':'target="_blank" rel="noopener"')+'>'+(IC[f.kind]||IC.outro)+(f.kind==='pdf'?'RDO em PDF':f.kind==='pacote'?'Pacote do 3D':esc(f.nome))+'<i>'+mb(f.tam||0)+'</i></a>';}).join('')+'</div>';
   if(fotos.length)h+='<div class="ph">'+fotos.map(function(f){var lb=f.kind==='pluvio'?((f.nome||'').match(/_(\d\d)h\./)||[])[1]:'';return '<a href="'+url(e,f)+'" target="_blank" rel="noopener" title="'+esc(f.nome)+'"><img loading="lazy" alt="'+esc(f.nome)+'" src="'+url(e,f)+'">'+(lb?'<span>Pluviômetro '+lb+'h</span>':'')+'</a>';}).join('')+'</div>';
   h+='</article>';
@@ -120,15 +126,64 @@ function draw(){
  if(L.length>limit)h+='<button class="btn more" type="button" id="more">Mostrar mais ('+(L.length-limit)+')</button>';
  $('list').innerHTML=h;
  var mo=$('more');if(mo)mo.onclick=function(){limit+=40;draw();};
+ Array.prototype.forEach.call(document.querySelectorAll('[data-dl]'),function(b){b.onclick=function(){var id=b.getAttribute('data-dl'),e=ITENS.filter(function(x){return x.id===id;})[0];if(!e)return;
+  saveOne(e,b).then(function(m){if(m)toast(m);}).catch(function(err){toast('Não consegui baixar: '+(err&&err.message||err));});};});
+ destUI();
  Array.prototype.forEach.call(document.querySelectorAll('[data-del]'),function(b){b.onclick=function(){var id=b.getAttribute('data-del');
   if(armed!==id){armed=id;draw();setTimeout(function(){if(armed===id){armed=null;draw();}},5000);return;}
   armed=null;b.disabled=true;b.textContent='Excluindo…';
   fetch('/api/rdo/item/'+encodeURIComponent(id),{method:'DELETE'}).then(function(r){return r.json();}).then(function(j){if(!j.ok)throw Error(j.error||'erro');ITENS=ITENS.filter(function(e){return e.id!==id;});months();draw();})
    .catch(function(e){alertMsg('Não consegui excluir: '+e.message);draw();});};});
 }
+// ---------- Baixar tudo (V1.61) ----------
+// No computador (Chrome/Edge): salva direto numa pasta escolhida uma vez (ex.: a pasta da obra no OneDrive), com uma
+// subpasta por RDO. No celular ou outro navegador: baixa um .zip com todos os arquivos do RDO.
+var FS=typeof window.showDirectoryPicker==='function',DL_IC='<svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',saved={},dirH=null;
+try{saved=JSON.parse(localStorage.getItem('rdo-baixados-v61')||'{}')||{};}catch(e){}
+function markSaved(id){saved[id]=Date.now();try{localStorage.setItem('rdo-baixados-v61',JSON.stringify(saved));}catch(e){}}
+function idb(){return new Promise(function(res,rej){var r=indexedDB.open('rdo-pasta-destino',1);r.onupgradeneeded=function(){r.result.createObjectStore('h');};r.onsuccess=function(){res(r.result);};r.onerror=function(){rej(r.error);};});}
+function getH(){return idb().then(function(d){return new Promise(function(r){var q=d.transaction('h').objectStore('h').get('dir');q.onsuccess=function(){r(q.result||null);};q.onerror=function(){r(null);};});}).catch(function(){return null;});}
+function setH(h){return idb().then(function(d){return new Promise(function(r){var t=d.transaction('h','readwrite');t.objectStore('h').put(h,'dir');t.oncomplete=r;t.onerror=r;});}).catch(function(){});}
+function destUI(){var el=$('dest');if(!FS){el.hidden=true;return;}el.hidden=false;
+ el.innerHTML=dirH?'Baixar tudo salva em: <b>'+esc(dirH.name)+'</b> (uma subpasta por RDO)<button type="button" id="dchg">Trocar pasta</button><button type="button" id="dall">Baixar todos os da lista ('+filtered().length+')</button>':'Escolha a pasta do computador onde os RDOs vão ser salvos<button type="button" id="dchg">Escolher pasta</button>';
+ $('dchg').onclick=function(){pick().then(destUI).catch(function(){});};var da=$('dall');if(da)da.onclick=saveAll;}
+function pick(){return window.showDirectoryPicker({id:'rdo-pasta',mode:'readwrite'}).then(function(h){dirH=h;return setH(h);});}
+function ensureDir(){
+ var go=dirH?Promise.resolve():pick();
+ return go.then(function(){return dirH.queryPermission({mode:'readwrite'});}).then(function(p){return p==='granted'?p:dirH.requestPermission({mode:'readwrite'});}).then(function(p){if(p!=='granted')throw Error('sem permissão para gravar na pasta');return dirH;});}
+function folderName(e){var s=function(x){return String(x||'').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9]+/g,'_').replace(/^_|_$/g,'');};
+ return [e.data||'sem_data',s(e.autor)||'apontador',e.turno==='noite'?'Noite':e.turno==='dia'?'Dia':'Pacote',e.rev!=null?'Rev'+e.rev:''].filter(Boolean).join('_');}
+function fetchAll(e,onp){var A=e.arquivos||[],out=[],i=0;
+ return A.reduce(function(p,f){return p.then(function(){onp&&onp(++i,A.length);return fetch(url(e,f,true)).then(function(r){if(!r.ok)throw Error('não consegui baixar '+(f.nome||'arquivo'));return r.blob();}).then(function(b){out.push({name:f.nome||('arquivo_'+f.n),blob:b});});});},Promise.resolve()).then(function(){return out;});}
+// .zip simples (sem compressão: PDF e fotos já são comprimidos)
+var CRC=(function(){var t=new Uint32Array(256);for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(u){var c=0xFFFFFFFF;for(var i=0;i<u.length;i++)c=CRC[(c^u[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+function zip(files){return Promise.all(files.map(function(f){return f.blob.arrayBuffer();})).then(function(bufs){
+ var enc=new TextEncoder(),parts=[],cen=[],off=0,d=new Date(),dt=((d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1))&0xFFFF,dd=(((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate())&0xFFFF;
+ files.forEach(function(f,i){var data=new Uint8Array(bufs[i]),nm=enc.encode(f.name),crc=crc32(data),h=new DataView(new ArrayBuffer(30));
+  h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,0,true);h.setUint16(10,dt,true);h.setUint16(12,dd,true);h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,nm.length,true);h.setUint16(28,0,true);
+  parts.push(h.buffer,nm,data);
+  var c=new DataView(new ArrayBuffer(46));c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(10,0,true);c.setUint16(12,dt,true);c.setUint16(14,dd,true);c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);c.setUint16(28,nm.length,true);c.setUint32(42,off,true);
+  cen.push(c.buffer,nm);off+=30+nm.length+data.length;});
+ var cs=cen.reduce(function(s,b){return s+(b.byteLength||b.length);},0),e=new DataView(new ArrayBuffer(22));
+ e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);
+ return new Blob(parts.concat(cen,[e.buffer]),{type:'application/zip'});});}
+function toast(t){var el=document.createElement('div');el.className='toast';el.textContent=t;document.body.append(el);setTimeout(function(){el.remove();},4200);}
+function saveOne(e,btn){
+ var setB=function(t){if(btn)btn.innerHTML=DL_IC+esc(t);};if(btn)btn.disabled=true;
+ var job=FS?ensureDir().then(function(dir){return fetchAll(e,function(i,n){setB('Baixando '+i+' de '+n+'…');}).then(function(list){setB('Salvando…');
+    return dir.getDirectoryHandle(folderName(e),{create:true}).then(function(sub){return list.reduce(function(p,f){return p.then(function(){return sub.getFileHandle(f.name,{create:true}).then(function(fh){return fh.createWritable();}).then(function(w){return w.write(f.blob).then(function(){return w.close();});});});},Promise.resolve());})
+     .then(function(){return 'Salvo em '+dir.name+' / '+folderName(e)+' ('+list.length+' arquivos)';});});})
+  :fetchAll(e,function(i,n){setB('Baixando '+i+' de '+n+'…');}).then(function(list){setB('Montando o .zip…');return zip(list).then(function(z){var a=document.createElement('a'),u=URL.createObjectURL(z);a.href=u;a.download=folderName(e)+'.zip';document.body.append(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},30000);return 'Baixado: '+folderName(e)+'.zip';});});
+ return job.then(function(msg){markSaved(e.id);destUI();if(btn){btn.disabled=false;btn.classList.add('ok');setB('Baixado · baixar de novo');}return msg;})
+  .catch(function(err){if(btn){btn.disabled=false;setB('Baixar tudo');}if(err&&err.name==='AbortError')return null;throw err;});}
+function saveAll(){var L=filtered(),ok=0,b=$('dall');if(!L.length)return;if(b)b.disabled=true;
+ L.reduce(function(p,e){return p.then(function(){if(b)b.textContent='Baixando '+(ok+1)+' de '+L.length+'…';return saveOne(e,document.querySelector('[data-dl="'+CSS.escape(e.id)+'"]')).then(function(){ok++;});});},Promise.resolve())
+  .then(function(){toast(ok+' RDOs salvos em '+(dirH?dirH.name:'sua pasta'));destUI();}).catch(function(err){toast('Parou: '+(err&&err.message||err));destUI();});}
 function alertMsg(t){var p=document.createElement('p');p.className='msg err';p.textContent=t;$('list').prepend(p);setTimeout(function(){p.remove();},5000);}
 $('q').oninput=function(){limit=40;draw();};$('mes').onchange=function(){limit=40;draw();};$('turno').onchange=function(){limit=40;draw();};$('upd').onclick=load;
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='visible')load();});
+if(FS)getH().then(function(h){if(h){dirH=h;destUI();}});
 load();
 })();
 </script>
