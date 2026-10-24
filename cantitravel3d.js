@@ -1,6 +1,6 @@
 /* Ponte Joinville — Cantitravel no 3D (V1.62)
    Dois cantitravels, com a frente virada para o Rio Cachoeira no centro da obra:
-     Adhemar Garcia: começa no eixo 14 e vai até o bloco 10 (hoje está no bloco 10)
+     Adhemar Garcia: começa no eixo 15 e vai até o bloco 10 (hoje está no bloco 10)
      Boa Vista:      começa no eixo 02 e vai até o bloco 9  (hoje está entre o apoio 8 e o 7)
    Cada um é uma plataforma com o piso na cota 8,70 (topo das travessas) do início ao fim, andando sobre duas vigas trilho
    apoiadas em estacas provisórias Ø800, com o guindaste BSM de 170 t no centro. Fica no eixo da ponte: o centro passa
@@ -268,8 +268,8 @@
   var DEFM = { cota: 8.70, Lp: 22, Wp: 16, G: 10, S: 6, Lb: 50 };
   var LIM = { cota: [0, 20], Lp: [12, 40], Wp: [10, 30], G: [4, 24], S: [3, 14], Lb: [20, 80] };
   var UNITS = [
-    { id: 'ag', name: 'Adhemar Garcia', xs: -359.9, dir: 1, endBlock: '10.', endTxt: 'bloco 10',
-      ap: [['Eixo 14', -359.9], ['Apoio 13', -319.7], ['Apoio 12', -279.4], ['Apoio 11', -239.2], ['Bloco 10', -160]] },
+    { id: 'ag', name: 'Adhemar Garcia', xs: -400.2, dir: 1, endBlock: '10.', endTxt: 'bloco 10',
+      ap: [['Eixo 15', -400.2], ['Apoio 14', -359.9], ['Apoio 13', -319.7], ['Apoio 12', -279.4], ['Apoio 11', -239.2], ['Bloco 10', -160]] },
     { id: 'bv', name: 'Boa Vista', xs: 308.1, dir: -1, endBlock: '9.', endTxt: 'bloco 9', initX: 99.4,
       ap: [['Eixo 02', 308.1], ['Apoio 3', 268.1], ['Apoio 4', 223.0], ['Apoio 5', 200.0], ['Apoio 6', 159.8], ['Apoio 7', 119.5], ['Apoio 8', 79.2], ['Bloco 9', 0]] }
   ];
@@ -345,7 +345,15 @@
   function kForFront(r, f) { var best = r.kMin, bd = Infinity; for (var k = r.kMin; k < r.rows.length; k++) { var d = Math.abs(r.rows[k] - f); if (d < bd) { bd = d; best = k; } } return best; }
   function wx(U, u) { return U.xs + U.dir * u; }
 
+  // (V1.63) o início do Adhemar passou do eixo 14 para o eixo 15: posições salvas antes eram contadas do eixo 14
+  var OLD_X0 = { ag: -359.9, bv: 308.1 };
+  function fixStart(U) {
+    var st = S[U.id], x0 = st.x0 == null ? OLD_X0[U.id] : st.x0;
+    if (st.f != null && x0 !== U.xs) st.f = U.dir * (x0 + U.dir * st.f - U.xs);
+    st.x0 = U.xs;
+  }
   function buildUnit(U) {
+    fixStart(U);
     var M = S.m, L = levels(M), st = S[U.id], r = R[U.id];
     if (r && r.root) { r.root.traverse(function (o) { if (o.geometry) o.geometry.dispose(); }); if (r.root.parent) r.root.parent.remove(r.root); }
     var rr = rowsFor(U, M);
@@ -523,7 +531,7 @@
     UNITS.forEach(function (U) {
       if (!ch[U.id] || !R[U.id]) return;
       var r = R[U.id], st = S[U.id];
-      r.root.visible = !!st.on; pose(U);
+      fixStart(U); r.root.visible = !!st.on; pose(U);
       var k = kForFront(r, st.f); if (k !== r.k) goK(U, k); else after();
     });
     ui();
