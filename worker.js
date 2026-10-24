@@ -9,6 +9,7 @@ const KEYS = new Set([
   'ponte-prelaje-v48',     // 3D: marcação manual das pré-lajes
   'ponte-plano-v50',       // 3D: cronograma (datas previstas) para planejado × executado
   'ponte-pintura-v55',     // 3D: peças pintadas à mão como previsão (botão "Pintar peças")
+  'ponte-cantitravel-v62', // 3D: posição, guindaste e medidas dos dois cantitravels
   'alya-pluvio-v1',        // painel de pluviometria
   'alya-paral-v1'          // painel de paralisações
 ]);
@@ -251,6 +252,6 @@ export default {
     }
     if (prof === 'equipe' && isRdo(path)) return blocked('O RDO é usado só pelos apontadores. Você tem acesso ao 3D, à pluviometria e às paralisações.', '/', 'Ir para o início');
     if (path.startsWith('/api/')) return api(req, env, url);
-    return withLoader(await env.ASSETS.fetch(req), path === '/3d' || path === '/3d.html' ? PAD_CSS + '<script src="/ajustes3d.js?v=2" defer></script><script src="/cena3d.js?v=1" defer></script><script src="/eixos3d.js?v=4" defer></script><script src="/clima3d.js?v=3" defer></script><script src="/ficha3d.js?v=5" defer></script><script src="/cronogramas3d.js?v=1" defer></script><script src="/cenarios3d.js?v=1" defer></script><script src="/previsao3d.js?v=6" defer></script><script src="/ocultar3d.js?v=4" defer></script><script src="/pintar3d.js?v=3" defer></script><script src="/batch3d.js?v=1" defer></script><script src="/rdopasta3d.js?v=1" defer></script><script src="/publicar3d.js?v=2" defer></script>' : '');
+    return withLoader(await env.ASSETS.fetch(req), path === '/3d' || path === '/3d.html' ? PAD_CSS + '<script src="/ajustes3d.js?v=2" defer></script><script src="/cena3d.js?v=1" defer></script><script src="/eixos3d.js?v=4" defer></script><script src="/clima3d.js?v=3" defer></script><script src="/ficha3d.js?v=5" defer></script><script src="/cronogramas3d.js?v=1" defer></script><script src="/cenarios3d.js?v=1" defer></script><script src="/previsao3d.js?v=7" defer></script><script src="/ocultar3d.js?v=5" defer></script><script src="/pintar3d.js?v=3" defer></script><script src="/batch3d.js?v=1" defer></script><script src="/rdopasta3d.js?v=1" defer></script><script src="/cantitravel3d.js?v=1" defer></script><script src="/publicar3d.js?v=3" defer></script>' : '');
   }
 };

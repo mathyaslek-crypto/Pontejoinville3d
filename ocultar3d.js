@@ -22,7 +22,16 @@
   function isAdKey(k) { var i = k.indexOf('-'); return i > 0 && ADU.test(k.slice(i + 1)); }
   function forecast(k) { try { var i = k.indexOf('-'); return !!(window.__prev53 && window.__prev53.eff(k.slice(0, i), k.slice(i + 1))); } catch (e) { return false; } }
   function keep(k) { return exec.has(k) || forecast(k); }    // lançada/concretada ou com previsão: continua aparecendo
-  function isHid(k) { return hidden.has(k) || (beamsOff && isBeamKey(k) && !keep(k)) || (adOff && isAdKey(k) && !keep(k)); }
+  // (V1.62) listas de outros módulos: o cantitravel esconde as peças que ficam dentro dele enquanto está ligado
+  var ext = {};
+  function extHas(k) { for (var n in ext) if (ext[n].has(k)) return true; return false; }
+  function isHid(k) { return hidden.has(k) || extHas(k) || (beamsOff && isBeamKey(k) && !keep(k)) || (adOff && isAdKey(k) && !keep(k)); }
+  function setExternal(name, keys) {
+    var s = new Set(keys || []), old = ext[name];
+    if (old ? old.size === s.size && (keys || []).every(function (k) { return old.has(k); }) : !s.size) return;
+    if (s.size) ext[name] = s; else delete ext[name];
+    apply(true);
+  }
 
   function save() { if (PUB) return; try { localStorage.setItem(KEY, JSON.stringify(order)); } catch (e) {} }
   function findPx(scene) { var px = null; scene.traverse(function (o) { if (!px && o.name === 'Peças para seleção') px = o; }); return px; }
@@ -213,6 +222,7 @@
     setPrelajes: function (v) { plOff = !v; wrb(KEY_P, plOff); var c = document.getElementById('av-prelaje'); if (c) c.checked = !!v; prelajes(); },
     refreshKeep: function () { if (beamsOff || adOff) apply(true); },
     get list() { return order.slice(); }, get mode() { return mode; }, get stats() { return stats; },
-    hide: hide, undo: undo, showAll: showAll, setMode: setMode, apply: function () { apply(true); }
+    hide: hide, undo: undo, showAll: showAll, setMode: setMode, apply: function () { apply(true); },
+    setExternal: setExternal, get extCount() { var n = 0; for (var k in ext) n += ext[k].size; return n; }
   };
 })();

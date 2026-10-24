@@ -225,7 +225,7 @@
   // ---------- placas (nomes) ----------
   function hiddenBoxes(px) {
     var out = [], seen = {};
-    if (!window.__oc54 || !window.__oc54.list.length) return out;
+    if (!window.__oc54 || (!window.__oc54.list.length && !window.__oc54.extCount)) return out;
     var acc = {};
     px.children.forEach(function (c) { var u = c.userData || {}; if (!u.b || !u.s || !hid(u.b, u.s)) return; var k = u.b + '|' + u.s, bx = worldBox(c); if (acc[k]) acc[k].union(bx); else acc[k] = bx; });
     if (cache) { cache.plates.forEach(function (a) { if (hid(a.b, a.s) && !acc[a.b + '|' + a.s]) out.push({ x0: a.x0, x1: a.x1, z0: a.z0, z1: a.z1, y0: a.y0, y1: a.y1 }); });
