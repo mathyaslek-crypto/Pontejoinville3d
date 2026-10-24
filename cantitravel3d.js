@@ -1,7 +1,7 @@
 /* Ponte Joinville — Cantitravel no 3D (V1.62)
    Dois cantitravels, com a frente virada para o Rio Cachoeira no centro da obra:
-     Adhemar Garcia: começa no eixo 15 e vai até o bloco 10 (hoje está no bloco 10)
-     Boa Vista:      começa no eixo 02 e vai até o bloco 9  (hoje está entre o apoio 8 e o 7)
+     Adhemar Garcia: começa no meio entre os blocos 15 e 14 e vai até o bloco 10 (hoje está no bloco 10)
+     Boa Vista:      começa no meio entre os blocos 1 e 2 e vai até o bloco 9    (hoje está entre o apoio 8 e o 7)
    Cada um é uma plataforma com o piso na cota 8,70 (topo das travessas) do início ao fim, andando sobre duas vigas trilho
    apoiadas em estacas provisórias Ø800, com o guindaste BSM de 170 t no centro. Fica no eixo da ponte: o centro passa
    entre os blocos .2 e .3. As estacas provisórias são colocadas sem bater nos blocos da ponte.
@@ -268,10 +268,10 @@
   var DEFM = { cota: 8.70, Lp: 22, Wp: 16, G: 10, S: 6, Lb: 50 };
   var LIM = { cota: [0, 20], Lp: [12, 40], Wp: [10, 30], G: [4, 24], S: [3, 14], Lb: [20, 80] };
   var UNITS = [
-    { id: 'ag', name: 'Adhemar Garcia', xs: -400.2, dir: 1, endBlock: '10.', endTxt: 'bloco 10',
-      ap: [['Eixo 15', -400.2], ['Apoio 14', -359.9], ['Apoio 13', -319.7], ['Apoio 12', -279.4], ['Apoio 11', -239.2], ['Bloco 10', -160]] },
-    { id: 'bv', name: 'Boa Vista', xs: 308.1, dir: -1, endBlock: '9.', endTxt: 'bloco 9', initX: 99.4,
-      ap: [['Eixo 02', 308.1], ['Apoio 3', 268.1], ['Apoio 4', 223.0], ['Apoio 5', 200.0], ['Apoio 6', 159.8], ['Apoio 7', 119.5], ['Apoio 8', 79.2], ['Bloco 9', 0]] }
+    { id: 'ag', name: 'Adhemar Garcia', xs: -380.05, dir: 1, endBlock: '10.', endTxt: 'bloco 10', startTxt: 'entre os blocos 15 e 14',
+      ap: [['Início', -380.05], ['Apoio 14', -359.9], ['Apoio 13', -319.7], ['Apoio 12', -279.4], ['Apoio 11', -239.2], ['Bloco 10', -160]] },
+    { id: 'bv', name: 'Boa Vista', xs: 327.85, dir: -1, endBlock: '9.', endTxt: 'bloco 9', initX: 99.4, startTxt: 'entre os blocos 1 e 2',
+      ap: [['Início', 327.85], ['Apoio 2', 308.1], ['Apoio 3', 268.1], ['Apoio 4', 223.0], ['Apoio 5', 200.0], ['Apoio 6', 159.8], ['Apoio 7', 119.5], ['Apoio 8', 79.2], ['Bloco 9', 0]] }
   ];
   function defUnit() { return { on: true, f: null, slew: 0, ang: 72, hook: 20, t: 0 }; }
   var S = { m: Object.assign({ t: 0 }, DEFM), ag: defUnit(), bv: defUnit() };
@@ -345,7 +345,8 @@
   function kForFront(r, f) { var best = r.kMin, bd = Infinity; for (var k = r.kMin; k < r.rows.length; k++) { var d = Math.abs(r.rows[k] - f); if (d < bd) { bd = d; best = k; } } return best; }
   function wx(U, u) { return U.xs + U.dir * u; }
 
-  // (V1.63) o início do Adhemar passou do eixo 14 para o eixo 15: posições salvas antes eram contadas do eixo 14
+  // o início mudou (V1.63: Adhemar no eixo 15; V1.64: Adhemar entre os blocos 15 e 14 e Boa Vista entre os blocos 1 e 2).
+  // A posição salva é contada a partir do início: aqui ela é recalculada para o cantitravel ficar no mesmo lugar.
   var OLD_X0 = { ag: -359.9, bv: 308.1 };
   function fixStart(U) {
     var st = S[U.id], x0 = st.x0 == null ? OLD_X0[U.id] : st.x0;
@@ -578,7 +579,7 @@
           return '<div class="u" data-u="' + U.id + '"><div class="nm"><label><input type="checkbox" data-on="' + U.id + '"' + lock + '> Cantitravel ' + U.name + '</label><small data-st="' + U.id + '"></small></div>' +
             '<div class="ctl"><button type="button" data-a="back" title="Volta uma fila: a estaca da frente some com o trecho de viga trilho"' + lock + '>◀ Recuar</button>' +
             '<button type="button" class="main" data-a="fwd" title="Crava a próxima fila de estacas e anda até ela"' + lock + '>Avançar ▶</button>' +
-            '<select data-a="go" aria-label="Ir até o apoio"' + lock + '><option value="">Ir até…</option>' + U.ap.map(function (a, i) { return '<option value="' + i + '">' + a[0] + '</option>'; }).join('') + '</select>' +
+            '<select data-a="go" aria-label="Ir até o apoio"' + lock + '><option value="">Ir até…</option>' + U.ap.map(function (a, i) { return '<option value="' + i + '">' + a[0] + (i ? '' : ' (' + U.startTxt + ')') + '</option>'; }).join('') + '</select>' +
             '<button type="button" data-a="see" title="Levar a câmera até ele">Ver</button></div>' +
             '<div class="cr"><label>Giro <input type="range" data-c="slew" min="-180" max="180" step="1"' + lock + '><output></output></label>' +
             '<label>Lança <input type="range" data-c="ang" min="30" max="82" step="1"' + lock + '><output></output></label>' +
