@@ -17,6 +17,8 @@
     { k: 'none', l: 'Sem cor', t: 'Tira a cor da peça, inclusive a do cronograma' },
     { k: null, l: 'Cronograma', t: 'Apaga a pintura e volta a usar a data da planilha' }
   ];
+  var PLAN = window.__plan66 || null;   // V1.66: no Planejamento a pintura é do cenário aberto (a página guarda e sincroniza)
+  if (PLAN) { TOOLS[0].l = 'Até o corte'; TOOLS[0].t = 'Pronta até a data de corte do cenário (cinza igual às concluídas)'; TOOLS[1].l = 'Depois do corte'; TOOLS[1].t = 'Depois da data de corte (cor escolhida em "Cor da previsão")'; TOOLS[TOOLS.length - 1].l = 'Tirar pintura'; TOOLS[TOOLS.length - 1].t = 'Tira a pintura da peça (volta ao que a base do cenário indica)'; }
   var synced = false, data = {}, undo = [], mode = false, tool = 'c2', custom = '#9575cd', btn = null, bar = null, canvas = null, down = null, msg = '', serverT = 0, pushing = false, again = false;
   // painel publicado (V1.58): a pintura vem gravada no próprio arquivo, sem nuvem e sem editar
   var PUB = window.__pub58 || null;
@@ -44,13 +46,13 @@
   // ---------- nuvem ----------
   function merge(items) { var ch = false; for (var k in items) { var b = items[k], a = data[k]; if (!b || typeof b.t !== 'number') continue; if (!a || b.t > a.t) { data[k] = b; ch = true; } } return ch; }
   function pull() {
-    if (PUB) return Promise.resolve(false);
+    if (PUB || PLAN) return Promise.resolve(false);
     return fetch(API + '?full=1&keys=' + KEY, { cache: 'no-store' }).then(function (r) { return r.ok && /json/.test(r.headers.get('content-type') || '') ? r.json() : null; })
       .then(function (j) { if (j) synced = true; var s = j && j[KEY]; if (!s || s.v == null) return false; serverT = s.t || 0; var o = {}; try { o = JSON.parse(s.v) || {}; } catch (e) {} var ch = merge(o.items || {}); if (ch) saveLocal(); return ch; })
       .catch(function () { return false; });
   }
   function push() {
-    if (PUB) return;
+    if (PUB || PLAN) return;
     if (pushing) { again = true; return; }
     pushing = true;
     pull().then(function () {
@@ -64,7 +66,7 @@
 
   // ---------- pintar ----------
   function nameOf(key) { try { var r = (window.__v22.rows || []).filter(function (x) { return x.key === key; })[0]; if (r && r.name) return r.name; } catch (e) {} return key; }
-  function label(k) { return k === 'c1' ? 'até 31/12/2026' : k === 'c2' ? 'até 30/03/2027' : k === 'none' ? 'sem cor' : k === null ? 'volta ao cronograma' : 'cor livre'; }
+  function label(k) { if (PLAN && (k === 'c1' || k === 'c2')) return k === 'c1' ? 'até o corte' : 'depois do corte'; return k === 'c1' ? 'até 31/12/2026' : k === 'c2' ? 'até 30/03/2027' : k === 'none' ? 'sem cor' : k === null ? 'volta ao cronograma' : 'cor livre'; }
   function paint(key) {
     var i = key.indexOf('-'), b = key.slice(0, i), s = key.slice(i + 1), k = tool === 'custom' ? custom : tool, fk = pfx() + key;
     if (k !== null && k !== 'none' && window.__prev53 && window.__prev53.pending && window.__prev53.pending(b, s) === 0) { msg = nameOf(key) + ' já está executada'; ui(); return; }
@@ -170,7 +172,7 @@
     var col = c2();
     bar.innerHTML = '<div class="r"><b>Pintar</b>' + TOOLS.map(function (t, i) {
       var k = t.k, sel = k === tool ? 'true' : 'false', sw = k === 'c1' ? '#969ba0' : k === 'c2' ? col : k === 'custom' ? custom : k && k[0] === '#' ? k : null;
-      var lb = t.l && innerWidth < 760 ? (k === 'c1' ? '31/12' : k === 'c2' ? '30/03' : t.l) : t.l;
+      var lb = t.l && innerWidth < 760 ? (k === 'c1' ? (PLAN ? 'Corte' : '31/12') : k === 'c2' ? (PLAN ? 'Depois' : '30/03') : t.l) : t.l;
       var inner = (sw ? '<i style="background:' + sw + (k === 'custom' ? ';outline:2px dashed #fff6;outline-offset:1px' : '') + '"></i>' : '') + (lb ? esc(lb) : '');
       return '<button type="button" data-i="' + i + '" class="' + (t.l ? '' : 'sw') + '" title="' + esc(t.t) + '" aria-label="' + esc(t.t) + '" aria-pressed="' + sel + '">' + inner + '</button>';
     }).join('') + '<input type="color" aria-label="Escolher outra cor" value="' + custom + '"></div>' +
@@ -185,7 +187,10 @@
   setInterval(function () { if (window.__v40 && window.__v40.scene) { mount(); bindCanvas(); } }, 400);
   window.__pt55 = { get: val, get mode() { return mode; }, setMode: setMode, get items() { return itemsOf(scen()); }, get all() { return JSON.parse(JSON.stringify(data)); }, get custom() { return custom; }, setTool: function (k) { tool = k; ui(); }, paint: paint, undo: undoLast, pull: pull,
     scenarios: userScens, countFor: countFor, itemsOf: itemsOf, create: createScen, rename: renameScen, remove: deleteScen, copyFrom: copyPaint,
-    switched: function () { undo = []; msg = ''; refresh(); }, get synced() { return synced; } };
+    switched: function () { undo = []; msg = ''; refresh(); }, get synced() { return synced; },
+    // V1.66 (Planejamento): várias peças de uma vez, sem desfazer (vigas da treliça lançadeira) e redesenho dos rótulos
+    setMany: function (map) { var t = Date.now(), p = pfx(); for (var k in map) data[p + k] = { c: map[k], t: t }; saveLocal(); refresh(); push(); },
+    refresh: function () { ui(); } };
   pubScens();
-  (function hookScen() { var C = window.__cen59; if (!C) { setTimeout(hookScen, 300); return; } C.on(function () { undo = []; msg = ''; ui(); }); pubScens(); })();
+  (function hookScen() { if (PLAN) return; var C = window.__cen59; if (!C) { setTimeout(hookScen, 300); return; } C.on(function () { undo = []; msg = ''; ui(); }); pubScens(); })();
 })();

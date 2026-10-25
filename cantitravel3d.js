@@ -14,6 +14,7 @@
 (function () {
   'use strict';
   var PUB = window.__pub58 || null, KEY = 'ponte-cantitravel-v62', API = '/api/state', GROUND = -6.5;
+  var PLAN = window.__plan66 || null;   // V1.66: no Planejamento a posição é do cenário aberto (a página guarda e sincroniza)
 
   // ======================= geometria (triângulos com cor por vértice) =======================
   var add = function (a, b) { return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]; };
@@ -505,7 +506,7 @@
   function saveLocal() { if (PUB) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
   function touch(part) { if (PUB) return; S[part].t = Date.now(); saveLocal(); clearTimeout(pushT); pushT = setTimeout(push, 1200); }
   function pull() {
-    if (PUB) return Promise.resolve(false);
+    if (PUB || PLAN) return Promise.resolve(false);
     return fetch(API + '?full=1&keys=' + KEY, { cache: 'no-store' }).then(function (r) { return r.ok && /json/.test(r.headers.get('content-type') || '') ? r.json() : null; })
       .then(function (j) {
         if (j) synced = true; var s = j && j[KEY]; if (!s || s.v == null) return false;
@@ -517,7 +518,7 @@
       }).catch(function () { return false; });
   }
   function push() {
-    if (PUB) return; if (pushing) { again = true; return; }
+    if (PUB || PLAN) return; if (pushing) { again = true; return; }
     pushing = true;
     pull().then(function (ch) {
       if (ch) applyRemote(ch);
@@ -574,7 +575,7 @@
     if (!box) {
       box = document.createElement('section'); box.id = 'ct62';
       var lock = PUB ? ' disabled' : '';
-      box.innerHTML = '<header><b>Cantitravel · ajustes</b><span>Frentes de estaca · andam até os blocos 10 e 9, de frente para o Rio Cachoeira</span><em id="ct62-sync"></em></header>' +
+      box.innerHTML = '<header><b>Cantitravel · ajustes</b><span>' + (PLAN ? 'Posição dos cantitravels neste cenário' : 'Frentes de estaca · andam até os blocos 10 e 9, de frente para o Rio Cachoeira') + '</span><em id="ct62-sync"></em></header>' +
         UNITS.map(function (U) {
           return '<div class="u" data-u="' + U.id + '"><div class="nm"><label><input type="checkbox" data-on="' + U.id + '"' + lock + '> Cantitravel ' + U.name + '</label><small data-st="' + U.id + '"></small></div>' +
             '<div class="ctl"><button type="button" data-a="back" title="Volta uma fila: a estaca da frente some com o trecho de viga trilho"' + lock + '>◀ Recuar</button>' +
@@ -585,7 +586,7 @@
             '<label>Lança <input type="range" data-c="ang" min="30" max="82" step="1"' + lock + '><output></output></label>' +
             '<label>Gancho <input type="range" data-c="hook" min="2" max="45" step="0.5"' + lock + '><output></output></label></div></div>';
         }).join('') +
-        (PUB ? '<p class="pub">Dashboard publicado: os cantitravels ficam na posição do momento da publicação.</p>' :
+        (PUB ? '<p class="pub">Dashboard publicado: os cantitravels ficam na posição do momento da publicação.</p>' : PLAN ? '' :
         '<details open><summary>Medidas do cantitravel <small>provisório: ajuste aqui, me mande um print e eu deixo fixo</small></summary><div class="md">' +
           [['cota', 'Cota do piso (topo da travessa)', 0.05], ['Lp', 'Comprimento da plataforma (m)', 0.5], ['Wp', 'Largura da plataforma (m)', 0.5], ['G', 'Vigas trilho, eixo a eixo (m)', 0.25], ['S', 'Espaçamento das estacas (m)', 0.25], ['Lb', 'Comprimento da lança (m)', 1]]
             .map(function (d) { return '<label>' + d[1] + '<input type="number" data-m="' + d[0] + '" step="' + d[2] + '" min="' + LIM[d[0]][0] + '" max="' + LIM[d[0]][1] + '"></label>'; }).join('') +
@@ -624,7 +625,8 @@
         S[U.id][t.dataset.c] = Number(t.value); pose(U); outputs(); clearTimeout(cTimer); cTimer = setTimeout(function () { touch(U.id); }, 500);
       });
     }
-    if (box.previousElementSibling !== sc) { sc.after(box); ui(); }   // logo abaixo do 3D, antes de "Carros de avanço"
+    var anchor = document.getElementById('pl66') || sc;              // no Planejamento: logo abaixo do painel de cenários
+    if (box.previousElementSibling !== anchor) { anchor.after(box); ui(); }   // logo abaixo do 3D, antes de "Carros de avanço"
     return true;
   }
   var cTimer = null;
@@ -648,7 +650,7 @@
     outputs();
     box.querySelectorAll('[data-m]').forEach(function (inp) { if (document.activeElement !== inp) inp.value = S.m[inp.dataset.m]; });
     var sy = document.getElementById('ct62-sync');
-    if (sy) sy.textContent = PUB ? '' : lastPush && Date.now() - lastPush < 8000 ? '✓ Salvo na nuvem' : synced ? 'Igual em todos os computadores' : '';
+    if (sy) sy.textContent = PUB || PLAN ? '' : lastPush && Date.now() - lastPush < 8000 ? '✓ Salvo na nuvem' : synced ? 'Igual em todos os computadores' : '';
   }
   function see(U) {
     var r = R[U.id], v = window.__v22; if (!r || !v || !v.camera || !v.controls) return;
@@ -674,7 +676,7 @@
   }
   function boxesPlat() { var b = []; UNITS.forEach(function (U) { if (R[U.id]) b = b.concat(boxesOf(U).filter(function (x) { return x.kind === 'plat'; })); }); return b; }
   setInterval(tick, 400);
-  if (!PUB) {
+  if (!PUB && !PLAN) {
     pull().then(function (ch) { if (ch) applyRemote(ch); ui(); });
     setInterval(function () { if (document.visibilityState === 'visible' && !pushing) pull().then(function (ch) { if (ch) applyRemote(ch); ui(); }); }, 45000);
     document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && !pushing) pull().then(function (ch) { if (ch) applyRemote(ch); ui(); }); });

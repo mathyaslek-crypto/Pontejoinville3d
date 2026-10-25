@@ -25,7 +25,9 @@
     try { var o = window.__oc54; if (o) { oc.hidden = o.list || []; oc.beamsOff = !!o.beamsOff; oc.adOff = !!o.adOff; oc.plOff = !!o.prelajeOff; } } catch (e) {}
     try { var c = window.__cena58; if (c) { cena['ponte-bonecos-v58'] = !!c.workers; cena['ponte-barco-v58'] = !!c.boat; } } catch (e) {}
     try { if (window.__ct62) ct = window.__ct62.snapshot(); } catch (e) {}   // (V1.62) cantitravels na posição do momento
-    return { at: new Date().toISOString(), paint: paint, prev: prev, oc: oc, cena: cena, cen: cen, ct: ct };
+    var plan = null, ls = null;   // (V1.66) cenário do Planejamento: data de corte, base e o que o 3D guardou nele (treliças, aparência…)
+    try { if (window.__plan66 && window.__pl66) { var P = window.__plan66; plan = { id: P.id, nome: P.nome, data: P.data, base: P.base }; ls = window.__pl66.snapLS(); } } catch (e) {}
+    return { at: new Date().toISOString(), paint: paint, prev: prev, oc: oc, cena: cena, cen: cen, ct: ct, plan: plan, ls: ls };
   }
   function safe(js) { return String(js).replace(/<\/script/gi, '<\\/script').replace(/<!--/g, '<\\!--'); }
 
@@ -34,6 +36,8 @@
     while ((m = re.exec(html))) tags.push({ full: m[0], name: m[1], url: '/' + m[1] + '.js' + (m[2] || '') });
     return Promise.all(tags.map(function (t) {
       if (SKIP.test(t.name)) return Promise.resolve('');
+      // o planejamento separa o armazenamento antes do 3D abrir: entra sem esperar a página carregar
+      if (t.name === 'planejamento3d') return fetch(t.url, { cache: 'force-cache' }).then(function (r) { if (!r.ok) throw Error(t.name + ': ' + r.status); return r.text(); }).then(function (code) { return '<script>/* planejamento3d.js */' + safe(code) + '\n<\/script>'; });
       return fetch(t.url, { cache: 'force-cache' }).then(function (r) { if (!r.ok) throw Error(t.name + ': ' + r.status); return r.text(); })
         .then(function (code) { return '<script>/* ' + t.name + '.js */document.addEventListener("DOMContentLoaded",function(){' + safe(code) + '\n});<\/script>'; });
     })).then(function (codes) {
@@ -50,7 +54,8 @@
   HTMLAnchorElement.prototype.click = function () {
     var a = this;
     if (a.download && /^Dashboard_/i.test(a.download) && blobs.has(a.href) && !a.dataset.pub58) {
-      var name = a.download.replace(/\.html?$/i, '') + '_cenario.html';
+      var P = window.__plan66, slug = P ? String(P.nome).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 40) : '';
+      var name = P ? 'Planejamento_' + (slug || 'cenario') + '_corte_' + String(P.data || '').replace(/-/g, '') + '.html' : a.download.replace(/\.html?$/i, '') + '_cenario.html';
       note('Montando o dashboard com a previsão atual…');
       blobs.get(a.href).text().then(build).then(function (html) {
         var url = origURL.call(URL, new Blob([html], { type: 'text/html;charset=utf-8' })), b = document.createElement('a');

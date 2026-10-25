@@ -10,6 +10,7 @@ const KEYS = new Set([
   'ponte-plano-v50',       // 3D: cronograma (datas previstas) para planejado × executado
   'ponte-pintura-v55',     // 3D: peças pintadas à mão como previsão (botão "Pintar peças")
   'ponte-cantitravel-v62', // 3D: posição, guindaste e medidas dos dois cantitravels
+  'ponte-planejamento-v66', // Planejamento: cenários (data de corte, base, pintura, cantitravels, treliças e aparência)
   'alya-pluvio-v1',        // painel de pluviometria
   'alya-paral-v1'          // painel de paralisações
 ]);
@@ -228,6 +229,30 @@ html body #pad50#pad50 .c::after{display:none}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){html body #pad50#pad50 .dp,html body #pad50#pad50 .side{background:#11151be6}}
 </style>`;
 
+// ---------- scripts do 3D (injetados no 3d.html, que não é editado) ----------
+const S3D = [
+  ['ajustes3d', 2],
+  ['cena3d', 1],
+  ['eixos3d', 4],
+  ['clima3d', 3],
+  ['ficha3d', 5],
+  ['cronogramas3d', 3],
+  ['cenarios3d', 1],
+  ['previsao3d', 8],
+  ['ocultar3d', 5],
+  ['pintar3d', 4],
+  ['batch3d', 1],
+  ['rdopasta3d', 1],
+  ['cantitravel3d', 4],
+  ['publicar3d', 4]
+];
+const tag3d = (n, v) => '<script src="/' + n + '.js?v=' + v + '" defer></script>';
+const INJ_3D = PAD_CSS + S3D.map(([n, v]) => tag3d(n, v)).join('');
+// V1.66 — Planejamento: o mesmo 3D, com o armazenamento separado por cenário (planejamento3d.js roda antes do 3D, sem defer)
+// e sem o que é só da produção (cenários do cronograma e leitura da Pasta do RDO).
+const PLAN_SKIP = new Set(['cenarios3d', 'rdopasta3d']);
+const INJ_PLAN = PAD_CSS + '<script src="/planejamento3d.js?v=1"></script>' + S3D.filter(([n]) => !PLAN_SKIP.has(n)).map(([n, v]) => tag3d(n, v)).join('');
+
 async function withLoader(res, extra = '') {
   const ct = res.headers.get('content-type') || '';
   if (res.status !== 200 || !ct.includes('text/html')) return res;
@@ -252,6 +277,7 @@ export default {
     }
     if (prof === 'equipe' && isRdo(path)) return blocked('O RDO é usado só pelos apontadores. Você tem acesso ao 3D, à pluviometria e às paralisações.', '/', 'Ir para o início');
     if (path.startsWith('/api/')) return api(req, env, url);
-    return withLoader(await env.ASSETS.fetch(req), path === '/3d' || path === '/3d.html' ? PAD_CSS + '<script src="/ajustes3d.js?v=2" defer></script><script src="/cena3d.js?v=1" defer></script><script src="/eixos3d.js?v=4" defer></script><script src="/clima3d.js?v=3" defer></script><script src="/ficha3d.js?v=5" defer></script><script src="/cronogramas3d.js?v=3" defer></script><script src="/cenarios3d.js?v=1" defer></script><script src="/previsao3d.js?v=7" defer></script><script src="/ocultar3d.js?v=5" defer></script><script src="/pintar3d.js?v=3" defer></script><script src="/batch3d.js?v=1" defer></script><script src="/rdopasta3d.js?v=1" defer></script><script src="/cantitravel3d.js?v=3" defer></script><script src="/publicar3d.js?v=3" defer></script>' : '');
+    if (path === '/planejamento' || path === '/planejamento.html') return withLoader(await env.ASSETS.fetch(new Request(url.origin + '/3d', req)), INJ_PLAN);
+    return withLoader(await env.ASSETS.fetch(req), path === '/3d' || path === '/3d.html' ? INJ_3D : '');
   }
 };

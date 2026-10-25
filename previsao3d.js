@@ -15,16 +15,21 @@
 (function () {
   'use strict';
   // V1.59: os cronogramas ficam em cronogramas3d.js (um por cenário-base); o cenário ativo vem de cenarios3d.js
-  var T = [], D = {}, BASE = null;
+  var T = [], D = {}, BASE = null, PLAN = window.__plan66 || null;   // V1.66: Planejamento (data de corte e base do cenário)
   function loadBase() {
+    if (PLAN && PLAN.base === 'zero') { if (BASE === 'zero') return false; BASE = 'zero'; T = []; D = {}; return true; }   // do zero: só a pintura
     var src = window.__cronData59, C = window.__cen59; if (!src || !src.bases || !src.bases.length) return false;
-    var id = C ? C.baseOf(C.active()) : src.padrao, b = null;
+    var id = PLAN ? PLAN.base : C ? C.baseOf(C.active()) : src.padrao, b = null;
     src.bases.forEach(function (x) { if (x.id === id) b = x; }); if (!b) b = src.bases[0];
     if (b.id === BASE) return false; BASE = b.id; T = b.T; D = b.D; return true;
   }
   loadBase();
 
-  var CUT1 = '2026-12-31', CUT2 = '2027-03-30';
+  // até CUT1: cinza igual às concluídas · até CUT2: cor da previsão. No Planejamento as duas são a data de corte do cenário
+  // (do cronograma entra só o que termina até o corte; a cor fica para as peças pintadas "depois do corte").
+  function cut1() { return PLAN && PLAN.data ? PLAN.data : '2026-12-31'; }
+  function cut2() { return PLAN && PLAN.data ? PLAN.data : '2027-03-30'; }
+  function brd(d) { return d ? d.slice(8, 10) + '/' + d.slice(5, 7) + '/' + d.slice(0, 4) : ''; }
   var DONE = 0x969ba0, DONE_EDGE = 0x617385;
   var KEY = 'ponte-previsao-v53', KEY_STYLE = 'ponte-previsao-cor-v54';
   var DEF = { color: '#f6d34a', opacity: 0.46 };
@@ -49,7 +54,7 @@
   function rgba(c, a) { var x = hex(c); return 'rgba(' + ((x >> 16) & 255) + ',' + ((x >> 8) & 255) + ',' + (x & 255) + ',' + a + ')'; }
 
   function get(b, s) { var r = D[b + '-' + s]; return r ? [r[0], r[1], T[r[2]]] : null; }
-  function bandOf(end) { return end <= CUT1 ? 'c1' : end <= CUT2 ? 'c2' : null; }
+  function bandOf(end) { return end <= cut1() ? 'c1' : end <= cut2() ? 'c2' : null; }
   function band(b, s) { var r = D[b + '-' + s]; return r ? bandOf(r[1]) : null; }
   function manual(b, s) { try { return window.__pt55 ? window.__pt55.get(b + '-' + s) : null; } catch (e) { return null; } }
   // cor usada na peça: pintura manual ('c1', 'c2', '#cor' ou 'none' = sem cor) ou, sem pintura, a faixa do cronograma
@@ -329,8 +334,10 @@
     if (leg.parentElement !== host) host.append(leg);
     var g = ghostOn(), note = !g && cache && !layoutOK ? '<small>Volte à vista geral da ponte para ver a previsão sem as partes não iniciadas.</small>' : '';
     var sm = innerWidth < 760;
-    var C = window.__cen59, cn = C ? C.name(C.active()) : '';
-    leg.innerHTML = '<b>Previsão do cronograma</b>' + (cn ? '<small class="cn59">Cenário: ' + cn.replace(/[&<>]/g, '') + '</small>' : '') + '<div><i style="background:#969ba0"></i><span>' + (sm ? 'Concluída ou prev. até 31/12/26' : 'Concluída ou prevista até 31/12/2026') + '</span><em>' + counts.c1 + (sm ? '' : ' prev.') + '</em></div><div><i style="background:' + rgba(style.color, Math.max(0.35, style.opacity)) + ';border-color:' + mix(style.color, 0, 0.28) + '"></i><span>' + (sm ? 'Prevista até 30/03/27' : 'Prevista de 01/01 a 30/03/2027') + '</span><em>' + counts.c2 + '</em></div>' +
+    var C = window.__cen59, cn = PLAN ? PLAN.nome + ' · corte ' + brd(PLAN.data) : C ? C.name(C.active()) : '';
+    var l1 = PLAN ? (sm ? 'Concluída ou até ' + brd(PLAN.data).slice(0, 6) + brd(PLAN.data).slice(8) : 'Concluída ou prevista até ' + brd(PLAN.data)) : (sm ? 'Concluída ou prev. até 31/12/26' : 'Concluída ou prevista até 31/12/2026');
+    var l2 = PLAN ? 'Pintada depois do corte' : (sm ? 'Prevista até 30/03/27' : 'Prevista de 01/01 a 30/03/2027');
+    leg.innerHTML = '<b>' + (PLAN ? 'Planejamento' : 'Previsão do cronograma') + '</b>' + (cn ? '<small class="cn59">Cenário: ' + cn.replace(/[&<>]/g, '') + '</small>' : '') + '<div><i style="background:#969ba0"></i><span>' + l1 + '</span><em>' + counts.c1 + (sm ? '' : ' prev.') + '</em></div><div><i style="background:' + rgba(style.color, Math.max(0.35, style.opacity)) + ';border-color:' + mix(style.color, 0, 0.28) + '"></i><span>' + l2 + '</span><em>' + counts.c2 + '</em></div>' +
       Object.keys(ccounts).map(function (c) { return '<div><i style="background:' + rgba(c, Math.max(0.35, style.opacity)) + ';border-color:' + mix(c, 0, 0.28) + '"></i><span>Pintura livre</span><em>' + ccounts[c] + '</em></div>'; }).join('') + note;
   }
   function mountBtn() {
@@ -358,7 +365,7 @@
   function buildPanel() {
     css();
     pan = document.createElement('div'); pan.id = 'pc54-pan'; pan.hidden = true; pan.setAttribute('role', 'dialog'); pan.setAttribute('aria-label', 'Cor da previsão');
-    pan.innerHTML = '<h4>Previsão de 01/01 a 30/03/2027</h4><p>Até 31/12/2026 a previsão fica no mesmo cinza das peças concluídas.</p><div class="sw">' +
+    pan.innerHTML = (PLAN ? '<h4>Peças pintadas depois do corte</h4><p>Até a data de corte as peças ficam no mesmo cinza das concluídas.</p>' : '<h4>Previsão de 01/01 a 30/03/2027</h4><p>Até 31/12/2026 a previsão fica no mesmo cinza das peças concluídas.</p>') + '<div class="sw">' +
       SWATCHES.map(function (s) { return '<button type="button" data-c="' + s[1] + '" title="' + s[0] + '" aria-label="' + s[0] + '" style="background:' + s[1] + '"></button>'; }).join('') +
       '<button type="button" data-c="custom" title="Outra cor" aria-label="Outra cor" style="background:conic-gradient(#ef5350,#f6d34a,#66bb6a,#26c6da,#42a5f5,#9575cd,#f06292,#ef5350)"></button></div>' +
       '<label><span>Outra cor</span><input type="color" aria-label="Escolher outra cor"></label>' +
@@ -428,6 +435,7 @@
   setInterval(flipPlates, 250);
   // troca de cenário: outro cronograma e/ou outra pintura
   (function hookScen() {
+    if (PLAN) return;
     var C = window.__cen59; if (!C) { setTimeout(hookScen, 300); return; }
     C.on(function () { loadBase(); lastPx = null; legend(); tick(); });
     if (loadBase()) { lastPx = null; }
@@ -440,7 +448,7 @@
       cache.items.forEach(function (it) { if (it.b === b && it.s === s && (g ? it.ghost : !!cu && !cu.present[it.key] && !!cu.bset[it.b])) n++; });
       return n; },
     get customCounts() { return ccounts; },
-    refresh: function () { lastPx = null; tick(); },
+    refresh: function () { lastPx = null; tick(); try { legend(); } catch (e) {} },
     chipStyle: function (b, s) { var k = eff(b, s); if (k && k[0] === '#') return { bg: rgba(k, 0.22), fg: mix(k, 255, 0.45) }; return k === 'c1' ? { bg: '#969ba033', fg: '#dfe3e7' } : k === 'c2' ? { bg: rgba(style.color, 0.22), fg: mix(style.color, 255, 0.45) } : { bg: '#ffffff14', fg: '#c9d0d8' }; },
     get style() { return { color: style.color, opacity: style.opacity }; },
     setStyle: function (c, o) { if (c) style.color = c; if (o != null) style.opacity = Math.max(0.1, Math.min(1, o)); saveStyle(); applyStyle(); state(); },
