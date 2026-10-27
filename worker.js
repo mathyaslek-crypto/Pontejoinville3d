@@ -243,7 +243,7 @@ const S3D = [
   ['pintar3d', 4],
   ['batch3d', 1],
   ['rdopasta3d', 1],
-  ['cantitravel3d', 4],
+  ['cantitravel3d', 5],
   ['publicar3d', 4]
 ];
 const tag3d = (n, v) => '<script src="/' + n + '.js?v=' + v + '" defer></script>';

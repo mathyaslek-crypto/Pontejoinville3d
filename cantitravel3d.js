@@ -7,6 +7,7 @@
    entre os blocos .2 e .3. As estacas provisórias são colocadas sem bater nos blocos da ponte.
    Avançar: aparece a próxima fila de estacas com o trecho de viga trilho e a plataforma anda até ela.
    Recuar: a plataforma volta e a fila da frente some junto com o trecho de viga trilho (camisas sacadas e trilho desmontado).
+   Frente (V1.67): 4 gabaritos fechados de 3,00 × 3,00 × 3,50 m lado a lado, no lugar da antiga plataforma de cravação.
    Onde o cantitravel passa ele vale mais que o desenho da ponte: as peças que ficam dentro dele somem enquanto ele está ligado.
    Painel "Cantitravel · ajustes" logo abaixo do 3D: liga/desliga cada um, avança/recua, vai até um apoio, guindaste e as
    medidas (provisórias, para ajustar na tela). Tudo fica salvo na nuvem e aparece igual em todos os computadores;
@@ -30,7 +31,7 @@
   var COL = {
     deck: 0x8a4f2f, frame: 0x9b4f26, frame2: 0xa85a2c, truss: 0xb4602d, rail: 0x7d4428, railDark: 0x5e3420,
     yellow: 0xd9a21b, steel: 0x6f7378, stop: 0xe0b31e, cap: 0x6e3d24, capDark: 0x4f2b19, pile: 0x7a4026,
-    pileHead: 0x4a2a1a, guard: 0xd9782e, grate: 0x8f6a4c, bogie: 0x3f4448, wheel: 0x24282b,
+    pileHead: 0x4a2a1a, guard: 0xd9782e, grate: 0x8f6a4c, bogie: 0x3f4448, wheel: 0x24282b, gab: 0xc8652a, gabDk: 0x93451f,
     crane: 0xf2b705, craneDk: 0xd29b00, dark: 0x2e3236, track: 0x33363a, trackDk: 0x232527, roller: 0x1d1f21,
     glass: 0x1d2a33, cw: 0x868b91, cwDk: 0x5d6166, red: 0xc8202a, white: 0xeeeeee, hook: 0xe2a400
   };
@@ -141,11 +142,10 @@
     for (s = -1; s <= 1; s += 2) truss([-hx, 0, s * hz], [hx, 0, s * hz], nb);
     var nzT = Math.max(3, Math.round(M.Wp / 2.75));
     for (s = -1; s <= 1; s += 2) truss([s * hx, 0, -hz], [s * hx, 0, hz], nzT);
-    var e = 0.12, stz0 = -hz + 0.5, stz1 = -hz + 1.5;
+    var e = 0.12;
     g.guard([-hx + e, H, -hz + e], [hx - e, H, -hz + e], C.guard);
     g.guard([-hx + e, H, hz - e], [hx - e, H, hz - e], C.guard);
     g.guard([-hx + e, H, -hz + e], [-hx + e, H, hz - e], C.guard);
-    g.guard([hx - e, H, stz1 + 0.05], [hx - e, H, hz - e], C.guard);
     for (var sx = -1; sx <= 1; sx += 2) for (s = -1; s <= 1; s += 2) {
       x = sx * (hx - 2.5); z = s * G2;
       g.box(x - 1.2, L.railTop + 0.62, z - 0.45, x + 1.2, fb, z + 0.45, C.bogie);
@@ -153,41 +153,83 @@
       g.box(x - 1.05, L.railTop + 0.05, z + 0.16, x + 1.05, L.railTop + 0.66, z + 0.22, C.bogie);
       [-0.68, 0.68].forEach(function (dx) { g.tube([x + dx, L.railTop + 0.3, z - 0.1], [x + dx, L.railTop + 0.3, z + 0.1], 0.3, C.wheel, 14, true); });
     }
-    var Lg = Math.max(3.5, M.S - 1.8), gx0 = hx, gx1 = hx + Lg, gz = hz + 1.5, xg = hx + M.S - 3.25, o = 0.8;
-    var floor = function (x0, x1, z0, z1) { if (x1 - x0 > 0.05 && z1 - z0 > 0.05) g.box(x0, Hg - 0.06, z0, x1, Hg, z1, g.jit(C.grate, 0.05)); };
-    floor(gx0, xg - o, -gz, gz); floor(xg + o, gx1, -gz, gz);
-    floor(xg - o, xg + o, -gz, -G2 - o); floor(xg - o, xg + o, -G2 + o, G2 - o); floor(xg - o, xg + o, G2 + o, gz);
-    [-gz + 0.1, -G2 - o - 0.1, -G2 + o + 0.1, 0, G2 - o - 0.1, G2 + o + 0.1, gz - 0.1].forEach(function (fz) {
-      g.box(gx0 - 0.2, Hg - 0.36, fz - 0.1, gx1, Hg - 0.06, fz + 0.1, C.frame);
-      g.box(gx0 - 0.2, Hg - 0.36, fz - 0.12, gx0 + 0.05, fb + 0.05, fz + 0.12, C.frame);
-    });
-    g.box(gx1 - 0.2, Hg - 0.36, -gz, gx1, Hg - 0.06, gz, C.frame);
-    [-gz + 0.1, 0, gz - 0.1].forEach(function (fz) { g.tube([gx0, H - 0.25, fz], [gx1 - 0.15, Hg + 0.02, fz], 0.07, C.truss, 8); });
-    [-G2, G2].forEach(function (zc) {
-      g.box(xg - o, Hg, zc - o, xg + o, Hg + 0.25, zc - o + 0.2, C.frame2); g.box(xg - o, Hg, zc + o - 0.2, xg + o, Hg + 0.25, zc + o, C.frame2);
-      g.box(xg - o, Hg, zc - o, xg - o + 0.2, Hg + 0.25, zc + o, C.frame2); g.box(xg + o - 0.2, Hg, zc - o, xg + o, Hg + 0.25, zc + o, C.frame2);
-      for (var k = 0; k < 14; k++) { var a0 = k / 14 * Math.PI * 2, a1 = (k + 1) / 14 * Math.PI * 2, r = 0.58; g.tube([xg + Math.cos(a0) * r, Hg + 0.32, zc + Math.sin(a0) * r], [xg + Math.cos(a1) * r, Hg + 0.32, zc + Math.sin(a1) * r], 0.06, C.dark, 6); }
-    });
-    g.guard([gx1 - e, Hg, -gz + e], [gx1 - e, Hg, gz - e], C.guard);
-    for (s = -1; s <= 1; s += 2) {
-      var zi = s * hz, zo = s * gz;
-      g.box(0, Hg - 0.06, Math.min(zi, zo), gx0, Hg, Math.max(zi, zo), g.jit(C.grate, 0.05));
-      for (x = 0; x <= hx + 0.01; x += bay) {
-        g.box(x - 0.1, Hg - 0.36, Math.min(zi, zo), x + 0.1, Hg - 0.06, Math.max(zi, zo), C.frame);
-        g.box(x - 0.1, Hg - 0.36, zi - 0.1, x + 0.1, fb + 0.05, zi + 0.1, C.frame);
-        g.tube([x, H - 0.25, zi], [x, Hg + 0.02, zo - s * 0.1], 0.06, C.truss, 8);
-      }
-      g.guard([0, Hg, zo - s * e], [gx1 - e, Hg, zo - s * e], C.guard);
-      g.guard([e, Hg, zi], [e, Hg, zo - s * e], C.guard);
+    // V1.67: a plataforma de cravação de baixo (galerias e escada) saiu; na frente entram os 4 gabaritos
+    var Q = buildGab(g, M, L);
+    if (hz - e - Q.zf > 0.3) {                                       // guarda-corpo da frente só fora da passarela dos gabaritos
+      g.guard([hx - e, H, Q.zf + 0.05], [hx - e, H, hz - e], C.guard);
+      g.guard([hx - e, H, -hz + e], [hx - e, H, -Q.zf - 0.05], C.guard);
     }
-    var run = 2.3, nst = 9;
-    [stz0, stz1].forEach(function (zz) {
-      g.beam([hx, H, zz], [hx + run, Hg, zz], 0.06, 0.26, C.frame2, [0, 1, 0]);
-      g.tube([hx, H + 0.95, zz], [hx + run, Hg + 0.95, zz], 0.025, C.guard, 6);
-      g.beam([hx + run, Hg, zz], [hx + run, Hg + 0.95, zz], 0.05, 0.05, C.guard, [1, 0, 0]);
+    return { geo: g, gab: Q };
+  }
+  // ---------- gabaritos (V1.67) ----------
+  // 4 gabaritos fechados (cubo), lado a lado, presos na frente da plataforma por uma passarela no nível do piso.
+  // Cada um: 3,00 × 3,00 m em planta e 3,50 m de altura (do piso 8,70 para baixo), X nas 4 faces, piso em grade em cima,
+  // no meio e embaixo, escada por dentro e anel-guia com 4 roletes em cima e embaixo. Os anéis ficam na próxima fila de
+  // estacas (S − 3,25 à frente da plataforma); os das pontas (G1 e G4) ficam no eixo das vigas trilho.
+  var GAB = { w: 3.0, h: 3.5, ring: 0.6 };
+  function gabOf(M) {
+    var G2 = M.G / 2, hx = M.Lp / 2, w = Math.max(1.6, Math.min(GAB.w, 2 * G2 / 3 - 0.2));
+    var xc = Math.max(hx + M.S - 3.25, hx + w / 2 + 0.3);
+    return { w: w, h: GAB.h, xc: xc, x0: xc - w / 2, x1: xc + w / 2, zs: [G2, G2 / 3, -G2 / 3, -G2], zf: G2 + w / 2 };
+  }
+  function buildGab(g, M, L) {
+    var Q = gabOf(M), H = L.H, Hb = H - Q.h, Hm = (H + Hb) / 2, hx = M.Lp / 2, fb = L.frameBot;
+    var w = Q.w, x0 = Q.x0, x1 = Q.x1, xc = Q.xc, zf = Q.zf, o = GAB.ring + 0.25, t = 0.18, e = 0.12, k;
+    var col = C.gab, dk = C.gabDk;
+    var fl = function (y, xa, xb, za, zb) { if (xb - xa > 0.05 && zb - za > 0.05) g.box(xa, y - 0.06, za, xb, y, zb, g.jit(C.grate, 0.05)); };
+    // piso de cada gabarito: abertura do anel no centro e alçapão da escada no canto de trás
+    var cubeFloor = function (y, zc) {
+      var za = zc - w / 2, zb = zc + w / 2;
+      fl(y, x0, xc - o, za, zb - 0.9); fl(y, x0, xc - o, zb - 0.25, zb);
+      fl(y, xc + o, x1, za, zb); fl(y, xc - o, xc + o, za, zc - o); fl(y, xc - o, xc + o, zc + o, zb);
+    };
+    // passarela entre a plataforma e os gabaritos, e o piso entre um gabarito e outro
+    fl(H, hx, x0, -zf, zf);
+    var zz = Q.zs.slice().sort(function (a, b) { return a - b; });
+    for (k = 0; k < zz.length - 1; k++) fl(H, x0, x1, zz[k] + w / 2, zz[k + 1] - w / 2);
+    // vigas em balanço no nível do piso e escoras até o banzo de baixo da plataforma
+    zz.forEach(function (zc) {
+      [zc - w / 2 + t / 2, zc + w / 2 - t / 2].forEach(function (z) {
+        g.box(hx - 0.15, H - 0.46, z - 0.1, x1, H - 0.06, z + 0.1, dk);
+        if (x0 - hx > 0.2) g.box(hx - 0.15, fb + 0.05, z - 0.08, x0 + 0.05, fb + 0.25, z + 0.08, dk);
+      });
     });
-    for (i = 1; i < nst; i++) { var t = i / nst, xs = hx + run * t, ys = H + (Hg - H) * t; g.box(xs - 0.12, ys - 0.04, stz0, xs + 0.12, ys, stz1, C.grate); }
-    return { geo: g, Lg: Lg, galZ: gz };
+    g.box(hx - 0.1, H - 0.46, -zf, hx + 0.1, H - 0.06, zf, dk);
+    zz.forEach(function (zc) {
+      var za = zc - w / 2, zb = zc + w / 2, X = [x0 + t / 2, x1 - t / 2], Z = [za + t / 2, zb - t / 2], lv = [Hb + 0.08, Hm, H - 0.3];
+      // montantes nos 4 cantos
+      X.forEach(function (x) { Z.forEach(function (z) { g.box(x - t / 2, Hb - 0.06, z - t / 2, x + t / 2, H - 0.06, z + t / 2, col); }); });
+      // travessas embaixo, no meio e em cima, nas 4 faces
+      lv.forEach(function (y) {
+        Z.forEach(function (z) { g.box(x0, y - 0.08, z - t / 2, x1, y + 0.08, z + t / 2, col); });
+        X.forEach(function (x) { g.box(x - t / 2, y - 0.08, za, x + t / 2, y + 0.08, zb, col); });
+      });
+      // X nas 4 faces (fechado como um cubo)
+      [[lv[0], lv[1]], [lv[1], lv[2]]].forEach(function (p) {
+        var ya = p[0], yb = p[1];
+        Z.forEach(function (z) { g.beam([x0 + t, ya, z], [x1 - t, yb, z], 0.1, 0.1, col); g.beam([x1 - t, ya, z], [x0 + t, yb, z], 0.1, 0.1, col); });
+        X.forEach(function (x) { g.beam([x, ya, za + t], [x, yb, zb - t], 0.1, 0.1, col); g.beam([x, ya, zb - t], [x, yb, za + t], 0.1, 0.1, col); });
+      });
+      // pisos em grade (o de cima fica no nível do piso da plataforma)
+      cubeFloor(H, zc); cubeFloor(Hm + 0.1, zc); cubeFloor(Hb + 0.18, zc);
+      // anel-guia com 4 roletes, em cima e embaixo
+      [H, Hb + 0.18].forEach(function (y) {
+        g.box(xc - o, y, zc - o, xc + o, y + 0.25, zc - o + 0.2, dk); g.box(xc - o, y, zc + o - 0.2, xc + o, y + 0.25, zc + o, dk);
+        g.box(xc - o, y, zc - o, xc - o + 0.2, y + 0.25, zc + o, dk); g.box(xc + o - 0.2, y, zc - o, xc + o, y + 0.25, zc + o, dk);
+        var r = GAB.ring, n = 18, j;
+        for (j = 0; j < n; j++) { var a0 = j / n * Math.PI * 2, a1 = (j + 1) / n * Math.PI * 2; g.tube([xc + Math.cos(a0) * r, y + 0.3, zc + Math.sin(a0) * r], [xc + Math.cos(a1) * r, y + 0.3, zc + Math.sin(a1) * r], 0.07, C.dark, 6); }
+        for (j = 0; j < 4; j++) { var a = j * Math.PI / 2, rr = r + 0.17; g.tube([xc + Math.cos(a) * rr, y + 0.12, zc + Math.sin(a) * rr], [xc + Math.cos(a) * rr, y + 0.5, zc + Math.sin(a) * rr], 0.13, C.roller, 10, true); }
+      });
+      // escada por dentro, no canto de trás (passa pelos alçapões e sobe 1 m acima do piso para apoio da mão)
+      var lz0 = zb - 0.8, lz1 = zb - 0.35, lx = x0 + 0.3;
+      [lz0, lz1].forEach(function (z) { g.tube([lx, Hb + 0.18, z], [lx, H + 1.0, z], 0.03, C.steel, 6); });
+      for (var y = Hb + 0.45; y < H - 0.1; y += 0.3) g.box(lx - 0.025, y - 0.02, lz0, lx + 0.025, y + 0.02, lz1, C.steel);
+    });
+    // guarda-corpo em volta da frente
+    g.guard([x1 - e, H, -zf + e], [x1 - e, H, zf - e], C.guard);
+    g.guard([hx, H, -zf + e], [x1 - e, H, -zf + e], C.guard);
+    g.guard([hx, H, zf - e], [x1 - e, H, zf - e], C.guard);
+    return Q;
   }
   var CR = { trackL: 8.6, trackH: 1.25, gauge: 5.5, shoe: 1.1, upY: 1.7, foot: [1.5, 1.5], apex: [-3.15, 6.9] };
   function buildCraneBase(g) {
@@ -370,7 +412,7 @@
     r.root = root;
     r.via = meshOf(buildVia(M, L, r.rows, r.k)); r.via.name = 'Vigas trilho e estacas'; root.add(r.via);
     var plat = new K.Group(); root.add(plat); r.plat = plat;
-    var pg = buildPlat(M, L); r.Lg = pg.Lg; r.galZ = pg.galZ;
+    var pg = buildPlat(M, L); r.gab = pg.gab;
     var pm = meshOf(pg.geo); pm.name = 'Plataforma'; plat.add(pm);
     var crane = new K.Group(); crane.position.set(0, L.H, 0); plat.add(crane); r.crane = crane;
     var cb = new Geo(31); buildCraneBase(cb); crane.add(meshOf(cb));
@@ -448,7 +490,8 @@
     [-1, 1].forEach(function (s) { W(a0, a1, L.rbBot, L.railTop, s * G2 - 0.48, s * G2 + 0.48, 'via'); });
     used.forEach(function (u) { W(u - 0.45, u + 0.45, L.capBot, L.rbBot, -G2 - 1.2, G2 + 1.2, 'via'); [-1, 1].forEach(function (s) { W(u - 0.45, u + 0.45, L.pileBot, L.capBot, s * G2 - 0.45, s * G2 + 0.45, 'via'); }); });
     var c = r.u;
-    W(c - hx - 0.2, c + hx + r.Lg, L.gal - 0.4, L.H + 1.15, -r.galZ, r.galZ, 'plat');
+    W(c - hx - 0.2, c + hx + 0.2, L.gal - 0.4, L.H + 1.15, -M.Wp / 2, M.Wp / 2, 'plat');
+    var q = r.gab; if (q) W(c + q.x0 - 0.1, c + q.x1 + 0.1, L.H - q.h - 0.2, L.H + 1.15, -q.zf - 0.1, q.zf + 0.1, 'plat');   // gabaritos (V1.67)
     W(c - 5.6, c + 5.6, L.H, L.H + 4.6, -5.6, 5.6, 'plat');      // guindaste (corpo, em qualquer giro)
     return out;
   }
