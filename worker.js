@@ -164,7 +164,8 @@ async function api(req, env, url) {
 //   apontador → só o RDO (qualquer outro endereço volta para o RDO)
 //   equipe    → início, 3D, pluviometria e paralisações (sem o RDO)
 const FULL = new Set(['mathyaslek@gmail.com']);
-const RDO_ONLY = new Set(['kailane.costa@alyaconstrutora.com', 'joao.psimoes@alyaconstrutora.com', 'anderson.silva@alyaconstrutora.com']);
+const RDO_ONLY = new Set(['kailane.costa@alyaconstrutora.com', 'joao.psimoes@alyaconstrutora.com', 'anderson.silva@alyaconstrutora.com',
+  'kailanesilva.c@outlook.com', 'testealya@gmail.com', 'joao0306091@outlook.com']);   // 28/10: e-mails pessoais, só o RDO
 const isRdo = p => p === '/rdo' || p === '/rdo.html' || p === '/rdo/';
 
 const b64u = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), c => c.charCodeAt(0));
