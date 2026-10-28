@@ -2,6 +2,8 @@
 // GET /api/state?keys=a,b  → {chave:{t,by,size}} (só metadados); com &full=1 inclui o valor (v)
 // PUT /api/state/<chave>    → grava {v,t} se for mais novo que o que está salvo (último a gravar vence)
 // O acesso ao site inteiro (inclusive /api) passa pelo login da Cloudflare Access.
+// (V1.68) O endereço só do RDO com usuário e senha é outro Worker (rdo-worker.js); aqui fica só a tela que cria os usuários.
+import { RDO_URL, USER_RE, SENHA_MIN, hashSenha, lerUsuario, gravarUsuario, apagarUsuario, listarUsuarios, publico, normUser } from './rdo-auth.js';
 const KEYS = new Set([
   'ponte-obra-v26',        // 3D: planilha de executados importada
   'aduelas-registros-v2',  // 3D: datas lançadas à mão nas aduelas
@@ -122,6 +124,50 @@ async function rdoApi(req, env, url, prof, email) {
     return json({ ok: true, removido: !!e });
   }
   return json({ error: 'rota desconhecida' }, 404);
+}
+
+// ---------- usuários do RDO com senha (V1.68): só o perfil completo cria, troca senha, bloqueia e exclui ----------
+async function usuariosApi(req, env, url) {
+  if (!env.DADOS) return json({ error: 'armazenamento não configurado' }, 503);
+  const o = req.headers.get('origin');
+  if (o && o !== url.origin) return json({ error: 'origem não permitida' }, 403);
+  const parts = url.pathname.split('/').filter(Boolean);   // ['api','rdo-usuarios',usuario?]
+  const nome = parts[2] ? normUser(decodeURIComponent(parts[2])) : '', m = req.method, agora = new Date().toISOString();
+  const corpo = async () => { if (!/json/.test(req.headers.get('content-type') || '')) return null; try { return await req.json(); } catch (e) { return null; } };
+  const txt = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
+  const okEmail = e => !e || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+  if (m === 'GET' && !nome) return json({ endereco: RDO_URL, usuarios: (await listarUsuarios(env)).map(([n, u]) => publico(n, u)) });
+  if (m === 'POST' && !nome) {
+    const b = await corpo(); if (!b) return json({ error: 'corpo inválido' }, 400);
+    const n = normUser(b.usuario), senha = String(b.senha || ''), email = txt(b.email, 120).toLowerCase();
+    if (!USER_RE.test(n)) return json({ error: 'Usuário: 3 a 32 letras minúsculas, números, ponto, traço ou sublinhado, sem espaço nem acento' }, 400);
+    if (senha.length < SENHA_MIN || senha.length > 200) return json({ error: 'A senha precisa ter pelo menos ' + SENHA_MIN + ' caracteres' }, 400);
+    if (!okEmail(email)) return json({ error: 'E-mail inválido' }, 400);
+    if (await lerUsuario(env, n)) return json({ error: 'Já existe um usuário "' + n + '"' }, 409);
+    const u = { nome: txt(b.nome, 80), email, ...(await hashSenha(senha)), ativo: true, v: 0, criado: agora, alterado: agora, ultimo: '', falhas: 0, bloq: 0 };
+    await gravarUsuario(env, n, u);
+    return json({ ok: true, usuario: publico(n, u) });
+  }
+  if (!nome || !USER_RE.test(nome)) return json({ error: 'usuário inválido' }, 400);
+  const u = await lerUsuario(env, nome);
+  if (!u) return json({ error: 'usuário não encontrado' }, 404);
+  if (m === 'PATCH') {
+    const b = await corpo(); if (!b) return json({ error: 'corpo inválido' }, 400);
+    if (b.nome != null) u.nome = txt(b.nome, 80);
+    if (b.email != null) { const e = txt(b.email, 120).toLowerCase(); if (!okEmail(e)) return json({ error: 'E-mail inválido' }, 400); u.email = e; }
+    if (b.senha != null) {
+      const s = String(b.senha);
+      if (s.length < SENHA_MIN || s.length > 200) return json({ error: 'A senha precisa ter pelo menos ' + SENHA_MIN + ' caracteres' }, 400);
+      Object.assign(u, await hashSenha(s)); u.v = (u.v || 0) + 1; u.falhas = 0; u.bloq = 0;        // senha nova derruba as sessões abertas
+    }
+    if (b.ativo != null) { const at = !!b.ativo; if (!at && u.ativo !== false) u.v = (u.v || 0) + 1; u.ativo = at; if (at) { u.falhas = 0; u.bloq = 0; } }
+    if (b.desbloquear) { u.falhas = 0; u.bloq = 0; }
+    u.alterado = agora;
+    await gravarUsuario(env, nome, u);
+    return json({ ok: true, usuario: publico(nome, u) });
+  }
+  if (m === 'DELETE') { await apagarUsuario(env, nome); return json({ ok: true }); }
+  return json({ error: 'método não permitido' }, 405);
 }
 
 async function api(req, env, url) {
@@ -277,8 +323,14 @@ export default {
       return Response.redirect(url.origin + '/rdo', 302);
     }
     if (prof === 'equipe' && isRdo(path)) return blocked('O RDO é usado só pelos apontadores. Você tem acesso ao 3D, à pluviometria e às paralisações.', '/', 'Ir para o início');
+    // (V1.68) usuários do RDO com senha: tela e API só do perfil completo
+    if (path === '/api/rdo-usuarios' || path.startsWith('/api/rdo-usuarios/')) return prof === 'completo' ? usuariosApi(req, env, url) : json({ error: 'só o perfil completo' }, 403);
+    if ((path === '/usuarios' || path === '/usuarios.html') && prof !== 'completo') return blocked('A tela de usuários do RDO é só do perfil completo.', '/', 'Ir para o início');
     if (path.startsWith('/api/')) return api(req, env, url);
     if (path === '/planejamento' || path === '/planejamento.html') return withLoader(await env.ASSETS.fetch(new Request(url.origin + '/3d', req)), INJ_PLAN);
     return withLoader(await env.ASSETS.fetch(req), path === '/3d' || path === '/3d.html' ? INJ_3D : '');
   }
 };
+
+// (V1.68) usado também pelo endereço só do RDO (rdo-worker.js)
+export { rdoApi };

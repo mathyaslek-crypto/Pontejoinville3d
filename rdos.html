@@ -22,6 +22,7 @@ button,input,select{font:inherit;color:inherit}
 .mk{width:22px;height:22px;background:var(--amber);clip-path:polygon(50% 0,100% 100%,72% 100%,50% 52%,28% 100%,0 100%)}
 .top b{font-weight:600;letter-spacing:.18em;font-size:12.5px}
 .top span{color:var(--muted);font-size:12.5px;margin-left:auto}
+.usr{display:inline-flex;align-items:center;text-decoration:none;font-size:13px;margin-left:8px}.usr[hidden]{display:none}
 h1{font:400 clamp(44px,6vw,72px)/.95 var(--serif);margin-top:26px}
 h1 em{font-style:italic;color:var(--ink2)}
 .lead{color:var(--ink2);max-width:640px;margin-top:12px}
@@ -67,12 +68,12 @@ h1 em{font-style:italic;color:var(--ink2)}
 .msg.err{border-color:#ef6b6266;color:#ffb1aa}
 .foot{margin-top:34px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:14px}
 .more{display:block;margin:18px auto 0}
-@media(max-width:720px){.wrap{padding:18px 16px 50px}.hd .meta{margin-left:0;flex-basis:100%}.top span{display:none}h1{margin-top:18px}.stats{gap:18px}}
+@media(max-width:720px){.wrap{padding:18px 16px 50px}.hd .meta{margin-left:0;flex-basis:100%}.top span{display:none}h1{margin-top:18px}.stats{gap:18px}.usr{margin-left:auto}}
 </style>
 </head>
 <body>
 <div class="wrap">
- <div class="top"><a class="back" href="./" title="Voltar ao início" aria-label="Voltar ao início">←</a><div class="mk"></div><b>ALYA</b><span>Obra 70.578 · Joinville · SC</span></div>
+ <div class="top"><a class="back" href="./" title="Voltar ao início" aria-label="Voltar ao início">←</a><div class="mk"></div><b>ALYA</b><span>Obra 70.578 · Joinville · SC</span><a class="btn usr" id="usr" href="usuarios" hidden>Usuários do RDO</a></div>
  <h1>Pasta do <em>RDO</em></h1>
  <p class="lead">Os RDOs que os apontadores finalizam no app chegam aqui direto, com o PDF, as fotos e o pacote do 3D. O Modelo 3D, a Pluviometria e as Paralisações leem os pacotes desta pasta sozinhos.</p>
  <div class="stats" id="stats"></div>
@@ -98,7 +99,7 @@ var IC={pdf:'<svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 
 function load(){
  $('list').innerHTML='<p class="msg">Carregando a pasta…</p>';
  fetch('/api/rdo/lista',{cache:'no-store'}).then(function(r){if(!r.ok||!/json/.test(r.headers.get('content-type')||''))throw Error(r.status===403?'Sem acesso à pasta do RDO.':'Não consegui abrir a pasta agora.');return r.json();})
-  .then(function(j){ITENS=(j.itens||[]).slice().sort(function(a,b){return String(b.data).localeCompare(String(a.data))||String(b.at).localeCompare(String(a.at));});podeExcluir=!!j.podeExcluir;months();draw();})
+  .then(function(j){ITENS=(j.itens||[]).slice().sort(function(a,b){return String(b.data).localeCompare(String(a.data))||String(b.at).localeCompare(String(a.at));});podeExcluir=!!j.podeExcluir;$('usr').hidden=!podeExcluir;months();draw();})
   .catch(function(e){$('list').innerHTML='<p class="msg err">'+esc(e.message)+' Tente de novo em instantes.</p>';});
 }
 function months(){var sel=$('mes'),cur=sel.value,ms={};ITENS.forEach(function(e){if(e.data)ms[e.data.slice(0,7)]=1;});

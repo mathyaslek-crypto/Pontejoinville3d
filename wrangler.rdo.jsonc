@@ -1,0 +1,9 @@
+// Endereço só do RDO, com usuário e senha (V1.68). Sem Cloudflare Access: o login é feito pelo próprio Worker.
+// Publicado com: npx wrangler deploy --config wrangler.rdo.jsonc
+{
+  "name": "rdo-ponte",
+  "compatibility_date": "2026-10-01",
+  "main": "rdo-worker.js",
+  "assets": { "directory": "./", "binding": "ASSETS", "run_worker_first": true },
+  "kv_namespaces": [{ "binding": "DADOS", "id": "fd732e53b35d40b082b603e9fcc6a904" }]
+}

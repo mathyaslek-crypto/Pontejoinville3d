@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0e12">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'none'">
+<title>Usuários do RDO · Ponte Joinville</title>
+<!-- V1.68: usuários do RDO com usuário e senha (só o perfil completo abre esta tela; o Worker bloqueia os outros) -->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0e12;--panel:#0f151b;--ink:#eef1f3;--ink2:#b9c2ca;--muted:#7d8893;--line:#1d262e;--line2:#2a3540;--amber:#f2b33d;--ok:#3fb37f;--err:#ef6b62;
+ --serif:"Instrument Serif",Georgia,"Times New Roman",serif;--sans:Manrope,"Segoe UI Variable Text","Segoe UI",Roboto,Arial,sans-serif;color-scheme:dark}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:14.5px/1.55 var(--sans);min-height:100vh}
+a{color:inherit}
+button,input{font:inherit;color:inherit}
+.wrap{max-width:980px;margin:0 auto;padding:26px 28px 60px}
+.top{display:flex;align-items:center;gap:12px}
+.back{display:grid;place-items:center;width:36px;height:36px;border:1px solid var(--line2);border-radius:10px;text-decoration:none;color:var(--ink2)}
+.back:hover{border-color:var(--amber);color:var(--amber)}
+.mk{width:22px;height:22px;background:var(--amber);clip-path:polygon(50% 0,100% 100%,72% 100%,50% 52%,28% 100%,0 100%)}
+.top b{font-weight:600;letter-spacing:.18em;font-size:12.5px}
+.top span{color:var(--muted);font-size:12.5px;margin-left:auto}
+h1{font:400 clamp(44px,6vw,72px)/.95 var(--serif);margin-top:26px}
+h1 em{font-style:italic;color:var(--ink2)}
+.lead{color:var(--ink2);max-width:680px;margin-top:12px}
+.addr{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:18px;padding:12px 14px;border:1px solid var(--line2);border-radius:14px;background:var(--panel)}
+.addr span{color:var(--muted);font-size:12.5px}
+.addr a{font-weight:600;color:#ffd27a;word-break:break-all}
+h2{font:600 12px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:flex;gap:10px;align-items:center;margin-top:30px}
+h2::after{content:"";flex:1;height:1px;background:var(--line)}
+.box{margin-top:12px;border:1px solid var(--line2);border-radius:14px;background:linear-gradient(180deg,#10161c,#0d1217);padding:16px 18px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+label{display:block;font-size:12.5px;color:var(--ink2);margin-bottom:5px}
+label i{font-style:normal;color:var(--muted)}
+input{width:100%;height:40px;border-radius:10px;border:1px solid var(--line2);background:#0b1015;padding:0 12px}
+input:focus{outline:none;border-color:var(--amber)}
+.row{display:flex;gap:8px}
+.btn{height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line2);background:#121a21;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--amber)}
+.btn.main{background:var(--amber);border-color:var(--amber);color:#151515;font-weight:700}
+.btn.sm{height:32px;padding:0 11px;font-size:12.5px;border-radius:8px}
+.btn.red{border-color:#ef6b6255;color:#ffb1aa;background:none}.btn.red:hover{border-color:var(--err)}
+.btn.red.arm{background:#ef6b6222;border-color:var(--err)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;align-items:center}
+.err{margin-top:12px;color:#ffb1aa;font-size:13px}
+.send{margin-top:14px;padding:12px 14px;border:1px solid #3fb37f66;border-radius:12px;background:#3fb37f12}
+.send p{color:#8ee0b5;font-size:13px;font-weight:600}
+.send pre{margin-top:8px;white-space:pre-wrap;font:13.5px/1.5 var(--sans);color:var(--ink)}
+.send .actions{margin-top:10px}
+.u{margin-top:12px;border:1px solid var(--line2);border-radius:14px;background:linear-gradient(180deg,#10161c,#0d1217);padding:14px 16px}
+.u.off{opacity:.62}
+.hd{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline}
+.hd b{font-size:16px;font-weight:600}
+.hd code{font:600 13px/1 ui-monospace,Consolas,monospace;color:#ffd27a}
+.tag{font-size:11.5px;padding:2px 9px;border-radius:999px;border:1px solid var(--line2);color:var(--ink2)}
+.tag.ok{border-color:#3fb37f88;color:#8ee0b5}.tag.no{border-color:#ef6b6288;color:#ffb1aa}
+.meta{color:var(--muted);font-size:12.5px;margin-top:4px}
+.pw{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
+.pw input{flex:1;min-width:160px;height:36px}
+.empty,.msg{margin-top:12px;padding:24px;border:1px dashed var(--line2);border-radius:14px;color:var(--ink2);text-align:center}
+.foot{margin-top:34px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:14px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:20;max-width:calc(100% - 32px);padding:10px 16px;border-radius:10px;background:#16202a;border:1px solid var(--line2);font-size:13px;box-shadow:0 10px 30px #0008}
+@media(max-width:720px){.wrap{padding:18px 16px 50px}.top span{display:none}h1{margin-top:18px}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <div class="top"><a class="back" href="rdos" title="Voltar à Pasta do RDO" aria-label="Voltar à Pasta do RDO">←</a><div class="mk"></div><b>ALYA</b><span>Obra 70.578 · Joinville · SC</span></div>
+ <h1>Usuários do <em>RDO</em></h1>
+ <p class="lead">Para os apontadores que não recebem o código da Cloudflare no e-mail. Eles entram no endereço abaixo com usuário e senha, veem só o RDO e só conseguem enviar para a Pasta do RDO.</p>
+ <div class="addr"><span>Endereço do RDO</span><a id="addr" href="#" target="_blank" rel="noopener">…</a><button class="btn sm" type="button" id="cpaddr">Copiar</button></div>
+
+ <h2>Novo usuário</h2>
+ <div class="box">
+  <div class="grid">
+   <div><label for="n-nome">Nome</label><input id="n-nome" maxlength="80" placeholder="Ex.: Kailane Silva"></div>
+   <div><label for="n-email">E-mail <i>(opcional, aparece na pasta)</i></label><input id="n-email" type="email" maxlength="120" placeholder="kailanesilva.c@outlook.com"></div>
+   <div><label for="n-user">Usuário <i>(minúsculas, sem espaço)</i></label><input id="n-user" maxlength="32" autocapitalize="none" spellcheck="false" placeholder="kailane"></div>
+   <div><label for="n-senha">Senha <i>(mínimo 6)</i></label><div class="row"><input id="n-senha" maxlength="200" autocomplete="new-password" spellcheck="false"><button class="btn" type="button" id="n-gen">Gerar</button></div></div>
+  </div>
+  <div class="actions"><button class="btn main" type="button" id="n-go">Criar usuário</button></div>
+  <p class="err" id="n-err" hidden></p>
+  <div id="n-send"></div>
+ </div>
+
+ <h2>Usuários</h2>
+ <div id="list"><p class="msg">Carregando…</p></div>
+
+ <p class="foot">As senhas ficam guardadas criptografadas: nem esta tela consegue mostrar a senha atual, só trocar. Trocar a senha ou bloquear tira a pessoa do RDO na hora (ela precisa entrar de novo). Cinco senhas erradas seguidas bloqueiam o usuário por 15 minutos.</p>
+</div>
+<script>
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id);};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});};
+var hora=function(iso){try{return new Date(iso).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return '';}};
+var ADDR='',USERS=[],armed=null,toastT=null;
+function toast(t){var el=document.querySelector('.toast');if(!el){el=document.createElement('div');el.className='toast';document.body.appendChild(el);}el.textContent=t;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){el.hidden=true;},2600);}
+function copy(t){(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){toast('Copiado.');},function(){var a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');toast('Copiado.');}catch(e){}a.remove();});}
+function gen(){var A='abcdefghjkmnpqrstuvwxyz23456789',r=new Uint32Array(8),s='';crypto.getRandomValues(r);for(var i=0;i<8;i++)s+=A[r[i]%A.length];return s;}
+function api(method,path,body){
+ return fetch('/api/rdo-usuarios'+(path||''),{method:method,cache:'no-store',headers:body?{'content-type':'application/json'}:{},body:body?JSON.stringify(body):undefined})
+  .then(function(r){return r.json().catch(function(){return {};}).then(function(j){if(!r.ok)throw Error(j.error||(r.status===403?'Sem acesso a esta tela.':'Não deu certo agora.'));return j;});});
+}
+function msgFor(u,senha){return 'RDO · Ponte Joinville\nEndereço: '+ADDR+'\nUsuário: '+u+'\nSenha: '+senha+'\n\nAbra o endereço no celular, entre com o usuário e a senha e preencha o RDO normalmente.';}
+function sendBox(u,senha,title){var t=msgFor(u,senha);
+ return '<div class="send"><p>'+esc(title)+'</p><pre>'+esc(t)+'</pre><div class="actions"><button class="btn sm" type="button" data-copy="'+esc(t)+'">Copiar mensagem</button><a class="btn sm" style="display:inline-flex;align-items:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(t)+'">Mandar no WhatsApp</a></div></div>';}
+function load(){
+ return api('GET').then(function(j){ADDR=j.endereco||'';$('addr').textContent=ADDR;$('addr').href=ADDR;USERS=j.usuarios||[];draw();})
+  .catch(function(e){$('list').innerHTML='<p class="msg">'+esc(e.message)+'</p>';});
+}
+function status(u){
+ if(!u.ativo)return '<span class="tag no">Bloqueado</span>';
+ if(u.bloqueadoAte)return '<span class="tag no">Senhas erradas · liberado às '+esc(hora(u.bloqueadoAte).slice(-5))+'</span>';
+ return '<span class="tag ok">Ativo</span>';
+}
+function draw(){
+ if(!USERS.length){$('list').innerHTML='<p class="empty">Nenhum usuário ainda. Crie o primeiro acima.</p>';return;}
+ $('list').innerHTML=USERS.map(function(u){
+  return '<div class="u'+(u.ativo?'':' off')+'" data-u="'+esc(u.usuario)+'"><div class="hd"><b>'+esc(u.nome||u.usuario)+'</b><code>'+esc(u.usuario)+'</code>'+status(u)+'</div>'+
+   '<div class="meta">'+(u.email?esc(u.email)+' · ':'')+(u.ultimo?'último acesso '+esc(hora(u.ultimo)):'ainda não entrou')+'</div>'+
+   '<div class="actions"><button class="btn sm" type="button" data-a="pw">Trocar senha</button>'+
+   (u.bloqueadoAte&&u.ativo?'<button class="btn sm" type="button" data-a="unlock">Liberar agora</button>':'')+
+   '<button class="btn sm" type="button" data-a="'+(u.ativo?'off':'on')+'">'+(u.ativo?'Bloquear':'Desbloquear')+'</button>'+
+   '<button class="btn sm red" type="button" data-a="del">Excluir</button></div><div class="slot"></div></div>';
+ }).join('');
+}
+$('cpaddr').onclick=function(){if(ADDR)copy(ADDR);};
+$('n-gen').onclick=function(){$('n-senha').value=gen();};
+$('n-email').addEventListener('blur',function(){var u=$('n-user');if(!u.value&&this.value.indexOf('@')>0)u.value=this.value.split('@')[0].toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9._-]/g,'').slice(0,32);});
+$('n-go').onclick=function(){
+ var b={nome:$('n-nome').value,email:$('n-email').value,usuario:$('n-user').value.trim().toLowerCase(),senha:$('n-senha').value},btn=this;
+ $('n-err').hidden=true;$('n-send').innerHTML='';btn.disabled=true;
+ api('POST','',b).then(function(j){
+  $('n-send').innerHTML=sendBox(j.usuario.usuario,b.senha,'Usuário criado. Mande esta mensagem para '+(b.nome||j.usuario.usuario)+':');
+  ['n-nome','n-email','n-user','n-senha'].forEach(function(id){$(id).value='';});load();
+ }).catch(function(e){$('n-err').textContent=e.message;$('n-err').hidden=false;}).then(function(){btn.disabled=false;});
+};
+document.addEventListener('click',function(ev){
+ var c=ev.target.closest('[data-copy]');if(c){copy(c.getAttribute('data-copy'));return;}
+ var b=ev.target.closest('[data-a]');if(!b)return;
+ var card=b.closest('.u'),u=card.getAttribute('data-u'),a=b.getAttribute('data-a'),slot=card.querySelector('.slot');
+ if(a==='pw'){slot.innerHTML='<div class="pw"><input value="'+gen()+'" maxlength="200" spellcheck="false" aria-label="Senha nova"><button class="btn sm" type="button" data-a="pwgen">Gerar</button><button class="btn sm main" type="button" data-a="pwsave">Salvar senha nova</button></div><p class="err" hidden></p>';return;}
+ if(a==='pwgen'){slot.querySelector('input').value=gen();return;}
+ var err=function(e){var p=slot.querySelector('.err');if(!p){slot.innerHTML='<p class="err"></p>';p=slot.querySelector('.err');}p.textContent=e.message;p.hidden=false;};
+ if(a==='pwsave'){var s=slot.querySelector('input').value;b.disabled=true;
+  api('PATCH','/'+encodeURIComponent(u),{senha:s}).then(load).then(function(){var cd=null;document.querySelectorAll('.u').forEach(function(x){if(x.getAttribute('data-u')===u)cd=x.querySelector('.slot');});if(cd)cd.innerHTML=sendBox(u,s,'Senha trocada. Mande a senha nova:');})
+   .catch(function(e){b.disabled=false;err(e);});return;}
+ if(a==='on'||a==='off'||a==='unlock'){b.disabled=true;api('PATCH','/'+encodeURIComponent(u),a==='unlock'?{desbloquear:true}:{ativo:a==='on'}).then(function(){toast(a==='off'?'Usuário bloqueado.':'Usuário liberado.');load();}).catch(function(e){b.disabled=false;err(e);});return;}
+ if(a==='del'){
+  if(armed!==b){if(armed){armed.classList.remove('arm');armed.textContent='Excluir';}armed=b;b.classList.add('arm');b.textContent='Confirmar exclusão';setTimeout(function(){if(armed===b){b.classList.remove('arm');b.textContent='Excluir';armed=null;}},5000);return;}
+  armed=null;b.disabled=true;api('DELETE','/'+encodeURIComponent(u)).then(function(){toast('Usuário excluído.');load();}).catch(function(e){b.disabled=false;err(e);});
+ }
+});
+load();
+})();
+</script>
+</body>
+</html>
