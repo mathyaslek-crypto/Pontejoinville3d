@@ -61,7 +61,7 @@ async function rdoDelete(env, id, meta) {      // apaga os arquivos e a ficha de
 async function rdoApi(req, env, url, prof, email) {
   const parts = url.pathname.split('/').filter(Boolean);   // ['api','rdo',acao,id?,n?]
   const acao = parts[2], id = parts[3] ? decodeURIComponent(parts[3]) : '', n = parts[4];
-  const canSend = prof === 'apontador' || prof === 'completo', canRead = prof === 'completo' || prof === 'equipe';
+  const canSend = prof === 'apontador' || prof === 'completo' || prof === 'equipe-rdo', canRead = prof === 'completo' || prof === 'equipe' || prof === 'equipe-rdo';
   // versão atual do app do RDO: os celulares que estão com a página antiga aberta se atualizam sozinhos
   if (acao === 'versao' && req.method === 'GET') return json({ rdo: RDO_VER });
   if (acao === 'arquivo' && req.method === 'PUT') {
@@ -209,9 +209,12 @@ async function api(req, env, url) {
 //   completo  → tudo (início, 3D, pluviometria, paralisações e RDO)
 //   apontador → só o RDO (qualquer outro endereço volta para o RDO)
 //   equipe    → início, 3D, pluviometria e paralisações (sem o RDO)
+//   equipe-rdo → o mesmo da equipe e também o RDO (abre e envia; não exclui nada da pasta)
 const FULL = new Set(['mathyaslek@gmail.com']);
 const RDO_ONLY = new Set(['kailane.costa@alyaconstrutora.com', 'joao.psimoes@alyaconstrutora.com', 'anderson.silva@alyaconstrutora.com',
   'kailanesilva.c@outlook.com', 'testealya@gmail.com', 'joao0306091@outlook.com']);   // 28/10: e-mails pessoais, só o RDO
+// equipe + RDO (31/10): vê o mesmo que a equipe e também abre e envia o RDO (não exclui nada da pasta)
+const EQUIPE_RDO = new Set(['mathias.oliveira@alyaconstrutora.com']);
 const isRdo = p => p === '/rdo' || p === '/rdo.html' || p === '/rdo/';
 
 const b64u = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), c => c.charCodeAt(0));
@@ -237,7 +240,7 @@ async function verifiedEmail(req) {
   const ok = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, b64u(sig), new TextEncoder().encode(h + '.' + p));
   return ok ? String(pay.email || '').toLowerCase() : null;
 }
-function profileOf(email) { return FULL.has(email) ? 'completo' : RDO_ONLY.has(email) ? 'apontador' : 'equipe'; }
+function profileOf(email) { return FULL.has(email) ? 'completo' : RDO_ONLY.has(email) ? 'apontador' : EQUIPE_RDO.has(email) ? 'equipe-rdo' : 'equipe'; }
 function blocked(msg, link, label) {
   return new Response(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Acesso restrito · Ponte Joinville</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#111215;color:#eceae5;font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;padding:16px}main{max-width:420px;padding:28px;border:1px solid #c7c4bc22;border-radius:12px;background:#17181c}h1{margin:0 0 8px;font-size:19px;color:#fff}p{margin:0 0 18px;color:#b9b6ae}a{display:inline-block;padding:10px 16px;border-radius:8px;background:#FDB900;color:#151515;font-weight:600;text-decoration:none}</style></head><body><main><h1>Acesso restrito</h1><p>${msg}</p>${link ? `<a href="${link}">${label}</a>` : ''}</main></body></html>`, { status: 403, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
 }
