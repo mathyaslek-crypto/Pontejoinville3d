@@ -34,7 +34,7 @@ async function clima() {
 //   rdo:f:<id>:<n>  arquivo (com nome, tipo e tamanho nos metadados)      rdo:m:<id>  ficha do envio
 //   rdo:index       lista de todos os envios (lida pela pasta da página inicial, 3D, pluviometria e paralisações)
 // Apontador e perfil completo enviam; perfil completo e equipe leem; só o perfil completo exclui.
-const RDO_ID = /^[A-Za-z0-9_.-]{6,140}$/, RDO_MAX = 24 * 1024 * 1024, RDO_VER = '1.60';   // RDO_VER igual ao do rdo.html
+const RDO_ID = /^[A-Za-z0-9_.-]{6,140}$/, RDO_MAX = 24 * 1024 * 1024, RDO_VER = '1.69';   // RDO_VER igual ao do rdo.html
 const KINDS = new Set(['pdf', 'pacote', 'foto', 'pluvio', 'outro']);
 async function rdoIndex(env) {
   let idx = await env.DADOS.get('rdo:index', 'json').catch(() => null);
@@ -64,6 +64,30 @@ async function rdoApi(req, env, url, prof, email) {
   const canSend = prof === 'apontador' || prof === 'completo' || prof === 'equipe-rdo', canRead = prof === 'completo' || prof === 'equipe' || prof === 'equipe-rdo';
   // versão atual do app do RDO: os celulares que estão com a página antiga aberta se atualizam sozinhos
   if (acao === 'versao' && req.method === 'GET') return json({ rdo: RDO_VER });
+  // (V1.69) equipamentos e ativos cadastrados pelos apontadores no RDO (a lista da planilha fica no próprio rdo.html).
+  // Um registro por ativo: rdo-at:<equipamento normalizado>|<ativo> (ativo vazio = equipamento sem ativo), dados nos metadados.
+  if (acao === 'ativos') {
+    const eqKey = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    if (req.method === 'GET') {
+      if (!canSend && !canRead) return json({ error: 'sem acesso' }, 403);
+      const itens = []; let cur;
+      do { const r = await env.DADOS.list({ prefix: 'rdo-at:', cursor: cur }); r.keys.forEach(k => { const m = k.metadata || {}; if (m.e) itens.push({ e: m.e, a: m.a || '', por: m.por || '', at: m.at || '' }); }); cur = r.list_complete ? null : r.cursor; } while (cur);
+      return json({ itens });
+    }
+    if (req.method !== 'POST' && req.method !== 'DELETE') return json({ error: 'método não permitido' }, 405);
+    if (!canSend) return json({ error: 'sem acesso' }, 403);
+    let b; try { b = await req.json(); } catch (e) { return json({ error: 'corpo inválido' }, 400); }
+    const e = String(b && b.e || '').replace(/,/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60), ek = eqKey(e);
+    const a = req.method === 'DELETE' && b.a === '*' ? '*' : String(b && b.a || '').replace(/,/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase().slice(0, 30);
+    if (!ek) return json({ error: 'equipamento inválido' }, 400);
+    if (req.method === 'POST') {
+      await env.DADOS.put('rdo-at:' + ek + '|' + a, '1', { metadata: { e, a, por: email, at: new Date().toISOString() } });
+      return json({ ok: true });
+    }
+    if (a === '*') { let cur; do { const r = await env.DADOS.list({ prefix: 'rdo-at:' + ek + '|', cursor: cur }); for (const k of r.keys) await env.DADOS.delete(k.name); cur = r.list_complete ? null : r.cursor; } while (cur); }
+    else await env.DADOS.delete('rdo-at:' + ek + '|' + a);
+    return json({ ok: true });
+  }
   if (acao === 'arquivo' && req.method === 'PUT') {
     if (!canSend) return json({ error: 'sem acesso' }, 403);
     if (!RDO_ID.test(id) || !/^\d{1,3}$/.test(n || '')) return json({ error: 'endereço inválido' }, 400);

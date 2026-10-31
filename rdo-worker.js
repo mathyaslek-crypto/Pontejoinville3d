@@ -91,7 +91,7 @@ export default {
     // envio para a Pasta do RDO (o perfil apontador só envia: não lista, não baixa e não exclui)
     if (path.startsWith('/api/rdo/')) {
       const acao = path.split('/')[3];
-      const pode = (acao === 'versao' && m === 'GET') || (acao === 'arquivo' && m === 'PUT') || (acao === 'fim' && m === 'POST');
+      const pode = (acao === 'versao' && m === 'GET') || (acao === 'arquivo' && m === 'PUT') || (acao === 'fim' && m === 'POST') || (acao === 'ativos' && ['GET', 'POST', 'DELETE'].includes(m));
       if (!pode) return json({ error: 'sem acesso' }, 403);
       return rdoApi(req, env, url, 'apontador', ses.u.email || ('usuário ' + ses.nome));
     }
