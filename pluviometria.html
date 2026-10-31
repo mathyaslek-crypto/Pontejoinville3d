@@ -142,25 +142,36 @@ async function siteScan(){if(siteBusy||location.protocol==='file:')return;siteBu
  }catch(e){}siteBusy=false;}
 setTimeout(siteScan,600);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')siteScan();});setInterval(()=>{if(document.visibilityState==='visible')siteScan();},5*60e3);
 
+// Pluviômetro de cada registro: o RDO V0.10 grava "Adhemar" ou "Boa Vista"; nos RDOs antigos vem da frente de serviço.
+const PLV=[['adhemar','Adhemar'],['boavista','Boa Vista']];
+const pluvOf=r=>r.pluviometro||(/adhemar/i.test(r.frente||'')?'Adhemar':/boa\s*vista/i.test(r.frente||'')?'Boa Vista':'');
 // ---------- Consolidação por dia ----------
 function daily(recs){let by=new Map;for(let r of recs){if(!by.has(r.data))by.set(r.data,[]);by.get(r.data).push(r);}
  let out=[];for(let [d,rs] of by){let day=rs.filter(r=>r.turno!=='noite'),night=rs.filter(r=>r.turno==='noite'),flags=[];
   const anyP=(list,k)=>list.some(r=>r[k]===true)?true:list.some(r=>r[k]===false)?false:null;
-  const pick=k=>{let v=[...new Set(rs.map(r=>r[k]).filter(x=>x!=null))];if(v.length>1)flags.push(`${k==='mm07'?'07h':'17h'}: valores diferentes (${v.map(x=>fmt(x)).join(' / ')} mm)`);return v.length?Math.max(...v):null;};
+  // divergência só entre leituras do mesmo pluviômetro (Adhemar e Boa Vista podem marcar valores diferentes)
+  const pick=(k,list=rs)=>{let g=new Map;for(let r of list){if(r[k]==null)continue;let p=pluvOf(r)||'?';if(!g.has(p))g.set(p,new Set);g.get(p).add(r[k]);}
+   if(list===rs)for(let [p,v] of g)if(v.size>1)flags.push(`${k==='mm07'?'07h':'17h'}${p!=='?'?' · '+p:''}: valores diferentes (${[...v].map(x=>fmt(x)).join(' / ')} mm)`);
+   let all=[...g.values()].flatMap(v=>[...v]);return all.length?Math.max(...all):null;};
+  const side=n=>{let L=rs.filter(r=>pluvOf(r)===n),a=pick('mm07',L),b=pick('mm17',L);return a==null&&b==null?null:(a??0)+(b??0);};
   const hrs=(list,k)=>Math.max(0,...list.map(r=>+r[k]||0));
-  let mm07=pick('mm07'),mm17=pick('mm17'),hc=hrs(day,'horasChuva')+hrs(night,'horasChuva'),hr=hrs(day,'horasRaio')+hrs(night,'horasRaio');
+  pick('mm07');pick('mm17');   // só para marcar divergências
+  // com mais de um pluviômetro no dia, vale o de maior total (07h e 17h do mesmo pluviômetro)
+  let best=null;for(let n of [...new Set(rs.map(r=>pluvOf(r)||'?'))]){let L=rs.filter(r=>(pluvOf(r)||'?')===n),a=pick('mm07',L),b=pick('mm17',L);if(a==null&&b==null)continue;let t=(a??0)+(b??0);if(!best||t>best.t)best={a,b,t};}
+  let mm07=best?best.a:null,mm17=best?best.b:null,hc=hrs(day,'horasChuva')+hrs(night,'horasChuva'),hr=hrs(day,'horasRaio')+hrs(night,'horasRaio');
   let iv=[];for(let list of [day,night]){let best=[...list].sort((a,b)=>((+b.horasChuva||0)+(+b.horasRaio||0))-((+a.horasChuva||0)+(+a.horasRaio||0)))[0];if(best)iv.push(...(best.intervalos||[]).map(v=>({...v,turno:best.turno})));}
-  out.push({data:d,manha:anyP(day,'chuvaManha'),tarde:anyP(day,'chuvaTarde'),noite:anyP(night,'chuvaNoite'),mm07,mm17,total:(mm07??0)+(mm17??0),medido:mm07!=null||mm17!=null,hc,hr,iv,apont:[...new Set(rs.map(r=>r.apontador))],fotos:rs.reduce((n,r)=>n+(r.fotos||[]).length,0),flags,regs:rs.length});}
+  out.push({data:d,manha:anyP(day,'chuvaManha'),tarde:anyP(day,'chuvaTarde'),noite:anyP(night,'chuvaNoite'),mm07,mm17,total:(mm07??0)+(mm17??0),medido:mm07!=null||mm17!=null,totA:side('Adhemar'),totB:side('Boa Vista'),pluvs:[...new Set(rs.map(pluvOf).filter(Boolean))],hc,hr,iv,apont:[...new Set(rs.map(r=>r.apontador))],fotos:rs.reduce((n,r)=>n+(r.fotos||[]).length,0),flags,regs:rs.length});}
  return out.sort((a,b)=>a.data.localeCompare(b.data));}
 
 // ---------- Filtros ----------
-let st={tab:'dash',per:'30',from:'',to:'',turno:'todos',view:'dia',sort:['data',-1]};
+let st={tab:'dash',per:'30',from:'',to:'',turno:'todos',pluv:'todos',view:'dia',sort:['data',-1]};
 try{Object.assign(st,JSON.parse(localStorage.getItem(KEY+'-ui')||'{}'));}catch(e){}
 const saveUI=()=>{try{localStorage.setItem(KEY+'-ui',JSON.stringify(st));}catch(e){}};
 function allRecs(){return demo||Object.values(db.recs);}
 function range(rs){let ds=rs.map(r=>r.data).sort(),last=ds.at(-1)||today(),first=ds[0]||today();
  if(st.per==='30')return [addD(last,-29),last];if(st.per==='mes')return [last.slice(0,8)+'01',last];if(st.per==='ano')return [last.slice(0,5)+'01-01',last];if(st.per==='custom')return [st.from||first,st.to||last];return [first,last];}
-function filtered(){let rs=allRecs();if(st.turno!=='todos')rs=rs.filter(r=>(r.turno||'dia')===st.turno);let [a,b]=range(allRecs());return {rs:rs.filter(r=>r.data>=a&&r.data<=b),a,b};}
+function filtered(){let rs=allRecs();if(st.turno!=='todos')rs=rs.filter(r=>(r.turno||'dia')===st.turno);
+ if(st.pluv&&st.pluv!=='todos'){let n=(PLV.find(p=>p[0]===st.pluv)||[])[1];rs=rs.filter(r=>pluvOf(r)===n);}let [a,b]=range(allRecs());return {rs:rs.filter(r=>r.data>=a&&r.data<=b),a,b};}
 
 // ---------- Render ----------
 function render(){
@@ -171,6 +182,7 @@ function render(){
  $('app').innerHTML=`${demo?'<div class="demo">Dados de <b>exemplo</b> só para visualizar. Importe os RDOs para ver os dados reais. <button class="btn ghost" id="nodemo" style="min-height:28px;margin-left:8px">Sair do exemplo</button></div>':''}
  <div class="bar"><div class="seg" id="per">${[['30','30 dias'],['mes','Mês'],['ano','Ano'],['tudo','Tudo'],['custom','Período']].map(([k,t])=>`<button data-k="${k}" aria-pressed="${st.per===k}">${t}</button>`).join('')}</div>
   ${st.per==='custom'?`<input type="date" id="from" value="${a}"><span class="note">a</span><input type="date" id="to" value="${b}">`:''}
+  <div class="seg" id="plv" title="Pluviômetro">${[['todos','Adhemar e Boa Vista'],...PLV].map(([k,t])=>`<button data-k="${k}" aria-pressed="${(st.pluv||'todos')===k}">${t}</button>`).join('')}</div>
   <div class="seg" id="tur">${[['todos','Dia e noite'],['dia','Dia'],['noite','Noite']].map(([k,t])=>`<button data-k="${k}" aria-pressed="${st.turno===k}">${t}</button>`).join('')}</div>
   <span class="note">${br(a)} a ${br(b)} · ${days.length} dia${days.length===1?'':'s'} com registro</span></div>
  <div class="tabs" role="tablist">${[['dash','Dashboard'],['graf','Gráficos'],['lin','Linhas']].map(([k,t])=>`<button role="tab" data-t="${k}" aria-selected="${st.tab===k}">${t}</button>`).join('')}</div>
@@ -178,6 +190,7 @@ function render(){
  $('nodemo')&&($('nodemo').onclick=()=>{demo=null;render();});
  document.querySelectorAll('#per button').forEach(x=>x.onclick=()=>{st.per=x.dataset.k;saveUI();render();});
  document.querySelectorAll('#tur button').forEach(x=>x.onclick=()=>{st.turno=x.dataset.k;saveUI();render();});
+ document.querySelectorAll('#plv button').forEach(x=>x.onclick=()=>{st.pluv=x.dataset.k;saveUI();render();});
  document.querySelectorAll('.tabs button').forEach(x=>x.onclick=()=>{st.tab=x.dataset.t;saveUI();render();});
  $('from')&&($('from').onchange=()=>{st.from=$('from').value;saveUI();render();});$('to')&&($('to').onchange=()=>{st.to=$('to').value;saveUI();render();});
  ({dash:viewDash,graf:viewGraf,lin:viewLin})[st.tab](days,rs,a,b);
@@ -218,23 +231,23 @@ function viewGraf(days,rs,a,b){let s=series(days,a,b),acc=0,cum=s.map(d=>({...d,
  <div class="card"><h2>Horas paradas por mês <span class="legend"><span><i style="background:var(--rain)"></i>Chuva</span><span><i style="background:var(--bolt)"></i>Raio</span></span></h2>${stackChart(ms,{h:220,month:true})}</div></div>`;
  bindTips();}
 function viewLin(days,rs){
- let rows=st.view==='dia'?days:rs.map(r=>({...r,total:(r.mm07??0)+(r.mm17??0)}));
+ let both=(st.pluv||'todos')==='todos',rows=st.view==='dia'?days:rs.map(r=>({...r,pluviometro:pluvOf(r),total:(r.mm07??0)+(r.mm17??0)}));
  let [k,dir]=st.sort;rows=[...rows].sort((x,y)=>{let p=x[k],q=y[k];if(Array.isArray(p))p=p.join();if(Array.isArray(q))q=q.join();return (p>q?1:p<q?-1:0)*dir;});
  const yn=v=>v===true?'<span class="pill r">choveu</span>':v===false?'não':'—';
- let cols=st.view==='dia'?[['data','Data'],['manha','Manhã'],['tarde','Tarde'],['noite','Noite'],['mm07','07h (mm)',1],['mm17','17h (mm)',1],['total','Total (mm)',1],['hc','Parada chuva',1],['hr','Parada raio',1],['iv','Paradas'],['apont','Apontadores'],['fotos','Fotos',1]]
-  :[['data','Data'],['turno','Turno'],['apontador','Apontador'],['frente','Frente'],['chuvaManha','Manhã'],['chuvaTarde','Tarde'],['chuvaNoite','Noite'],['mm07','07h (mm)',1],['mm17','17h (mm)',1],['horasChuva','Parada chuva',1],['horasRaio','Parada raio',1],['intervalos','Paradas'],['_file','Arquivo']];
- const cell=(r,c)=>{let v=r[c];switch(c){case 'data':return `${br(v)} <span class="note">${wd(v)}</span>${r.flags?.length?` <span title="${esc(r.flags.join('; '))}">⚠</span>`:''}`;case 'manha':case 'tarde':case 'noite':case 'chuvaManha':case 'chuvaTarde':case 'chuvaNoite':return yn(v);case 'mm07':case 'mm17':return v==null?'—':fmt(v);case 'total':return r.medido===false?'—':`<b>${fmt(v)}</b>`;case 'hc':case 'hr':case 'horasChuva':case 'horasRaio':return v?fmtH(v):'—';case 'iv':case 'intervalos':return (v||[]).map(x=>`${x.tipo==='Raio'?'⚡':'☂'} ${x.inicio}–${x.fim}`).join('<br>')||'—';case 'apont':return esc((v||[]).join(', '));case 'turno':return v==='noite'?'Noite':'Dia';default:return esc(v??'—');}};
+ let cols=st.view==='dia'?[['data','Data'],['manha','Manhã'],['tarde','Tarde'],['noite','Noite'],['mm07','07h (mm)',1],['mm17','17h (mm)',1],['total','Total (mm)',1],...(both?[['totA','Adhemar (mm)',1],['totB','Boa Vista (mm)',1]]:[]),['hc','Parada chuva',1],['hr','Parada raio',1],['iv','Paradas'],['apont','Apontadores'],['fotos','Fotos',1]]
+  :[['data','Data'],['turno','Turno'],['apontador','Apontador'],['pluviometro','Pluviômetro'],['frente','Frente'],['chuvaManha','Manhã'],['chuvaTarde','Tarde'],['chuvaNoite','Noite'],['mm07','07h (mm)',1],['mm17','17h (mm)',1],['horasChuva','Parada chuva',1],['horasRaio','Parada raio',1],['intervalos','Paradas'],['_file','Arquivo']];
+ const cell=(r,c)=>{let v=r[c];switch(c){case 'data':return `${br(v)} <span class="note">${wd(v)}</span>${r.flags?.length?` <span title="${esc(r.flags.join('; '))}">⚠</span>`:''}`;case 'manha':case 'tarde':case 'noite':case 'chuvaManha':case 'chuvaTarde':case 'chuvaNoite':return yn(v);case 'mm07':case 'mm17':return v==null?'—':fmt(v);case 'total':return r.medido===false?'—':`<b>${fmt(v)}</b>`;case 'totA':case 'totB':return v==null?'—':fmt(v);case 'hc':case 'hr':case 'horasChuva':case 'horasRaio':return v?fmtH(v):'—';case 'iv':case 'intervalos':return (v||[]).map(x=>`${x.tipo==='Raio'?'⚡':'☂'} ${x.inicio}–${x.fim}`).join('<br>')||'—';case 'apont':return esc((v||[]).join(', '));case 'turno':return v==='noite'?'Noite':'Dia';default:return esc(v??'—');}};
  $('view').innerHTML=`<div class="bar"><div class="seg" id="vw"><button data-k="dia" aria-pressed="${st.view==='dia'}">Por dia (consolidado)</button><button data-k="reg" aria-pressed="${st.view==='reg'}">Por RDO</button></div><span class="note">${rows.length} linha${rows.length===1?'':'s'}</span><div style="flex:1"></div><button class="btn" id="csv">Baixar planilha (Excel)</button>${demo?'':'<button class="btn ghost" id="clear">Limpar dados</button>'}</div>
  <div class="tw"><table><thead><tr>${cols.map(([c,t,n])=>`<th class="${n?'n':''}" data-c="${c}">${t}${k===c?(dir>0?' ▲':' ▼'):''}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${cols.map(([c,,n])=>`<td class="${n?'n':''}">${cell(r,c)}</td>`).join('')}</tr>`).join('')}</tbody>
- ${st.view==='dia'&&rows.length?`<tfoot><tr><td><b>Total</b></td><td></td><td></td><td></td><td class="n">${fmt(rows.reduce((s,r)=>s+(r.mm07||0),0))}</td><td class="n">${fmt(rows.reduce((s,r)=>s+(r.mm17||0),0))}</td><td class="n"><b>${fmt(rows.reduce((s,r)=>s+r.total,0))}</b></td><td class="n">${fmtH(rows.reduce((s,r)=>s+r.hc,0))}</td><td class="n">${fmtH(rows.reduce((s,r)=>s+r.hr,0))}</td><td></td><td></td><td class="n">${rows.reduce((s,r)=>s+r.fotos,0)}</td></tr></tfoot>`:''}</table></div>
- <p class="note">Total do dia = leitura das 07h (noite e madrugada) + leitura das 17h (07h às 17h). Horas paradas somam o turno do dia e o da noite.</p>`;
+ ${st.view==='dia'&&rows.length?`<tfoot><tr><td><b>Total</b></td><td></td><td></td><td></td><td class="n">${fmt(rows.reduce((s,r)=>s+(r.mm07||0),0))}</td><td class="n">${fmt(rows.reduce((s,r)=>s+(r.mm17||0),0))}</td><td class="n"><b>${fmt(rows.reduce((s,r)=>s+r.total,0))}</b></td>${both?`<td class="n">${fmt(rows.reduce((s,r)=>s+(r.totA||0),0))}</td><td class="n">${fmt(rows.reduce((s,r)=>s+(r.totB||0),0))}</td>`:''}<td class="n">${fmtH(rows.reduce((s,r)=>s+r.hc,0))}</td><td class="n">${fmtH(rows.reduce((s,r)=>s+r.hr,0))}</td><td></td><td></td><td class="n">${rows.reduce((s,r)=>s+r.fotos,0)}</td></tr></tfoot>`:''}</table></div>
+ <p class="note">Total do dia = leitura das 07h (noite e madrugada) + leitura das 17h (07h às 17h). Horas paradas somam o turno do dia e o da noite.${both?' Com os dois pluviômetros juntos, o total do dia é o maior dos dois; as colunas Adhemar e Boa Vista mostram cada um.':''} RDOs antigos, sem a escolha do pluviômetro, entram pela frente de serviço.</p>`;
  document.querySelectorAll('#vw button').forEach(x=>x.onclick=()=>{st.view=x.dataset.k;st.sort=['data',-1];saveUI();render();});
  document.querySelectorAll('th[data-c]').forEach(th=>th.onclick=()=>{let c=th.dataset.c;st.sort=[c,st.sort[0]===c?-st.sort[1]:-1];saveUI();render();});
  $('csv').onclick=()=>downloadCSV(rows,st.view);
  $('clear')&&($('clear').onclick=e=>{let b=e.currentTarget;if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent='Confirmar: apagar tudo';return;}db={recs:{},files:{}};save();render();toast('Dados apagados deste navegador. Importe de novo quando quiser.');});}
 function downloadCSV(rows,view){const yn=v=>v===true?'Sim':v===false?'Não':'';const n=v=>v==null?'':String(Math.round(v*100)/100).replace('.',',');
- let head=view==='dia'?['Data','Dia','Chuva manhã','Chuva tarde','Chuva noite','Leitura 07h (mm)','Leitura 17h (mm)','Total do dia (mm)','Horas paradas chuva','Horas paradas raio','Paradas','Apontadores','Fotos','Observação']:['Data','Turno','Apontador','Frente','Chuva manhã','Chuva tarde','Chuva noite','Leitura 07h (mm)','Leitura 17h (mm)','Horas paradas chuva','Horas paradas raio','Paradas','Arquivo'];
- let body=rows.map(r=>view==='dia'?[br(r.data),wd(r.data),yn(r.manha),yn(r.tarde),yn(r.noite),n(r.mm07),n(r.mm17),r.medido?n(r.total):'',n(r.hc),n(r.hr),(r.iv||[]).map(x=>x.tipo+' '+x.inicio+'-'+x.fim).join(' | '),(r.apont||[]).join(', '),r.fotos,(r.flags||[]).join('; ')]:[br(r.data),r.turno==='noite'?'Noite':'Dia',r.apontador,r.frente||'',yn(r.chuvaManha),yn(r.chuvaTarde),yn(r.chuvaNoite),n(r.mm07),n(r.mm17),n(r.horasChuva),n(r.horasRaio),(r.intervalos||[]).map(x=>x.tipo+' '+x.inicio+'-'+x.fim).join(' | '),r._file||'']);
+ let head=view==='dia'?['Data','Dia','Chuva manhã','Chuva tarde','Chuva noite','Leitura 07h (mm)','Leitura 17h (mm)','Total do dia (mm)','Adhemar (mm)','Boa Vista (mm)','Horas paradas chuva','Horas paradas raio','Paradas','Apontadores','Fotos','Observação']:['Data','Turno','Apontador','Pluviômetro','Frente','Chuva manhã','Chuva tarde','Chuva noite','Leitura 07h (mm)','Leitura 17h (mm)','Horas paradas chuva','Horas paradas raio','Paradas','Arquivo'];
+ let body=rows.map(r=>view==='dia'?[br(r.data),wd(r.data),yn(r.manha),yn(r.tarde),yn(r.noite),n(r.mm07),n(r.mm17),r.medido?n(r.total):'',n(r.totA),n(r.totB),n(r.hc),n(r.hr),(r.iv||[]).map(x=>x.tipo+' '+x.inicio+'-'+x.fim).join(' | '),(r.apont||[]).join(', '),r.fotos,(r.flags||[]).join('; ')]:[br(r.data),r.turno==='noite'?'Noite':'Dia',r.apontador,pluvOf(r),r.frente||'',yn(r.chuvaManha),yn(r.chuvaTarde),yn(r.chuvaNoite),n(r.mm07),n(r.mm17),n(r.horasChuva),n(r.horasRaio),(r.intervalos||[]).map(x=>x.tipo+' '+x.inicio+'-'+x.fim).join(' | '),r._file||'']);
  let csv='﻿'+[head,...body].map(l=>l.map(v=>{v=String(v??'');return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(';')).join('\r\n');
  let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download=`Pluviometria_Ponte_Joinville_${view==='dia'?'por_dia':'por_RDO'}_${today()}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);}
 
@@ -272,7 +285,7 @@ function bindTips(){let tip=$('tip');document.querySelectorAll('[data-tip]').for
 function makeDemo(){let out=[],seed=7,rnd=()=>(seed=(seed*16807)%2147483647)/2147483647,end=today();
  for(let i=75;i>=0;i--){let d=addD(end,-i),w=new Date(d+'T12:00:00').getDay();if(w===0)continue;let wet=rnd()<.38,m7=wet&&rnd()<.6?Math.round(rnd()*28*10)/10:0,m17=wet?Math.round(rnd()*rnd()*40*10)/10:0,hc=m17>8?Math.round(rnd()*4*4)/4:m17>2?.5:0,hr=wet&&rnd()<.25?Math.round(rnd()*2*4)/4:0;
   let iv=[];if(hc)iv.push({tipo:'Chuva',inicio:'13:10',fim:`${13+Math.floor(hc)}:${String(10+Math.round((hc%1)*60)).padStart(2,'0')}`});if(hr)iv.push({tipo:'Raio',inicio:'15:40',fim:`${15+Math.floor(hr)}:${String(40+Math.round((hr%1)*60)%20).padStart(2,'0')}`});
-  out.push({data:d,apontador:'Exemplo Dia',turno:'dia',frente:'Boa Vista',chuvaManha:m7>3||rnd()<.1,chuvaTarde:m17>0,chuvaNoite:null,mm07:m7,mm17:m17,horasChuva:hc,horasRaio:hr,intervalos:iv,fotos:rnd()<.7?['f.jpg']:[]});
+  out.push({data:d,apontador:'Exemplo Dia',turno:'dia',frente:'Boa Vista',pluviometro:'Boa Vista',chuvaManha:m7>3||rnd()<.1,chuvaTarde:m17>0,chuvaNoite:null,mm07:m7,mm17:m17,horasChuva:hc,horasRaio:hr,intervalos:iv,fotos:rnd()<.7?['f.jpg']:[]});
   if(w>=1&&w<=4)out.push({data:d,apontador:'Exemplo Noite',turno:'noite',frente:'Adhemar',chuvaManha:null,chuvaTarde:null,chuvaNoite:m7>0,mm07:null,mm17:null,horasChuva:m7>12?1:0,horasRaio:0,intervalos:m7>12?[{tipo:'Chuva',inicio:'21:00',fim:'22:00'}]:[],fotos:[]});}
  return out;}
 
