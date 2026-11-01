@@ -467,7 +467,7 @@ return {Doc,width,enc};
 
 const CATALOG_SEED=window.CATALOG_SEED||{schema:'alya-catalogo-1',generated:'',pieces:[]};   // (V1.76) vem do rdo-catalogo.js
 const LOGO=document.querySelector('header.top img').src;
-const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.19';
+const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.20';
 const PASTA='https://queirozgalvao1.sharepoint.com/:f:/s/PonteJoinville/IgDE4PJCU0C9RJfF4FAkIarTAa_wdhMCQYOGRe-1D9gsBmM?e=5Pvp5v';
 const OBRA={nome:'Ponte de Joinville',numero:'70.578',empresa:'Alya Construtora'};
 const $=id=>document.getElementById(id);
@@ -1193,7 +1193,7 @@ async function retryPending(){if(retrying||sending||!navigator.onLine)return;let
  retrying=false;if(ok){note(ok===1?'RDO pendente enviado para a pasta do site.':ok+' RDOs pendentes enviados para a pasta do site.');try{render();}catch(e){}}}
 addEventListener('online',()=>setTimeout(retryPending,1500));setTimeout(retryPending,4000);
 // Versão nova do RDO: o app confere sozinho quando volta para a tela e se atualiza (os dados ficam no aparelho).
-const RDO_VER='1.79';
+const RDO_VER='1.80';
 async function checkVer(){try{if(location.protocol==='file:')return;let r=await fetch('/api/rdo/versao',{cache:'no-store'});if(!r.ok||!/json/.test(r.headers.get('content-type')||''))return;let j=await r.json();
  if(!j||!j.rdo||j.rdo===RDO_VER)return;let k='rdo-ver-'+j.rdo;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');}catch(e){}
  if($('sheet').hidden&&!sending&&!retrying){save();location.reload();}else note('Tem uma versão nova do RDO: ela abre quando você fechar esta tela.');}catch(e){}}
@@ -1247,8 +1247,7 @@ async function buildPdf(d){
  section('3. Mão de obra');
  if(x.crews.length){table([{t:'Encarregado',w:.32,bold:true},{t:'Funções e quantidades',w:.56},{t:'Efetivo',w:.12,align:'right'}],x.crews.map(c=>{let F=foreman(c.fid);return {cells:[title(F.n)+'\n'+title(F.c),Object.entries(c.counts).filter(([,n])=>+n).map(([f,n])=>title(f)+' '+n).join(' · ')||'—',String(crewTotal(c))]};}).concat([{cells:['Total','',String(st.efetivo)],bold:true}]));
   let roles=new Map;for(let c of x.crews){let F=foreman(c.fid);roles.set(title(F.c),(roles.get(title(F.c))||0)+1);for(let [f,n] of Object.entries(c.counts))if(+n)roles.set(title(f),(roles.get(title(f))||0)+(+n));}
-  let hhRole=new Map;for(let p of st.people)hhRole.set(p.role,(hhRole.get(p.role)||0)+p.h);
-  table([{t:'Função',w:.5,bold:true},{t:'Pessoas',w:.25,align:'right'},{t:'Horas-homem',w:.25,align:'right'}],[...roles.entries()].sort((a,b)=>b[1]-a[1]).map(([r,n])=>({cells:[r,String(n),fmt(hhRole.get(r)||0)]})).concat([{cells:['Total',String(st.efetivo),fmt(st.hh)],bold:true}]));}
+  table([{t:'Função',w:.75,bold:true},{t:'Pessoas',w:.25,align:'right'}],[...roles.entries()].sort((a,b)=>b[1]-a[1]).map(([r,n])=>({cells:[r,String(n)]})).concat([{cells:['Total',String(st.efetivo)],bold:true}]));}   // sem horas-homem no PDF (V0.20)
  else none('Nenhuma equipe lançada.');
  section('4. Atividades');
  let a3=st.acts.filter(a=>a.kind==='3d'),ax=st.acts.filter(a=>a.kind==='extra');
