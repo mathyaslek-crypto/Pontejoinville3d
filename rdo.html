@@ -79,7 +79,7 @@ input:disabled,select:disabled,textarea:disabled{opacity:.6}
 .day .d b{display:block;font-size:18px;font-weight:600}
 .day .d span{font-size:12.5px;color:var(--muted)}
 .he{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.06em;padding:1px 6px;border-radius:5px;background:#3a2a10;color:var(--amber2);margin-left:6px;vertical-align:1px}
-.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:0 0 12px}
+.steps{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin:0 0 12px}
 .steps a{display:flex;flex-direction:column;gap:3px;text-decoration:none;color:var(--muted);font-size:11px;padding:8px 6px;border-radius:9px;border:1px solid var(--line);background:var(--panel);text-align:center;min-width:0}
 .steps a b{font-size:13px;color:#c9d3dc;font-weight:600}
 .steps a.ok{border-color:#2b6047;background:#12241c;color:#8fdcb6}
@@ -467,7 +467,7 @@ return {Doc,width,enc};
 
 const CATALOG_SEED=window.CATALOG_SEED||{schema:'alya-catalogo-1',generated:'',pieces:[]};   // (V1.76) vem do rdo-catalogo.js
 const LOGO=document.querySelector('header.top img').src;
-const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.17';
+const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.18';
 const PASTA='https://queirozgalvao1.sharepoint.com/:f:/s/PonteJoinville/IgDE4PJCU0C9RJfF4FAkIarTAa_wdhMCQYOGRe-1D9gsBmM?e=5Pvp5v';
 const OBRA={nome:'Ponte de Joinville',numero:'70.578',empresa:'Alya Construtora'};
 const $=id=>document.getElementById(id);
@@ -658,14 +658,14 @@ function keepScroll(fn){let y=scrollY;fn();scrollTo(0,y);}
 // ---------- Hoje ----------
 function pageToday(){
  let x=getDay(),fin=x.finalized,dis=fin?'disabled':'',st=dayStats(),w=win(day,x.shift),gs=gridStats(),stops=x.stops,nWx=ownP(x).filter(i=>x.rainP[i]!=null).length;
- const ok={t:!!x.author,p:pluvioDone(x),e:x.crews.length>0,a:st.acts.length>0,s:true};
+ const ok={t:!!x.author,p:pluvioDone(x),e:x.crews.length>0,a:st.acts.length>0,s:true,q:eqCount(x)>0};
  $('content').innerHTML=`
  ${migrated?`<p class="alert">${esc(migrated)}</p>`:''}
  <section class="card sec" id="s1"><div class="day"><button class="btn nav" type="button" id="dprev" aria-label="Dia anterior">‹</button><div class="d"><b>${br(day)}</b><span>${weekday(day)}${day===today()?' · hoje':''}</span></div><button class="btn nav" type="button" id="dnext" aria-label="Próximo dia" ${day>=today()?'disabled':''}>›</button></div>
   <div class="grid2" style="margin-top:14px"><label class="f">Apontador<select id="author" ${dis}>${apOpts(x.author||db.profile)}</select></label><label class="f fr">Frente de serviço<span class="frs">${frOpts(x.front,dis)}</span></label></div>
   <label class="f" style="margin-top:10px">Turno${w.he?'<span class="he" style="margin:0">HORA EXTRA</span>':''}<div class="seg" id="shift">${[['dia','Dia',ICON.sun],['noite','Noite',ICON.moon]].map(([k,t,ic])=>`<button type="button" data-v="${k}" aria-pressed="${x.shift===k}" ${dis}><span class="row" style="gap:6px">${ic}${t}</span><small>${winLabel(day,k)}</small></button>`).join('')}</div></label>
  </section>
- <nav class="steps" aria-label="Seções do RDO">${[['01','Turno','s1',ok.t],['02','Pluviômetro','s2',ok.p],['03','Equipes','s3',ok.e],['04','Atividades','s4',ok.a],['05','Paralisações','s5',ok.a]].map(([n,t,id,k])=>`<a href="#${id}" class="${k?'ok':''}"><b>${k?'✓':n}</b><span>${t}</span></a>`).join('')}</nav>
+ <nav class="steps" aria-label="Seções do RDO">${[['01','Turno','s1',ok.t],['02','Chuva','s2',ok.p],['03','Equipes','s3',ok.e],['04','Ativid.','s4',ok.a],['05','Paradas','s5',ok.a],['07','Equip.','s7',ok.q]].map(([n,t,id,k])=>`<a href="#${id}" class="${k?'ok':''}"><b>${k?'✓':n}</b><span>${t}</span></a>`).join('')}</nav>
  ${fin?`<div class="final"><div><b>RDO finalizado · Rev. ${fin.rev}</b>${br(fin.at)} às ${new Date(fin.at).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}. Para corrigir, reabra o dia.</div><button class="btn sm ghost" type="button" id="reshare">${siteOk(x)?'Enviar de novo':'Enviar para a pasta'}</button><button class="btn sm ghost" type="button" id="reopen">Reabrir</button></div>`:''}
 
  <section class="card sec" id="s2"><div class="sh"><span class="ix">02</span><h2>Pluviômetro</h2><span class="pill ${ok.p?'ok':'warn'}">${ok.p?'Completo':!x.pluv?'Escolha o pluviômetro':nWx+'/'+ownP(x).length+' períodos'}</span></div>
@@ -698,7 +698,7 @@ function pageToday(){
   ${x.photos.map(g=>phCard(g,st,dis)).join('')||`<p class="empty">${st.acts.length?'Fotos das atividades do dia, até 6 por atividade.':'Lance as atividades primeiro. As fotos ficam ligadas a elas.'}</p>`}
   ${fin?'':`<button class="btn dash" type="button" id="newPh" ${st.acts.length?'':'disabled'}>${ICON.cam}Fotos de uma atividade</button>`}
  </section>
- <section class="card sec" id="s7"><div class="sh"><span class="ix">07</span><h2>Equipamentos e observações</h2><span class="pill ${eqCount(x)?'ok':''}">${eqCount(x)?eqCount(x)+' equip.':'Nenhum'}</span></div>
+ <section class="card sec" id="s7"><div class="sh"><span class="ix">07</span><h2>Equipamentos e observações</h2><span class="pill ${eqCount(x)?'ok':'warn'}">${eqCount(x)?eqCount(x)+' equip.':'Obrigatório'}</span></div>
   <h3 style="margin-top:4px">Equipamentos na frente</h3>${fin?'':'<p class="hint" style="margin-top:0">Escolha o equipamento e toque nos ativos que estão na frente de serviço.</p>'}
   <div id="eqW"></div>
   <label class="f" style="margin-top:14px">Observações e ocorrências do dia<textarea id="notes" ${dis}>${esc(x.notes)}</textarea></label>
@@ -1080,6 +1080,7 @@ function finalize(){
  if(!x.pluv)block.push('qual pluviômetro (Adhemar ou Boa Vista)');
  if(!x.crews.length)block.push('equipes do dia');
  if(!st.acts.length)block.push('pelo menos uma atividade');
+ if(!eqCount(x))block.push('equipamentos na frente (07)');
  let empty=x.crews.filter(c=>crewTotal(c)===1);if(empty.length)warn.push('equipe sem quantidades: '+empty.map(c=>short(c.fid)).join(', '));
  let idle=x.crews.filter(c=>!st.acts.some(a=>a.crews.some(k=>k.id===c.id)));if(idle.length)warn.push('equipe sem atividade: '+idle.map(c=>short(c.fid)).join(', '));
  // chuva medida × "não choveu" (17h mede 07h–17h: manhã e tarde; 07h mede a noite)
@@ -1178,7 +1179,7 @@ async function retryPending(){if(retrying||sending||!navigator.onLine)return;let
  retrying=false;if(ok){note(ok===1?'RDO pendente enviado para a pasta do site.':ok+' RDOs pendentes enviados para a pasta do site.');try{render();}catch(e){}}}
 addEventListener('online',()=>setTimeout(retryPending,1500));setTimeout(retryPending,4000);
 // Versão nova do RDO: o app confere sozinho quando volta para a tela e se atualiza (os dados ficam no aparelho).
-const RDO_VER='1.77';
+const RDO_VER='1.78';
 async function checkVer(){try{if(location.protocol==='file:')return;let r=await fetch('/api/rdo/versao',{cache:'no-store'});if(!r.ok||!/json/.test(r.headers.get('content-type')||''))return;let j=await r.json();
  if(!j||!j.rdo||j.rdo===RDO_VER)return;let k='rdo-ver-'+j.rdo;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');}catch(e){}
  if($('sheet').hidden&&!sending&&!retrying){save();location.reload();}else note('Tem uma versão nova do RDO: ela abre quando você fechar esta tela.');}catch(e){}}
