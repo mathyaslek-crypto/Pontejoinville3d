@@ -467,7 +467,7 @@ return {Doc,width,enc};
 
 const CATALOG_SEED=window.CATALOG_SEED||{schema:'alya-catalogo-1',generated:'',pieces:[]};   // (V1.76) vem do rdo-catalogo.js
 const LOGO=document.querySelector('header.top img').src;
-const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.18';
+const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.19';
 const PASTA='https://queirozgalvao1.sharepoint.com/:f:/s/PonteJoinville/IgDE4PJCU0C9RJfF4FAkIarTAa_wdhMCQYOGRe-1D9gsBmM?e=5Pvp5v';
 const OBRA={nome:'Ponte de Joinville',numero:'70.578',empresa:'Alya Construtora'};
 const $=id=>document.getElementById(id);
@@ -658,7 +658,7 @@ function keepScroll(fn){let y=scrollY;fn();scrollTo(0,y);}
 // ---------- Hoje ----------
 function pageToday(){
  let x=getDay(),fin=x.finalized,dis=fin?'disabled':'',st=dayStats(),w=win(day,x.shift),gs=gridStats(),stops=x.stops,nWx=ownP(x).filter(i=>x.rainP[i]!=null).length;
- const ok={t:!!x.author,p:pluvioDone(x),e:x.crews.length>0,a:st.acts.length>0,s:true,q:eqCount(x)>0};
+ const ok={t:!!x.author,p:pluvioDone(x),e:x.crews.length>0,a:st.acts.length>0&&!crewCheck().length,s:true,q:eqCount(x)>0};
  $('content').innerHTML=`
  ${migrated?`<p class="alert">${esc(migrated)}</p>`:''}
  <section class="card sec" id="s1"><div class="day"><button class="btn nav" type="button" id="dprev" aria-label="Dia anterior">‹</button><div class="d"><b>${br(day)}</b><span>${weekday(day)}${day===today()?' · hoje':''}</span></div><button class="btn nav" type="button" id="dnext" aria-label="Próximo dia" ${day>=today()?'disabled':''}>›</button></div>
@@ -685,6 +685,7 @@ function pageToday(){
  </section>
 
  <section class="card sec" id="s4"><div class="sh"><span class="ix">04</span><h2>Atividades</h2><span class="pill ${ok.a?'ok':'warn'}">${st.acts.length?st.acts.length+' · '+fmtH(st.hh)+' H-H':'Nenhuma'}</span></div>
+  ${(()=>{let L=st.acts.length?crewCheck():[];return L.length?`<div class="alert err" style="margin-bottom:10px"><b>Conferir a equipe nas atividades:</b><ul style="margin:6px 0 0 18px;padding:0">${L.map(m=>`<li>${esc(m)}</li>`).join('')}</ul></div>`:'';})()}
   ${st.acts.map(a=>actCard(a,st)).join('')||'<p class="empty">Lance as atividades do dia. Pode ser ao longo do turno ou tudo no final.</p>'}
   ${fin?'':`<div class="addrow"><button class="btn primary" type="button" id="new3d">${ICON.plus}Do 3D</button><button class="btn" type="button" id="newExtra">${ICON.plus}Extra</button></div><p class="hint">Extra: serviços fora do escopo do 3D (limpeza, apoio, mobilização…). Ficam no RDO, mas não mexem no avanço da ponte.</p>`}
  </section>
@@ -712,6 +713,18 @@ const eqCount=x=>Object.values(x.equipment||{}).reduce((n,v)=>n+eqVals(v).length
 function resumoHTML(x,st,gs){let par=x.stops.reduce((s,p)=>s+(p.em-p.sm)/60,0),mm=(x.mm07!==''||x.mm17!=='')?fmt((+x.mm07||0)+(+x.mm17||0))+' mm':'—';
  const it=(t,v)=>`<div><span>${t}</span><b>${v}</b></div>`;
  return `<section class="card resumo" aria-label="Resumo do dia"><h3 style="margin:0 0 8px">Confira antes de enviar</h3><div class="rgrid">${it('Efetivo',st.efetivo+' pessoas')}${it('Atividades',st.acts.length+' · '+fmtH(st.hh)+' H-H')}${it('Paralisações',fmtH(par))}${it('Chuva / raio',fmtH(gs.c)+' / '+fmtH(gs.r))}${it('Chuva medida',mm)}${it('Pluviômetro',pluvName(x.pluv)||'—')}${it('Equipamentos',eqCount(x)+' ativos')}${it('Fotos',photoCount(x))}</div></section>`;}
+// Conferência da equipe (V0.19): cada pessoa da equipe tem que estar em alguma atividade e ninguém pode estar
+// em duas atividades ao mesmo tempo. Por função: no pico do dia o número apontado tem que chegar ao da equipe
+// (senão falta gente) e em nenhum horário pode passar dele (senão está duplicado).
+function crewCheck(d=day){let x=getDay(d),w=win(d,x.shift),acts=listActs(d),out=[];
+ for(let c of x.crews){let F=foreman(c.fid);
+  for(let [f,nv] of Object.entries(c.counts||{})){let N=+nv||0;if(!N)continue;let mx=0,over=null;
+   for(let m=w.a;m<w.b;m+=15){let n=0;for(let a of acts){if(!(a.sm<m+15&&a.em>m))continue;for(let k of a.crews||[])if(k.id===c.id)n+=k.counts?(+k.counts[f]||0):N;}
+    mx=Math.max(mx,n);if(n>N){if(!over)over={a:m,b:m+15,n};else if(over.b===m){over.b=m+15;over.n=Math.max(over.n,n);}}}
+   let fn=title(f).toLowerCase(),eq=short(c.fid);
+   if(over)out.push(`${eq}: ${over.n} ${fn}${over.n>1?'s':''} apontados ao mesmo tempo (${span(over.a,over.b)}), a equipe tem ${N}`);
+   else if(mx<N)out.push(`${eq}: ${N-mx} ${fn}${N-mx>1?'s':''} sem atividade (equipe tem ${N}, apontados ${mx})`);}}
+ return out;}
 // Seções que recolhem (V0.16): toque no título; o estado fica guardado no aparelho
 function bindCollapse(){let col=[];try{col=JSON.parse(localStorage.getItem('rdo-col')||'[]');}catch(e){}
  document.querySelectorAll('#content .card.sec').forEach(sec=>{let h=sec.querySelector('.sh');if(!h)return;sec.classList.toggle('col',col.includes(sec.id));h.setAttribute('role','button');h.tabIndex=0;h.setAttribute('aria-expanded',!sec.classList.contains('col'));
@@ -1081,6 +1094,7 @@ function finalize(){
  if(!x.crews.length)block.push('equipes do dia');
  if(!st.acts.length)block.push('pelo menos uma atividade');
  if(!eqCount(x))block.push('equipamentos na frente (07)');
+ for(let m of crewCheck())block.push(m);
  let empty=x.crews.filter(c=>crewTotal(c)===1);if(empty.length)warn.push('equipe sem quantidades: '+empty.map(c=>short(c.fid)).join(', '));
  let idle=x.crews.filter(c=>!st.acts.some(a=>a.crews.some(k=>k.id===c.id)));if(idle.length)warn.push('equipe sem atividade: '+idle.map(c=>short(c.fid)).join(', '));
  // chuva medida × "não choveu" (17h mede 07h–17h: manhã e tarde; 07h mede a noite)
@@ -1179,7 +1193,7 @@ async function retryPending(){if(retrying||sending||!navigator.onLine)return;let
  retrying=false;if(ok){note(ok===1?'RDO pendente enviado para a pasta do site.':ok+' RDOs pendentes enviados para a pasta do site.');try{render();}catch(e){}}}
 addEventListener('online',()=>setTimeout(retryPending,1500));setTimeout(retryPending,4000);
 // Versão nova do RDO: o app confere sozinho quando volta para a tela e se atualiza (os dados ficam no aparelho).
-const RDO_VER='1.78';
+const RDO_VER='1.79';
 async function checkVer(){try{if(location.protocol==='file:')return;let r=await fetch('/api/rdo/versao',{cache:'no-store'});if(!r.ok||!/json/.test(r.headers.get('content-type')||''))return;let j=await r.json();
  if(!j||!j.rdo||j.rdo===RDO_VER)return;let k='rdo-ver-'+j.rdo;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');}catch(e){}
  if($('sheet').hidden&&!sending&&!retrying){save();location.reload();}else note('Tem uma versão nova do RDO: ela abre quando você fechar esta tela.');}catch(e){}}
