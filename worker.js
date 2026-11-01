@@ -281,9 +281,9 @@ async function api(req, env, url) {
 // ---------- quem pode ver o quê ----------
 // Login continua na Cloudflare Access (código no e-mail). Aqui o Worker lê o e-mail do token assinado pela Access
 // e libera as páginas por perfil:
-//   completo  → tudo (início, 3D, pluviometria, paralisações e RDO)
+//   completo  → tudo (início, 3D, pluviometria, paralisações, mão de obra e RDO)
 //   apontador → só o RDO (qualquer outro endereço volta para o RDO)
-//   equipe    → início, 3D, pluviometria e paralisações (sem o RDO)
+//   equipe    → início, 3D, pluviometria, paralisações e mão de obra (sem o RDO)
 //   equipe-rdo → o mesmo da equipe e também o RDO (abre e envia; não exclui nada da pasta)
 const FULL = new Set(['mathyaslek@gmail.com']);
 const RDO_ONLY = new Set(['kailane.costa@alyaconstrutora.com', 'joao.psimoes@alyaconstrutora.com', 'anderson.silva@alyaconstrutora.com',
@@ -372,11 +372,13 @@ const S3D = [
   ['publicar3d', 4]
 ];
 const tag3d = (n, v) => '<script src="/' + n + '.js?v=' + v + '" defer></script>';
-const INJ_3D = PAD_CSS + S3D.map(([n, v]) => tag3d(n, v)).join('');
+// (V1.81) a mão de obra saiu do Dashboard do 3D e virou a página mao-de-obra.html: esconde os painéis (V1.37, V1.49 e V1.52) sem editar o 3d.html
+const SEM_MO = '<style>#mo37,#mo49,#mo50{display:none!important}</style>';
+const INJ_3D = PAD_CSS + SEM_MO + S3D.map(([n, v]) => tag3d(n, v)).join('');
 // V1.66 — Planejamento: o mesmo 3D, com o armazenamento separado por cenário (planejamento3d.js roda antes do 3D, sem defer)
 // e sem o que é só da produção (cenários do cronograma e leitura da Pasta do RDO).
 const PLAN_SKIP = new Set(['cenarios3d', 'rdopasta3d']);
-const INJ_PLAN = PAD_CSS + '<script src="/planejamento3d.js?v=1"></script>' + S3D.filter(([n]) => !PLAN_SKIP.has(n)).map(([n, v]) => tag3d(n, v)).join('');
+const INJ_PLAN = PAD_CSS + SEM_MO + '<script src="/planejamento3d.js?v=1"></script>' + S3D.filter(([n]) => !PLAN_SKIP.has(n)).map(([n, v]) => tag3d(n, v)).join('');
 
 async function withLoader(res, extra = '') {
   const ct = res.headers.get('content-type') || '';
@@ -401,7 +403,7 @@ export default {
       if (path.startsWith('/api/')) return json({ error: 'sem acesso' }, 403);
       return Response.redirect(url.origin + '/rdo', 302);
     }
-    if (prof === 'equipe' && isRdo(path)) return blocked('O RDO é usado só pelos apontadores. Você tem acesso ao 3D, à pluviometria e às paralisações.', '/', 'Ir para o início');
+    if (prof === 'equipe' && isRdo(path)) return blocked('O RDO é usado só pelos apontadores. Você tem acesso ao 3D, à pluviometria, às paralisações e à mão de obra.', '/', 'Ir para o início');
     // (V1.68) usuários do RDO com senha: tela e API só do perfil completo
     if (path === '/api/rdo-usuarios' || path.startsWith('/api/rdo-usuarios/')) return prof === 'completo' ? usuariosApi(req, env, url) : json({ error: 'só o perfil completo' }, 403);
     if ((path === '/usuarios' || path === '/usuarios.html') && prof !== 'completo') return blocked('A tela de usuários do RDO é só do perfil completo.', '/', 'Ir para o início');

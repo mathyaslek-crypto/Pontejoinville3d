@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1117">
+<title>Mão de obra · Ponte Joinville</title>
+<!-- V1.81 — Mão de obra (saiu do Dashboard do 3D). Lê os pacotes da Pasta do RDO e mostra o efetivo por dia, por
+     função, por encarregado e por atividade. Sem horas-homem: só pessoas e diárias (1 pessoa num dia = 1 diária). -->
+<style>
+:root{--bg:#0e141a;--panel:#141c24;--raise:#1a242e;--line:#22303b;--line2:#304150;--ink:#e8edf2;--ink2:#c3ccd5;--muted:#8a99a8;--amber:#f2b33d;
+ --f:Bahnschrift,"DIN Alternate","Segoe UI Variable Text","Segoe UI",Roboto,Arial,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.45 var(--f)}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;padding:12px 20px;background:#0b1117f2;backdrop-filter:blur(8px);border-bottom:1px solid var(--line);flex-wrap:wrap}
+header .mk{width:30px;height:30px;background:var(--amber);clip-path:polygon(50% 0,100% 100%,72% 100%,50% 52%,28% 100%,0 100%)}
+header h1{font-size:17px;margin:0;font-weight:600}
+header small{display:block;color:var(--muted);font-size:12px;font-weight:400}
+header .sp{flex:1}
+.btn{min-height:40px;padding:0 14px;border-radius:8px;border:1px solid var(--line2);background:var(--raise);color:#d3dbe3;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-size:14px;white-space:nowrap;text-decoration:none}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+main{max-width:1280px;margin:0 auto;padding:16px 20px 60px}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.seg{display:flex;border:1px solid var(--line2);border-radius:9px;overflow:hidden;background:var(--raise)}
+.seg button{border:0;background:transparent;color:#b8c4cf;padding:0 13px;min-height:38px;cursor:pointer;font-size:13.5px;white-space:nowrap}
+.seg button+button{border-left:1px solid var(--line2)}
+.seg button[aria-pressed=true]{background:var(--amber);color:#18140a;font-weight:600}
+.per{display:flex;gap:6px;align-items:center}
+.per button{width:38px;min-height:38px;border-radius:8px;border:1px solid var(--line2);background:var(--raise);cursor:pointer;font-size:18px}
+input[type=date],input[type=month],select{min-height:38px;border-radius:8px;border:1px solid var(--line2);background:var(--raise);padding:0 10px;color-scheme:dark}
+select{max-width:100%}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;position:relative;min-width:0}
+.card h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;font-weight:600;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.card h2 span{letter-spacing:0;text-transform:none;font-weight:400}
+.grid{display:grid;gap:14px}
+.kpis{grid-template-columns:repeat(6,minmax(0,1fr))}
+.kpi .v{font-size:30px;font-weight:600;line-height:1.05;font-variant-numeric:tabular-nums}
+.kpi .v small{font-size:14px;color:var(--muted);font-weight:400;margin-left:3px}
+.kpi .s{color:var(--muted);font-size:12.5px;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi i{position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:var(--amber)}
+.two{grid-template-columns:1fr 1.3fr}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2);text-transform:none;letter-spacing:0;font-weight:400}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.legend button{border:0;background:none;color:inherit;cursor:pointer;padding:2px 0;font-size:12.5px}
+.legend button[aria-pressed=false]{opacity:.38}
+svg.chart{width:100%;display:block;overflow:visible}
+svg.chart text{fill:var(--muted);font-size:11px;font-family:var(--f)}
+svg.chart .gl{stroke:var(--line);stroke-width:1}
+svg.chart .hit{fill:transparent;cursor:crosshair}
+svg.chart .sel{fill:#f2b33d14;stroke:#f2b33d55}
+#tip{position:fixed;z-index:50;pointer-events:none;background:#0b1117;border:1px solid var(--line2);border-radius:8px;padding:8px 10px;font-size:12.5px;box-shadow:0 10px 24px #0009;min-width:160px;display:none}
+#tip b{display:block;margin-bottom:3px}
+#tip div{display:flex;justify-content:space-between;gap:14px;color:var(--ink2)}
+#tip div span:last-child{font-variant-numeric:tabular-nums;color:var(--ink)}
+#tip div i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{position:sticky;top:0;background:#18212a;color:var(--muted);font-weight:600;text-align:left;padding:9px 10px;border-bottom:1px solid var(--line2);white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover td{background:#17212b}
+.tw{max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.mx tbody tr{cursor:pointer}
+.mx tbody tr.on td{background:#2a241255}
+.mx td.c{text-align:center;font-variant-numeric:tabular-nums}
+.mx td.c span{display:inline-block;min-width:34px;padding:2px 6px;border-radius:6px}
+.mx td.z{color:#3b4a58}
+.sub2{display:block;color:var(--muted);font-size:12px}
+.pill{display:inline-block;font-size:11.5px;padding:1px 7px;border-radius:9px;background:#22303d;color:var(--ink2);white-space:nowrap}
+.pill.e{background:#2a2412;color:#f6dc9a}
+.hb{display:grid;gap:9px}
+.hr{display:grid;grid-template-columns:minmax(0,40%) 1fr 110px;gap:10px;align-items:center;font-size:13px}
+.hr .l{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink2)}
+.hr .t{height:12px;background:#1b2530;border-radius:4px;overflow:hidden}
+.hr .t i{display:block;height:100%;border-radius:0 4px 4px 0}
+.hr .v{text-align:right;font-variant-numeric:tabular-nums}
+.hr .v small{color:var(--muted);margin-left:4px}
+.det{margin-top:14px}
+.det h3{margin:0 0 4px;font-size:16px}
+.dd{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:10px;background:#111920}
+.dd .h{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:13px}
+.dd .h b{font-size:13.5px}
+.dd .fs{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.dd details{margin-top:6px;font-size:12.5px;color:var(--ink2)}
+.dd summary{cursor:pointer;color:var(--muted)}
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty b{display:block;color:var(--ink);font-size:18px;margin-bottom:8px}
+.note{font-size:12.5px;color:var(--muted)}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b2631;border:1px solid var(--line2);border-radius:10px;padding:10px 16px;font-size:14px;display:none;z-index:60;max-width:calc(100% - 24px)}
+@media(max-width:1000px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.two{grid-template-columns:1fr}}
+@media(max-width:560px){main{padding:12px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi .v{font-size:24px}header{padding:10px 12px}.card{padding:14px 12px}.hr{grid-template-columns:minmax(0,38%) 1fr 92px}}
+</style>
+</head>
+<body>
+<header><a class="btn ghost" href="./" title="Voltar ao início" style="padding:0 10px">←</a><div class="mk"></div><div><h1>Mão de obra · Ponte Joinville</h1><small id="sub">Efetivo dos RDOs enviados pelos apontadores</small></div><div class="sp"></div>
+ <button class="btn" id="upd">Atualizar</button></header>
+<main id="app"><div class="empty"><b>Lendo a Pasta do RDO…</b></div></main>
+<div id="tip"></div><div id="toast"></div>
+<script>
+'use strict';
+const KEY='alya-mo-v1',$=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=(n,d=1)=>Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:d});
+const br=d=>d?d.split('-').reverse().join('/'):'—';
+const brs=d=>d?d.slice(8,10)+'/'+d.slice(5,7):'';
+const wd=d=>new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','');
+const iso=x=>{let d=new Date(x);return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);};
+const addD=(d,n)=>{let x=new Date(d+'T12:00:00');x.setDate(x.getDate()+n);return x.toISOString().slice(0,10);};
+const today=()=>iso(Date.now());
+const MES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const monLabel=m=>MES[+m.slice(5,7)-1]+' de '+m.slice(0,4);
+const hm=m=>{m=Math.round(m);let h=Math.floor(m/60)%24;return String(h).padStart(2,'0')+':'+String(m%60).padStart(2,'0');};
+const hmEnd=m=>m>=1440&&m%1440===0?'24:00':hm(m);
+function toast(t){let e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',4200);}
+
+// ---------- mesmas regras do RDO (rdo.html) ----------
+const SMALL=new Set(['da','de','do','das','dos','e']);
+const title=s=>String(s||'').toLowerCase().split(/\s+/).map((w,i)=>/^(i|ii|iii|iv)$/.test(w)?w.toUpperCase():i&&SMALL.has(w)?w:w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+const short=s=>{let w=String(s||'').split(/\s+/).filter(Boolean);return title(w[0]+(w.length>1?' '+w[w.length-1]:''));};
+const dow=d=>new Date(d+'T12:00:00').getDay();
+function win(d,s){let w=dow(d),he=w===6||w===0;if(s==='noite')return w>=1&&w<=4?{a:1080,b:1640}:{a:1020,b:1440};return w>=1&&w<=4?{a:420,b:1020}:{a:420,b:960};}
+function lado(f){f=String(f||'');return /adhemar/i.test(f)?'Adhemar':/boa\s*vista/i.test(f)?'Boa Vista':'';}
+// grupos de função dos gráficos (os mesmos que o 3D usava)
+const FN=[{k:'Encarregado',c:'#3987e5',re:/encarreg|lider|mestre|feitor/},{k:'Carpinteiro',c:'#d95926',re:/carpint/},{k:'Pedreiro',c:'#199e70',re:/pedreir/},
+ {k:'Ajudante',c:'#c98500',re:/ajudant|servent/},{k:'Armador',c:'#d55181',re:/armador|ferreir/},{k:'Outras funções',c:'#9085e9',re:/./}];
+const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const grp=r=>{const n=norm(r);for(const f of FN)if(f.re.test(n))return f.k;return 'Outras funções';};
+const FC=Object.fromEntries(FN.map(f=>[f.k,f.c]));
+
+// ---------- leitura de um pacote do RDO ----------
+// Cada dia/apontador/turno guarda: equipes (encarregado + quantidades) e atividades com as pessoas distribuídas
+// como no RDO (a mesma pessoa não conta duas vezes em horários diferentes). O pacote mais novo de cada dia vale.
+function readDay(o,d,x){
+ const author=x.author||o.from||'?',shift=x.shift==='noite'?'noite':'dia',key=d+'|'+author+'|'+shift,w=win(d,shift);
+ const rowsMO=(o.maoDeObra||[]).filter(r=>r.data===d&&(r.apontador||'')===(x.author||'')&&(r.turno||'dia')===shift);
+ const cargo=new Map;for(const r of rowsMO)if(r.encarregado&&r.cargo)cargo.set(norm(r.encarregado),r.cargo);
+ const crewById=new Map,crews=[];
+ for(const c of x.crews||[]){const n=title(c.fid),cg=cargo.get(norm(n))||'Encarregado',counts={};
+  for(const [f,v] of Object.entries(c.counts||{}))if(+v)counts[title(f)]=(counts[title(f)]||0)+(+v);
+  const cr={id:c.id,enc:n,cargo:cg,counts,total:1+Object.values(counts).reduce((s,v)=>s+v,0)};crews.push(cr);crewById.set(c.id,{raw:c,cr});}
+ // atividades na mesma ordem do RDO (listActs) para casar com as linhas de "atividades" do pacote
+ const evs=(o.events||[]).filter(e=>!e.deleted&&e.date===d).sort((a,b)=>(a.sm??0)-(b.sm??0)||String(a.created).localeCompare(String(b.created)));
+ let acts=evs.map(e=>({kind:'3d',label:e.piece||e.uid||'Peça',sub:e.service||'',status:e.status||'',sm:e.sm??w.a,em:e.em??w.b,crews:e.crews||[]}))
+  .concat((x.extras||[]).map(t=>({kind:'extra',label:t.desc||'Atividade extra',sub:'Atividade extra',status:'Extra',sm:t.sm,em:t.em,crews:t.crews||[]})));
+ acts=acts.map((a,i)=>({...a,i})).sort((p,q)=>p.sm-q.sm||p.em-q.em||p.i-q.i);
+ const rowsA=(o.atividades||[]).filter(r=>r.data===d&&(r.apontador||'')===(x.author||'')&&(r.turno||'dia')===shift);
+ if(rowsA.length===acts.length)acts.forEach((a,i)=>{const r=rowsA[i];a.label=r.atividade||a.label;if(r.tipo==='3D'){a.sub=r.servico||a.sub;a.status=r.situacao||a.status;}});
+ // distribui as pessoas (assign do RDO)
+ const pools=new Map,out=[];
+ for(const a of acts){const ps=[];
+  for(const c of a.crews){const k=crewById.get(c.id);if(!k)continue;const {raw,cr}=k;
+   const need=[['__L',1],...Object.entries(raw.counts||{}).map(([f,n])=>[f,Math.min(+n||0,c.counts&&c.counts[f]!=null?+c.counts[f]:+n||0)])];
+   for(const [f,n] of need){if(!n)continue;const pk=raw.id+'|'+f,pool=pools.get(pk)||[];pools.set(pk,pool);let got=0;
+    const mk=i=>f==='__L'?{nome:cr.enc,funcao:cr.cargo,enc:cr.enc}:{nome:short(cr.enc)+' · '+title(f)+' '+(i+1),funcao:title(f),enc:cr.enc};
+    for(let i=0;i<pool.length&&got<n;i++)if(pool[i].every(([s,e])=>a.em<=s||a.sm>=e)){pool[i].push([a.sm,a.em]);ps.push(mk(i));got++;}
+    while(got<n){pool.push([[a.sm,a.em]]);ps.push(mk(pool.length-1));got++;}}}
+  out.push({tipo:a.kind==='3d'?'3D':'Extra',atividade:a.label,servico:a.kind==='3d'?a.sub:'',situacao:a.kind==='3d'?a.status:'',sm:a.sm,em:a.em,
+   encs:[...new Set(a.crews.map(c=>crewById.get(c.id)).filter(Boolean).map(k=>k.cr.enc))],pessoas:ps});}
+ return {key,data:d,apontador:x.author||o.from||'',turno:shift,frente:x.front||'',lado:lado(x.front)||lado(x.pluv==='boavista'?'Boa Vista':x.pluv==='adhemar'?'Adhemar':''),crews,acts:out};}
+
+let db={days:{},at:{},files:{}};
+try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.days)db=Object.assign({days:{},at:{},files:{}},s);}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}};
+function importPkg(o,at){let n=0;
+ for(const [d,x] of Object.entries(o.days||{})){if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||!x)continue;
+  const key=d+'|'+(x.author||o.from||'?')+'|'+(x.shift==='noite'?'noite':'dia');
+  if(String(db.at[key]||'')>at)continue;
+  try{const r=readDay(o,d,x);if(r.crews.length||r.acts.length)db.days[key]=r;else delete db.days[key];db.at[key]=at;n++;}catch(e){console.error('mão de obra: dia',d,e);}}
+ return n;}
+
+let busy=false;
+async function siteScan(manual){if(busy||location.protocol==='file:')return;busy=true;$('upd').disabled=true;let n=0,err='';
+ try{const r=await fetch('/api/rdo/lista',{cache:'no-store'});
+  if(!r.ok||!/json/.test(r.headers.get('content-type')||''))err='Não consegui ler a Pasta do RDO.';
+  else{const L=((await r.json()).itens||[]).slice().sort((a,b)=>String(a.at).localeCompare(String(b.at)));
+   for(const e of L)for(const f of (e.arquivos||[])){if(f.kind!=='pacote')continue;const k=e.id+':'+f.n;if(db.files[k])continue;
+    try{const q=await fetch('/api/rdo/arquivo/'+encodeURIComponent(e.id)+'/'+f.n,{cache:'no-store'});if(!q.ok)continue;const o=JSON.parse(await q.text());db.files[k]=1;
+     if(o&&o.schema==='alya-rdo-pacote-1'){importPkg(o,o.exported||e.at||'');n++;}}catch(x){db.files[k]=1;}}}
+ }catch(e){err='Sem conexão com o site.';}
+ busy=false;$('upd').disabled=false;if(n)save();render();
+ if(err&&manual)toast(err);else if(manual)toast(n?n+(n>1?' RDOs novos lidos':' RDO novo lido'):'Nenhum RDO novo na pasta.');else if(n)toast(n+(n>1?' RDOs novos':' RDO novo')+' da Pasta do RDO');}
+$('upd').onclick=()=>siteScan(true);
+
+// ---------- filtros ----------
+let st={per:'mes',dia:'',mes:'',lado:'todos',turno:'todos',act:'',fnOff:[]};
+try{Object.assign(st,JSON.parse(localStorage.getItem(KEY+'-ui')||'{}'));}catch(e){}
+const saveUI=()=>{try{localStorage.setItem(KEY+'-ui',JSON.stringify(st));}catch(e){}};
+const allDays=()=>Object.values(db.days);
+function base(){return allDays().filter(r=>(st.lado==='todos'||r.lado===st.lado)&&(st.turno==='todos'||r.turno===st.turno));}
+function lastDate(){const ds=allDays().map(r=>r.data).sort();return ds.at(-1)||today();}
+function range(){const last=lastDate();
+ if(st.per==='dia'){const d=st.dia||last;return [d,d];}
+ if(st.per==='mes'){const m=st.mes||last.slice(0,7);const e=addD((m.slice(5)==='12'?(+m.slice(0,4)+1)+'-01':m.slice(0,5)+String(+m.slice(5)+1).padStart(2,'0'))+'-01',-1);return [m+'-01',e];}
+ if(st.per==='30')return [addD(last,-29),last];
+ const ds=allDays().map(r=>r.data).sort();return [ds[0]||last,last];}
+function inRange(rs,a,b){return rs.filter(r=>r.data>=a&&r.data<=b);}
+
+// ---------- agregados ----------
+function perDay(rs){const m=new Map;for(const r of rs){let g=m.get(r.data);if(!g){g={data:r.data,tot:0,f:{},rdos:0};m.set(r.data,g);}g.rdos++;
+ for(const c of r.crews){g.tot+=c.total;g.f.Encarregado=(g.f.Encarregado||0)+1;for(const [f,n] of Object.entries(c.counts)){const k=grp(f);g.f[k]=(g.f[k]||0)+n;}}}return m;}
+function series(rs,a,b){const m=perDay(rs),out=[];let days=Math.round((new Date(b)-new Date(a))/864e5)+1;
+ if(days>120){const mm=new Map;for(const g of m.values()){const k=g.data.slice(0,7);let x=mm.get(k);if(!x){x={data:k,month:true,tot:0,f:{},n:0};mm.set(k,x);}x.n++;x.tot+=g.tot;for(const [f,v] of Object.entries(g.f))x.f[f]=(x.f[f]||0)+v;}
+  return [...mm.values()].sort((p,q)=>p.data.localeCompare(q.data));}
+ for(let d=a;d<=b;d=addD(d,1))out.push(m.get(d)||{data:d,tot:0,f:{},none:true});return out;}
+function byRole(rs){const m=new Map;for(const r of rs)for(const c of r.crews){const add=(f,n)=>{let g=m.get(f)||{k:f,n:0,days:new Set,max:new Map};g.n+=n;g.days.add(r.data);g.max.set(r.data,(g.max.get(r.data)||0)+n);m.set(f,g);};add(c.cargo,1);for(const [f,n] of Object.entries(c.counts))add(f,n);}
+ return [...m.values()].map(g=>({...g,mx:Math.max(...g.max.values())})).sort((a,b)=>b.n-a.n);}
+function byForeman(rs){const m=new Map;for(const r of rs)for(const c of r.crews){let g=m.get(c.enc);if(!g){g={enc:c.enc,cargo:c.cargo,n:0,days:new Set,f:{},lados:new Set};m.set(c.enc,g);}
+ g.n+=c.total;g.days.add(r.data);if(r.lado)g.lados.add(r.lado);for(const [f,n] of Object.entries(c.counts))g.f[f]=(g.f[f]||0)+n;}
+ return [...m.values()].sort((a,b)=>b.n-a.n);}
+const actKey=a=>a.tipo+'|'+a.atividade+'|'+a.servico;
+function byAct(rs){const m=new Map;for(const r of rs)for(const a of r.acts){const k=actKey(a);let g=m.get(k);if(!g){g={k,tipo:a.tipo,atividade:a.atividade,servico:a.servico,n:0,f:{},days:new Set,items:[]};m.set(k,g);}
+ g.n+=a.pessoas.length;g.days.add(r.data);g.items.push({r,a});for(const p of a.pessoas){const f=grp(p.funcao);g.f[f]=(g.f[f]||0)+1;}}
+ return [...m.values()].sort((a,b)=>b.n-a.n);}
+
+// ---------- gráficos ----------
+let W=innerWidth<700?420:1000;
+addEventListener('resize',()=>{const w=innerWidth<700?420:1000;if(w!==W){W=w;render();}});
+const scaleMax=v=>{if(v<=0)return 4;const p=Math.pow(10,Math.floor(Math.log10(v))),n=v/p;return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*p;};
+const xLab=(d,i,n,month)=>{if(month)return MES[+d.data.slice(5,7)-1].slice(0,3)+'/'+d.data.slice(2,4);const step=Math.max(1,Math.ceil(n/(W/48)));return i%step===0||i===n-1?brs(d.data):'';};
+function stackChart(s,o){const keys=FN.filter(f=>!st.fnOff.includes(f.k)),h=o.h||250,n=s.length||1,
+ mx=scaleMax(Math.max(1,...s.map(d=>keys.reduce((t,f)=>t+(d.f[f.k]||0),0)))),bw=(W-50)/n,gap=Math.max(Math.min(2,bw*.2),bw-46),ph=h-46;
+ let g='';for(let i=0;i<=4;i++){const y=h-26-ph*i/4;g+=`<line class="gl" x1="44" x2="${W}" y1="${y}" y2="${y}"/><text x="38" y="${y+4}" text-anchor="end">${fmt(mx*i/4,1)}</text>`;}
+ const bars=s.map((d,i)=>{const x=48+i*bw;let y=h-26,segs='';
+  for(const f of keys){const v=d.f[f.k]||0;if(!v)continue;const hh=v/mx*ph;y-=hh;segs+=`<rect x="${x+gap/2}" y="${y}" width="${Math.max(1,bw-gap)}" height="${hh}" fill="${f.c}" rx="1.5"/>`;}
+  const sel=o.sel&&o.sel===d.data?`<rect class="sel" x="${x}" y="0" width="${bw}" height="${h-26}" rx="3"/>`:'';
+  const tot=keys.reduce((t,f)=>t+(d.f[f.k]||0),0);
+  const tp={t:d.month?monLabel(d.data):br(d.data)+' · '+wd(d.data),r:d.none?[['Sem RDO','']]:[['Total',fmt(tot,0)+(d.month?' diárias':' pessoas')],...keys.filter(f=>d.f[f.k]).map(f=>[f.k,fmt(d.f[f.k],0),f.c])].concat(d.month?[['Média por dia',fmt(tot/(d.n||1))]]:[])};
+  return `${sel}${segs}<text x="${x+bw/2}" y="${h-8}" text-anchor="middle">${xLab(d,i,n,d.month)}</text><rect class="hit" x="${x}" y="0" width="${bw}" height="${h-26}" data-tip="${esc(JSON.stringify(tp))}"${!d.month&&!d.none?` data-day="${d.data}"`:''}/>`;}).join('');
+ return `<svg class="chart" viewBox="0 0 ${W} ${h}" role="img" aria-label="${esc(o.label||'')}">${g}${bars}</svg>`;}
+function lineChart(days,lines,o){const h=o.h||240,n=days.length,mx=scaleMax(Math.max(1,...lines.flatMap(l=>l.v))),ph=h-46,X=i=>48+(n>1?i*(W-60)/(n-1):(W-60)/2),Y=v=>h-26-v/mx*ph;
+ let g='';for(let i=0;i<=4;i++){const y=h-26-ph*i/4;g+=`<line class="gl" x1="44" x2="${W}" y1="${y}" y2="${y}"/><text x="38" y="${y+4}" text-anchor="end">${fmt(mx*i/4,1)}</text>`;}
+ const ls=lines.map(l=>`<polyline fill="none" stroke="${l.c}" stroke-width="2.4" stroke-linejoin="round" points="${l.v.map((v,i)=>X(i)+','+Y(v)).join(' ')}"/>${l.v.map((v,i)=>`<circle cx="${X(i)}" cy="${Y(v)}" r="${n>40?2:3.2}" fill="${l.c}"/>`).join('')}`).join('');
+ const step=Math.max(1,Math.ceil(n/(W/60)));
+ const hits=days.map((d,i)=>{const x0=n>1?X(i)-(W-60)/(n-1)/2:44,w=n>1?(W-60)/(n-1):W-44;
+  return `<text x="${X(i)}" y="${h-8}" text-anchor="middle">${i%step===0||i===n-1?brs(d):''}</text><rect class="hit" x="${x0}" y="0" width="${w}" height="${h-26}" data-tip="${esc(JSON.stringify({t:br(d)+' · '+wd(d),r:[['Total',fmt(lines.reduce((t,l)=>t+l.v[i],0),0)+' pessoas'],...lines.filter(l=>l.v[i]).map(l=>[l.k,fmt(l.v[i],0),l.c])]}))}"/>`;}).join('');
+ return `<svg class="chart" viewBox="0 0 ${W} ${h}" role="img" aria-label="${esc(o.label||'')}">${g}${ls}${hits}</svg>`;}
+function legend(){return `<span class="legend">${FN.map(f=>`<button type="button" data-fn="${esc(f.k)}" aria-pressed="${!st.fnOff.includes(f.k)}"><i style="background:${f.c}"></i>${esc(f.k)}</button>`).join('')}</span>`;}
+
+// ---------- tela ----------
+function seg(name,opts,val){return `<div class="seg" role="group" aria-label="${name}">${opts.map(([v,t])=>`<button type="button" data-${name}="${v}" aria-pressed="${v===val}">${t}</button>`).join('')}</div>`;}
+function render(){
+ const all=allDays();
+ if(!all.length){$('app').innerHTML=`<div class="empty"><b>Nenhum RDO com mão de obra ainda</b>Os RDOs enviados pelos apontadores aparecem aqui sozinhos (Pasta do RDO).</div>`;return;}
+ const [a,b]=range(),rs=inRange(base(),a,b),dayM=perDay(rs);
+ const last=lastDate();
+ const perCtl=st.per==='dia'?`<div class="per"><button type="button" data-step="-1" aria-label="Dia anterior">‹</button><input type="date" id="fd" value="${st.dia||last}" aria-label="Dia"><button type="button" data-step="1" aria-label="Próximo dia">›</button></div>`
+  :st.per==='mes'?`<div class="per"><button type="button" data-step="-1" aria-label="Mês anterior">‹</button><input type="month" id="fm" value="${st.mes||last.slice(0,7)}" aria-label="Mês"><button type="button" data-step="1" aria-label="Próximo mês">›</button></div>`:'';
+ const perTxt=st.per==='dia'?br(a)+' · '+wd(a):st.per==='mes'?monLabel(a.slice(0,7)):br(a)+' a '+br(b);
+ const scopeTxt=[st.lado==='todos'?'Adhemar e Boa Vista':st.lado,st.turno==='todos'?'todos os turnos':'turno '+st.turno].join(' · ');
+ // números
+ const daysWith=[...dayM.values()].filter(g=>g.tot),diarias=daysWith.reduce((t,g)=>t+g.tot,0),pico=daysWith.reduce((m,g)=>g.tot>m.tot?g:m,{tot:0}),
+  fore=byForeman(rs),acts=byAct(rs),nActs=rs.reduce((t,r)=>t+r.acts.length,0);
+ const one=st.per==='dia';
+ const kp=[
+  [one?'Efetivo do dia':'Média por dia',one?fmt(diarias,0):fmt(daysWith.length?diarias/daysWith.length:0),one?'pessoas':'pessoas',one?(rs.length+' RDO'+(rs.length===1?'':'s')):daysWith.length+' dia'+(daysWith.length===1?'':'s')+' com efetivo'],
+  ['Diárias',fmt(diarias,0),'','soma das pessoas de cada dia'],
+  ['Pico',fmt(pico.tot,0),'pessoas',pico.data?br(pico.data)+' · '+wd(pico.data):'—'],
+  ['Encarregados',fmt(fore.length,0),'',fore[0]?'maior: '+short(fore[0].enc):'—'],
+  ['Atividades',fmt(nActs,0),'',acts.filter(x=>x.tipo==='3D').length+' do 3D · '+acts.filter(x=>x.tipo==='Extra').length+' extras'],
+  ['RDOs',fmt(rs.length,0),'',[...new Set(rs.map(r=>short(r.apontador)))].filter(Boolean).slice(0,3).join(', ')||'—']];
+ // gráfico por dia: no modo "Dia" mostra os 30 dias até a data escolhida
+ const [ca,cb]=one?[addD(a,-29),a]:[a,b],s=series(inRange(base(),ca,cb),ca,cb);
+ const roles=byRole(rs),mxR=Math.max(1,...roles.map(r=>r.n));
+ const roleRows=roles.map(r=>`<div class="hr" data-tip="${esc(JSON.stringify({t:r.k,r:[['Diárias',fmt(r.n,0)],['Dias',String(r.days.size)],['Média por dia',fmt(r.n/r.days.size)],['Máximo num dia',fmt(r.mx,0)]]}))}"><span class="l" title="${esc(r.k)}">${esc(r.k)}</span><span class="t"><i style="width:${Math.max(1.5,r.n/mxR*100)}%;background:${FC[grp(r.k)]}"></i></span><span class="v">${fmt(r.n,0)}<small>${one?'pess.':'diár.'}</small></span></div>`).join('');
+ const foreRows=fore.map(g=>`<tr><td><b>${esc(g.enc)}</b><span class="sub2">${esc(title(g.cargo))}${g.lados.size?' · '+esc([...g.lados].join(', ')):''}</span></td><td class="n">${g.days.size}</td><td class="n">${fmt(g.n/g.days.size)}</td><td class="n">${fmt(g.n,0)}</td><td>${Object.entries(g.f).sort((x,y)=>y[1]-x[1]).map(([f,n])=>`<span class="pill">${esc(f)} ${fmt(n,0)}</span>`).join(' ')}</td></tr>`).join('');
+ // matriz atividade × função
+ const cols=FN.filter(f=>acts.some(x=>x.f[f.k]));const mxC=Math.max(1,...acts.flatMap(x=>cols.map(f=>x.f[f.k]||0)));
+ if(st.act&&!acts.some(x=>x.k===st.act))st.act='';
+ const mxRows=acts.map(x=>`<tr data-act="${esc(x.k)}" class="${x.k===st.act?'on':''}"><td><b>${esc(x.atividade)}</b><span class="sub2">${x.tipo==='3D'?esc(x.servico):'<span class="pill e">Extra</span>'} · ${x.days.size} dia${x.days.size>1?'s':''}</span></td>${cols.map(f=>{const v=x.f[f.k]||0;return v?`<td class="c"><span style="background:${f.c}${Math.round(25+v/mxC*155).toString(16).padStart(2,'0')}">${fmt(v,0)}</span></td>`:'<td class="c z">·</td>';}).join('')}<td class="n"><b>${fmt(x.n,0)}</b></td></tr>`).join('');
+ // ficha e linha do tempo da atividade escolhida
+ let det='';const sel=acts.find(x=>x.k===st.act);
+ if(sel){const items=sel.items.slice().sort((p,q)=>q.r.data.localeCompare(p.r.data)||p.a.sm-q.a.sm);
+  const ds=[...sel.days].sort(),lines=FN.map(f=>({k:f.k,c:f.c,v:ds.map(d=>sel.items.filter(it=>it.r.data===d).reduce((t,it)=>t+it.a.pessoas.filter(p=>grp(p.funcao)===f.k).length,0))})).filter(l=>l.v.some(Boolean));
+  det=`<div class="det"><h3>${esc(sel.atividade)}</h3><p class="note" style="margin:0">${sel.tipo==='3D'?esc(sel.servico)+' · ':'Atividade extra · '}${fmt(sel.n,0)} ${one?'pessoas':'diárias'} em ${sel.days.size} dia${sel.days.size>1?'s':''}</p>
+   ${ds.length>1?`<div class="card" style="margin-top:12px"><h2>Pessoas por dia nesta atividade <span class="legend">${lines.map(l=>`<span><i style="background:${l.c}"></i>${esc(l.k)}</span>`).join('')}</span></h2>${lineChart(ds,lines,{h:220,label:'Pessoas por dia na atividade'})}</div>`:''}
+   ${items.slice(0,40).map(({r,a:x})=>{const fs={};for(const p of x.pessoas)fs[p.funcao]=(fs[p.funcao]||0)+1;
+    return `<div class="dd"><div class="h"><b>${br(r.data)} · ${wd(r.data)} · ${hm(x.sm)}–${hmEnd(x.em)}</b><span class="note">${esc(r.apontador)} · turno ${r.turno}${r.frente?' · '+esc(r.frente):''}</span></div>
+     <div class="note">${x.situacao?esc(x.situacao)+' · ':''}${x.encs.length?'Equipes: '+esc(x.encs.join(', ')):'Sem equipe'}</div>
+     <div class="fs">${Object.entries(fs).map(([f,n])=>`<span class="pill" style="box-shadow:inset 3px 0 0 ${FC[grp(f)]}">${esc(f)} ${n}</span>`).join('')}<span class="pill">Total ${x.pessoas.length}</span></div>
+     ${x.pessoas.length?`<details><summary>Quem trabalhou</summary>${x.pessoas.map(p=>esc(p.nome)).join(' · ')}</details>`:''}</div>`;}).join('')}
+   ${items.length>40?`<p class="note">Mostrando os 40 registros mais recentes de ${items.length}.</p>`:''}</div>`;}
+
+ $('sub').textContent=perTxt+' · '+scopeTxt;
+ $('app').innerHTML=`<div class="bar">${seg('per',[['dia','Dia'],['mes','Mês'],['30','30 dias'],['tudo','Tudo']],st.per)}${perCtl}${seg('lado',[['todos','Todos'],['Adhemar','Adhemar'],['Boa Vista','Boa Vista']],st.lado)}${seg('turno',[['todos','Todos os turnos'],['dia','☀ Dia'],['noite','☾ Noite']],st.turno)}</div>
+ <div class="grid kpis">${kp.map(([t,v,u,s])=>`<div class="card kpi"><i></i><h2>${t}</h2><div class="v">${v}${u?`<small>${u}</small>`:''}</div><div class="s">${esc(s)}</div></div>`).join('')}</div>
+ <div class="card" style="margin-top:14px"><h2>Efetivo por dia${one?' · 30 dias até '+brs(a):''} ${legend()}</h2>${stackChart(s,{h:250,sel:one?a:'',label:'Efetivo por dia'})}<p class="note" style="margin:6px 0 0">${one?'Toque numa barra para ver aquele dia.':'Cada barra é a soma das pessoas das equipes no dia (encarregado + equipe).'}${s.some(d=>d.month)?' Período longo: barras por mês (diárias).':''}</p></div>
+ <div class="grid two" style="margin-top:14px">
+  <div class="card"><h2>Por função <span>${one?'pessoas no dia':'diárias no período'}</span></h2>${roles.length?`<div class="hb">${roleRows}</div>`:'<p class="note">Sem equipes no período.</p>'}</div>
+  <div class="card"><h2>Por encarregado <span>${fore.length} equipe${fore.length===1?'':'s'}</span></h2>${fore.length?`<div class="tw"><table><thead><tr><th>Encarregado</th><th class="n">Dias</th><th class="n">Média</th><th class="n">${one?'Pessoas':'Diárias'}</th><th>Funções</th></tr></thead><tbody>${foreRows}</tbody></table></div>`:'<p class="note">Sem equipes no período.</p>'}</div>
+ </div>
+ <div class="card" style="margin-top:14px"><h2>Mão de obra por atividade <span>${one?'pessoas':'diárias'} de cada função · toque numa atividade para ver quem trabalhou</span></h2>
+  ${acts.length?`<div class="tw mx"><table><thead><tr><th>Atividade</th>${cols.map(f=>`<th class="n" style="text-align:center"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${f.c};margin-right:5px"></i>${esc(f.k)}</th>`).join('')}<th class="n">Total</th></tr></thead><tbody>${mxRows}</tbody></table></div>${det}`:'<p class="note">Nenhuma atividade no período.</p>'}</div>
+ <p class="note" style="margin-top:14px">${all.length} RDO${all.length===1?'':'s'} lidos da Pasta do RDO. Quando a mesma equipe trabalha em atividades em horários diferentes, cada pessoa conta uma vez por atividade. Não mostra horas-homem.</p>`;
+ bind();}
+
+function bind(){
+ document.querySelectorAll('[data-per]').forEach(b=>b.onclick=()=>{st.per=b.dataset.per;saveUI();render();});
+ document.querySelectorAll('[data-lado]').forEach(b=>b.onclick=()=>{st.lado=b.dataset.lado;saveUI();render();});
+ document.querySelectorAll('[data-turno]').forEach(b=>b.onclick=()=>{st.turno=b.dataset.turno;saveUI();render();});
+ document.querySelectorAll('[data-fn]').forEach(b=>b.onclick=()=>{const k=b.dataset.fn;st.fnOff=st.fnOff.includes(k)?st.fnOff.filter(x=>x!==k):st.fnOff.concat(k);saveUI();render();});
+ const fd=$('fd'),fm=$('fm');
+ if(fd)fd.onchange=()=>{if(fd.value){st.dia=fd.value;saveUI();render();}};
+ if(fm)fm.onchange=()=>{if(fm.value){st.mes=fm.value;saveUI();render();}};
+ document.querySelectorAll('[data-step]').forEach(b=>b.onclick=()=>{const n=+b.dataset.step,last=lastDate();
+  if(st.per==='dia')st.dia=addD(st.dia||last,n);
+  else{let [y,m]=(st.mes||last.slice(0,7)).split('-').map(Number);m+=n;if(m<1){m=12;y--;}if(m>12){m=1;y++;}st.mes=y+'-'+String(m).padStart(2,'0');}
+  saveUI();render();});
+ document.querySelectorAll('[data-day]').forEach(r=>r.onclick=()=>{st.per='dia';st.dia=r.dataset.day;saveUI();render();});
+ document.querySelectorAll('tr[data-act]').forEach(r=>r.onclick=()=>{st.act=st.act===r.dataset.act?'':r.dataset.act;saveUI();render();if(st.act)setTimeout(()=>document.querySelector('.det')?.scrollIntoView({behavior:'smooth',block:'nearest'}),30);});}
+
+// dica ao passar o dedo/mouse
+const tip=$('tip');
+function showTip(el,x,y){let d;try{d=JSON.parse(el.dataset.tip);}catch(e){return;}
+ tip.innerHTML=`<b>${esc(d.t)}</b>${(d.r||[]).map(([k,v,c])=>`<div><span>${c?`<i style="background:${c}"></i>`:''}${esc(k)}</span><span>${esc(v)}</span></div>`).join('')}`;tip.style.display='block';
+ const r=tip.getBoundingClientRect();tip.style.left=Math.max(8,Math.min(innerWidth-r.width-8,x+14))+'px';tip.style.top=Math.max(8,Math.min(innerHeight-r.height-8,y-r.height-10))+'px';}
+document.addEventListener('pointermove',e=>{const el=e.target.closest&&e.target.closest('[data-tip]');if(el)showTip(el,e.clientX,e.clientY);else tip.style.display='none';});
+document.addEventListener('pointerdown',e=>{const el=e.target.closest&&e.target.closest('[data-tip]');if(el&&e.pointerType!=='mouse')showTip(el,e.clientX,e.clientY);});
+addEventListener('scroll',()=>tip.style.display='none',{passive:true});
+
+render();
+setTimeout(()=>siteScan(false),300);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')siteScan(false);});
+setInterval(()=>{if(document.visibilityState==='visible')siteScan(false);},5*60e3);
+</script>
+</body>
+</html>
