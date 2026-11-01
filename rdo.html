@@ -319,6 +319,82 @@ html.light .steps a{background:#fff;color:#3a4a58;border-color:var(--line2)}html
 .thm::before{content:"☀";font-size:18px}html.light .thm::before{content:"☾"}
 p.ver{text-align:center;color:var(--muted);font-size:12px;margin:18px 0 0}
 @media(max-width:720px){p.ver{margin-bottom:96px}}
+
+
+/* tema claro: versão clara de cada fundo escuro fixo e de cada texto claro fixo (gerado) */
+html.light header.top{background:#f2f5f8}
+html.light .sync.pending{background:#fde8e6;color:#7a4f00}
+html.light nav.tabs button{color:#2e3d4a}
+html.light nav.tabs .n{background:#f2f5f8}
+html.light h3{color:#2e3d4a}
+html.light .btn{color:#2e3d4a}
+html.light .btn.danger{color:#a3271c}
+html.light .btn.dash{color:#2e3d4a}
+html.light .seg button{color:#2e3d4a}
+html.light .he{background:#fff1cc}
+html.light .steps a b{color:#2e3d4a}
+html.light .steps a.ok{background:#e3f5ec;color:#145c39}
+html.light .steps a.ok b{color:#2e3d4a}
+html.light .final{background:#e3f5ec;color:#145c39}
+html.light .final b{color:#2e3d4a}
+html.light .pill{background:#e3eefb;color:#2e3d4a}
+html.light .pill.ok{background:#e3f5ec;color:#145c39}
+html.light .pill.warn{background:#fde8e6;color:#7a4f00}
+html.light .wx .opt button{color:#2e3d4a}
+html.light .wx .opt button[data-v="1"][aria-pressed=true]{background:#e3eefb;color:#1d4f86}
+html.light .wx .opt button[data-v="0"][aria-pressed=true]{background:#fde8e6;color:#7a4f00}
+html.light .ph label{color:#2e3d4a}
+html.light .ph .okt{color:#145c39}
+html.light .rmph{color:#a3271c}
+html.light .wsh .seg button[data-wt=c][aria-pressed=true]{background:#e3eefb;color:#1d4f86}
+html.light .wsh .seg button[data-wt=r][aria-pressed=true]{background:#efe8ff;color:#2e3d4a}
+html.light .wsh .x{color:#a3271c}
+html.light .thumbs img{background:#e3f5ec}
+html.light .thumbs .th button{background:#f2f5f8;color:#2e3d4a}
+html.light .ph label.has{background:#e3f5ec;color:#145c39}
+html.light .tools button{color:#2e3d4a}
+html.light .tools button[aria-pressed=true][data-t=c]{background:#e3eefb;color:#1d4f86}
+html.light .tools button[aria-pressed=true][data-t=r]{background:#efe8ff;color:#2e3d4a}
+html.light .tools button[aria-pressed=true][data-t=x]{background:#fde8e6;color:#a3271c}
+html.light .tl .cl{background:#e3f5ec}
+html.light .tlsum .c{color:#1d4f86}
+html.light .tlsum .r{color:#2e3d4a}
+html.light .crew .hd .av{background:#fde8e6}
+html.light .stp{background:#e3f5ec}
+html.light .stp button{color:#2e3d4a}
+html.light .it .st{color:#7a4f00}
+html.light .it .st.k-ok{color:#145c39}
+html.light .it .st.k-x{color:#1d4f86}
+html.light .it .st.k-s{color:#a3271c}
+html.light .it .sb{color:#2e3d4a}
+html.light .it .cc{color:#1d4f86}
+html.light .eqv{color:#2e3d4a}
+html.light .chips button.rm{color:#a3271c}
+html.light #sheet header{background:#f2f5f8}
+html.light #sheet footer{background:#f2f5f8}
+html.light .results{background:#e3f5ec}
+html.light .res:hover,html.light .res:focus,html.light .res[aria-selected=true]{background:#e3eefb}
+html.light .chips button{color:#2e3d4a}
+html.light .chips button[aria-pressed=true]{background:#fde8e6}
+html.light .chosen{background:#fde8e6}
+html.light .chosen .ca{color:#7a4f00}
+html.light .svc.done span{color:#145c39}
+html.light .svc.open span,html.light .svc.stop span{color:#7a4f00}
+html.light .svc[aria-pressed=true]{background:#fde8e6}
+html.light .fopt .av{background:#fde8e6}
+html.light .cs .crew{background:#e3f5ec}
+html.light .toggle button{color:#2e3d4a}
+html.light .toggle button[aria-pressed=true]{background:#e3eefb;color:#1d4f86}
+html.light .toggle button[data-v="0"][aria-pressed=true]{background:#e3eefb;color:#2e3d4a}
+html.light .alert{background:#fde8e6;color:#7a4f00}
+html.light .alert.err{background:#fde8e6;color:#a3271c}
+html.light .tag{background:#e3eefb;color:#2e3d4a}
+html.light .tag.ok{background:#e3f5ec;color:#145c39}
+html.light #notice{background:#e3eefb}
+html.light #notice.err{background:#fde8e6}
+html.light nav.tabs{background:#f2f5f8}
+html.light nav.tabs button[aria-current=page]{background:#fde8e6}
+html.light header.top,html.light #sheet header,html.light #sheet footer{background:#f2f5f8}
 /* tema claro (para o sol forte) */
 html.light{--bg:#eef2f5;--panel:rgba(255,255,255,.92);--raise:#f3f6f8;--line:#d4dde4;--line2:#bfcbd5;--ink:#15202a;--muted:#5a6a78;--amber2:#8a5a00;color-scheme:light}
 html.light body,html.light #sheet{background:#eef2f5}
@@ -391,7 +467,7 @@ return {Doc,width,enc};
 
 const CATALOG_SEED=window.CATALOG_SEED||{schema:'alya-catalogo-1',generated:'',pieces:[]};   // (V1.76) vem do rdo-catalogo.js
 const LOGO=document.querySelector('header.top img').src;
-const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.16';
+const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.17';
 const PASTA='https://queirozgalvao1.sharepoint.com/:f:/s/PonteJoinville/IgDE4PJCU0C9RJfF4FAkIarTAa_wdhMCQYOGRe-1D9gsBmM?e=5Pvp5v';
 const OBRA={nome:'Ponte de Joinville',numero:'70.578',empresa:'Alya Construtora'};
 const $=id=>document.getElementById(id);
@@ -1102,7 +1178,7 @@ async function retryPending(){if(retrying||sending||!navigator.onLine)return;let
  retrying=false;if(ok){note(ok===1?'RDO pendente enviado para a pasta do site.':ok+' RDOs pendentes enviados para a pasta do site.');try{render();}catch(e){}}}
 addEventListener('online',()=>setTimeout(retryPending,1500));setTimeout(retryPending,4000);
 // Versão nova do RDO: o app confere sozinho quando volta para a tela e se atualiza (os dados ficam no aparelho).
-const RDO_VER='1.76';
+const RDO_VER='1.77';
 async function checkVer(){try{if(location.protocol==='file:')return;let r=await fetch('/api/rdo/versao',{cache:'no-store'});if(!r.ok||!/json/.test(r.headers.get('content-type')||''))return;let j=await r.json();
  if(!j||!j.rdo||j.rdo===RDO_VER)return;let k='rdo-ver-'+j.rdo;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');}catch(e){}
  if($('sheet').hidden&&!sending&&!retrying){save();location.reload();}else note('Tem uma versão nova do RDO: ela abre quando você fechar esta tela.');}catch(e){}}
