@@ -356,6 +356,7 @@ html body #pad50#pad50 .c::after{display:none}
 
 // ---------- scripts do 3D (injetados no 3d.html, que não é editado) ----------
 const S3D = [
+  ['tema3d', 1],      // (V1.82) temas Liquid Glass escuro/claro do 3D, com botão sol/lua
   ['ajustes3d', 2],
   ['cena3d', 1],
   ['eixos3d', 4],
