@@ -356,7 +356,7 @@ html body #pad50#pad50 .c::after{display:none}
 
 // ---------- scripts do 3D (injetados no 3d.html, que não é editado) ----------
 const S3D = [
-  ['tema3d', 1],      // (V1.82) temas Liquid Glass escuro/claro do 3D, com botão sol/lua
+  ['tema3d', 2],      // (V1.82) temas Liquid Glass escuro/claro do 3D, com botão sol/lua
   ['ajustes3d', 2],
   ['cena3d', 1],
   ['eixos3d', 4],
@@ -386,6 +386,8 @@ async function withLoader(res, extra = '') {
   if (res.status !== 200 || !ct.includes('text/html')) return res;
   let put = false;
   return new HTMLRewriter()
+    // (V1.83) o 3D passa a aceitar as fontes do próprio site (pasta /fontes): só acrescenta font-src 'self' à política da página
+    .on('meta[http-equiv="Content-Security-Policy"]', { element(e) { const c = e.getAttribute('content') || ''; if (c && !/font-src/.test(c)) e.setAttribute('content', c.replace(/;?\s*$/, "; font-src 'self'")); } })
     .on('head > title', { element(e) { if (!put) { put = true; e.after(LOADER_HTML + extra, { html: true }); } } })
     .on('body', { element(e) { if (!put) { put = true; e.prepend(LOADER_HTML + extra, { html: true }); } } })
     .transform(res);
