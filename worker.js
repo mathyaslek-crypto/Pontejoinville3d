@@ -34,7 +34,7 @@ async function clima() {
 //   rdo:f:<id>:<n>  arquivo (com nome, tipo e tamanho nos metadados)      rdo:m:<id>  ficha do envio
 //   rdo:index       lista de todos os envios (lida pela pasta da página inicial, 3D, pluviometria e paralisações)
 // Apontador e perfil completo enviam; perfil completo e equipe leem; só o perfil completo exclui.
-const RDO_ID = /^[A-Za-z0-9_.-]{6,140}$/, RDO_MAX = 24 * 1024 * 1024, RDO_VER = '1.75';   // RDO_VER igual ao do rdo.html
+const RDO_ID = /^[A-Za-z0-9_.-]{6,140}$/, RDO_MAX = 24 * 1024 * 1024, RDO_VER = '1.76';   // RDO_VER igual ao do rdo.html
 const KINDS = new Set(['pdf', 'pacote', 'foto', 'pluvio', 'outro']);
 async function rdoIndex(env) {
   let idx = await env.DADOS.get('rdo:index', 'json').catch(() => null);
@@ -64,6 +64,57 @@ async function rdoApi(req, env, url, prof, email) {
   const canSend = prof === 'apontador' || prof === 'completo' || prof === 'equipe-rdo', canRead = prof === 'completo' || prof === 'equipe' || prof === 'equipe-rdo';
   // versão atual do app do RDO: os celulares que estão com a página antiga aberta se atualizam sozinhos
   if (acao === 'versao' && req.method === 'GET') return json({ rdo: RDO_VER });
+  // (V1.76) cópia de segurança dos dados do celular (sem as fotos): rdo-bk:<aparelho>, resumo dos dias nos metadados.
+  // Quem envia RDO grava e lê as próprias cópias; completo e equipe veem o resumo de todas (painel "Hoje" da Pasta do RDO).
+  if (acao === 'backup') {
+    const BK = /^[A-Za-z0-9_-]{6,64}$/;
+    if (req.method === 'POST') {
+      if (!canSend) return json({ error: 'sem acesso' }, 403);
+      const txt = await req.text(); if (txt.length > 8e6) return json({ error: 'cópia grande demais' }, 413);
+      let b; try { b = JSON.parse(txt); } catch (e) { return json({ error: 'corpo inválido' }, 400); }
+      if (!b || !BK.test(String(b.device || '')) || !b.db || typeof b.db !== 'object') return json({ error: 'cópia inválida' }, 400);
+      const dias = {}; for (const [d, v] of Object.entries(b.dias || {}).slice(0, 10)) if (/^\d{4}-\d{2}-\d{2}$/.test(d)) dias[d] = { s: String(v && v.s || '').slice(0, 12), a: String(v && v.a || '').slice(0, 80), t: String(v && v.t || '').slice(0, 10), u: String(v && v.u || '').slice(0, 30) };
+      const meta = { por: email, autor: String(b.profile || '').slice(0, 80), at: new Date().toISOString(), app: String(b.app || '').slice(0, 30), dias };
+      await env.DADOS.put('rdo-bk:' + b.device, JSON.stringify({ meta, db: b.db }), { metadata: meta });
+      return json({ ok: true, at: meta.at });
+    }
+    if (req.method === 'GET') {
+      const id = url.searchParams.get('id');
+      if (id) {
+        if (!BK.test(id)) return json({ error: 'endereço inválido' }, 400);
+        const v = await env.DADOS.get('rdo-bk:' + id, 'json').catch(() => null);
+        if (!v) return json({ error: 'cópia não encontrada' }, 404);
+        if (prof !== 'completo' && v.meta && v.meta.por !== email) return json({ error: 'sem acesso' }, 403);
+        return json(v);
+      }
+      if (!canSend && !canRead) return json({ error: 'sem acesso' }, 403);
+      const itens = []; let cur;
+      do { const r = await env.DADOS.list({ prefix: 'rdo-bk:', cursor: cur }); r.keys.forEach(k => { const m = k.metadata || {}; if (canRead || m.por === email) itens.push({ id: k.name.slice(7), ...m, minha: m.por === email }); }); cur = r.list_complete ? null : r.cursor; } while (cur);
+      itens.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+      return json({ itens });
+    }
+    return json({ error: 'método não permitido' }, 405);
+  }
+  // (V1.76) pedido de correção de um RDO enviado (só o perfil completo pede); o app do RDO mostra o pedido no dia
+  if (acao === 'correcao' && (req.method === 'POST' || req.method === 'DELETE')) {
+    if (prof !== 'completo') return json({ error: 'só o perfil completo pede correção' }, 403);
+    if (!RDO_ID.test(id)) return json({ error: 'endereço inválido' }, 400);
+    const e = await env.DADOS.get('rdo:m:' + id, 'json').catch(() => null);
+    if (!e) return json({ error: 'RDO não encontrado' }, 404);
+    if (req.method === 'POST') {
+      let b; try { b = await req.json(); } catch (x) { return json({ error: 'corpo inválido' }, 400); }
+      const msg = String(b && b.msg || '').trim().slice(0, 500); if (!msg) return json({ error: 'escreva o que precisa corrigir' }, 400);
+      e.correcao = { msg, at: new Date().toISOString(), por: email };
+    } else delete e.correcao;
+    await env.DADOS.put('rdo:m:' + id, JSON.stringify(e));
+    const idx = await rdoIndex(env); idx.itens = idx.itens.map(x => x.id === id ? e : x); await env.DADOS.put('rdo:index', JSON.stringify(idx));
+    return json({ ok: true, item: e });
+  }
+  if (acao === 'correcoes' && req.method === 'GET') {
+    if (!canSend && !canRead) return json({ error: 'sem acesso' }, 403);
+    const idx = await rdoIndex(env);
+    return json({ itens: idx.itens.filter(x => x.correcao).map(x => ({ id: x.id, data: x.data, autor: x.autor, turno: x.turno, rev: x.rev, msg: x.correcao.msg, at: x.correcao.at })) });
+  }
   // (V1.69) equipamentos e ativos cadastrados pelos apontadores no RDO (a lista da planilha fica no próprio rdo.html).
   // Um registro por ativo: rdo-at:<equipamento normalizado>|<ativo> (ativo vazio = equipamento sem ativo), dados nos metadados.
   if (acao === 'ativos') {
@@ -346,6 +397,7 @@ export default {
     if (path.startsWith('/api/rdo/')) return env.DADOS ? rdoApi(req, env, url, prof, email) : json({ error: 'armazenamento não configurado' }, 503);
     if (prof === 'apontador') {
       if (isRdo(path)) return withLoader(await env.ASSETS.fetch(req));
+      if (path === '/rdo-catalogo.js') return env.ASSETS.fetch(req);   // (V1.76) catálogo de peças do RDO, em arquivo separado
       if (path.startsWith('/api/')) return json({ error: 'sem acesso' }, 403);
       return Response.redirect(url.origin + '/rdo', 302);
     }

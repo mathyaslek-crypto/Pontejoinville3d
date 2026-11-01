@@ -91,11 +91,12 @@ export default {
     // envio para a Pasta do RDO (o perfil apontador só envia: não lista, não baixa e não exclui)
     if (path.startsWith('/api/rdo/')) {
       const acao = path.split('/')[3];
-      const pode = (acao === 'versao' && m === 'GET') || (acao === 'arquivo' && m === 'PUT') || (acao === 'fim' && m === 'POST') || (acao === 'ativos' && ['GET', 'POST', 'DELETE'].includes(m));
+      const pode = (acao === 'versao' && m === 'GET') || (acao === 'arquivo' && m === 'PUT') || (acao === 'fim' && m === 'POST') || (acao === 'ativos' && ['GET', 'POST', 'DELETE'].includes(m)) || (acao === 'backup' && ['GET', 'POST'].includes(m)) || (acao === 'correcoes' && m === 'GET');
       if (!pode) return json({ error: 'sem acesso' }, 403);
       return rdoApi(req, env, url, 'apontador', ses.u.email || ('usuário ' + ses.nome));
     }
     if (path.startsWith('/api/')) return json({ error: 'sem acesso' }, 403);
+    if (path === '/rdo-catalogo.js' && (m === 'GET' || m === 'HEAD')) return env.ASSETS.fetch(new Request(url.origin + '/rdo-catalogo.js', { method: m }));   // catálogo de peças (V1.76)
     if ((path === '/' || path === '/rdo' || path === '/rdo.html') && (m === 'GET' || m === 'HEAD')) {
       const res = await env.ASSETS.fetch(new Request(url.origin + '/rdo', { method: m }));   // /rdo.html seria redirecionado para /rdo
       const h = new Headers(res.headers); h.set('cache-control', 'no-store'); Object.entries(SEG).forEach(([k, v]) => h.set(k, v));
