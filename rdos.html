@@ -73,6 +73,34 @@ h1 em{font-style:italic;color:var(--ink2)}
 .hrow b{font-weight:600;min-width:150px}.hrow .st{font-size:12.5px;padding:3px 10px;border-radius:999px;border:1px solid var(--line2)}
 .st.ok{border-color:#3fb37f88;color:#8ee0b5}.st.pe{border-color:#f2b33d88;color:#ffd27a}.st.ab{border-color:#5aa9f088;color:#a9d3ff}.st.fa{color:var(--muted)}.st.late{border-color:#ef6b6288;color:#ffb1aa;background:#ef6b6214}
 .hrow small{color:var(--muted);font-size:12px}
+.cals{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.cal{border:1px solid var(--line2);border-radius:12px;background:var(--panel2);padding:12px 12px 10px}
+.cal header{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cal header b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal header .st{font-size:11.5px;padding:2px 9px;border-radius:999px;border:1px solid var(--line2);white-space:nowrap}
+.cal small{display:block;color:var(--muted);font-size:11.5px;margin:3px 0 8px}
+.cal .wk,.cal .g7{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal .wk span{text-align:center;font-size:10.5px;color:var(--muted)}
+.cal .g7{margin-top:4px}
+.cal .d{aspect-ratio:1;border:0;border-radius:7px;font:600 11.5px var(--sans);color:#d9e1e8;background:#1a232c;display:grid;place-items:center;padding:0;cursor:default}
+.cal .d.g{background:#1f7a52;color:#eafff3;cursor:pointer}.cal .d.g:hover{background:#26935f}
+.cal .d.b{background:#2463a8;color:#eaf4ff}
+.cal .d.r{background:#8f2c26;color:#ffe9e6}.cal .d.r.b2{box-shadow:inset 0 0 0 2px #5aa9f0}
+.cal .d.s{background:transparent;color:#5d6873}
+.cal .d.f{background:transparent;color:#56616c;box-shadow:inset 0 0 0 1px #1d262e}
+.cal .d.t{background:transparent;color:var(--ink)}
+.cal .d.hj{outline:2px solid var(--amber);outline-offset:1px}
+.cal .e{aspect-ratio:1}
+.cal .sum{display:flex;gap:6px;align-items:center;margin:8px 0 0;font-size:11.5px;color:var(--muted)}
+.cal .sum i{width:9px;height:9px;border-radius:3px;display:inline-block;margin-left:6px}.cal .sum i:first-child{margin-left:0}
+i.g{background:#1f7a52}i.b{background:#2463a8}i.r{background:#8f2c26}i.s{background:#1a232c;box-shadow:inset 0 0 0 1px #2a3540}
+.hoje h2{justify-content:space-between}
+.hoje .mn{display:flex;align-items:center;gap:8px;letter-spacing:0;text-transform:none;font-size:13px;color:var(--ink)}
+.hoje .mn button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line2);background:transparent;color:var(--ink2);cursor:pointer;font-size:16px}
+.hoje .mn button:disabled{opacity:.35;cursor:default}
+.hoje .leg{display:flex;flex-wrap:wrap;gap:6px 16px;margin:12px 0 0;font-size:12px;color:var(--muted)}
+.hoje .leg i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-right:6px;vertical-align:-1px}
+
 .corr{margin-top:10px;padding:9px 12px;border-radius:10px;background:#3a1a17;color:#ffb1aa;font-size:13px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .corr button,.cf button{height:28px;padding:0 10px;border-radius:8px;border:1px solid var(--line2);background:#0b1015;cursor:pointer;font-size:12px}
 .cf{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px}.cf input{flex:1;min-width:200px;height:34px;border-radius:8px;border:1px solid var(--line2);background:#0b1015;padding:0 10px}
@@ -116,21 +144,55 @@ var IC={pdf:'<svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 
 var APONT=['Anderson Júnior','Kailane Silva','João Paulo'];
 var nk=function(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim();};
 function hojeISO(){var d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);}
+// Calendário por apontador (V1.85): no lugar da lista, um mês para cada apontador.
+//   verde = RDO enviado (ou finalizado esperando internet) · azul = preenchendo (cópia de segurança do celular)
+//   vermelho = dia que já passou sem RDO (domingo não conta) · cinza = domingo, dias futuros e antes do 1º RDO dele
+var calMes=null;
+function addDia(d,n){var x=new Date(d+'T12:00:00');x.setDate(x.getDate()+n);return x.toISOString().slice(0,10);}
 function hoje(){var el=$('hoje');if(!el)return;var d=hojeISO(),now=new Date(),dow=now.getDay(),late=dow>=1&&dow<=5&&(now.getHours()*60+now.getMinutes())>=17*60+30;
+ if(!calMes)calMes=d.slice(0,7);
  var names=APONT.slice(),seen={};names.forEach(function(n){seen[nk(n)]=1;});
- var lim=new Date(Date.now()-7*864e5).toISOString().slice(0,10);
+ var lim=addDia(d,-31);
  ITENS.forEach(function(e){if(e.autor&&e.data>=lim&&!seen[nk(e.autor)]){seen[nk(e.autor)]=1;names.push(e.autor);}});
  BK.forEach(function(b){Object.keys(b.dias||{}).forEach(function(k){var a=b.dias[k].a;if(a&&k>=lim&&!seen[nk(a)]){seen[nk(a)]=1;names.push(a);}});});
- var falta=0,rows=names.map(function(n){var mine=ITENS.filter(function(e){return e.data===d&&nk(e.autor)===nk(n);}).sort(function(a,b){return String(b.at).localeCompare(String(a.at));});
-  var bk=null;BK.forEach(function(b){var x=(b.dias||{})[d];if(x&&nk(x.a)===nk(n)&&(!bk||String(b.at)>String(bk.b.at)))bk={b:b,x:x};});
-  var st,cls,info='';
-  if(mine.length){var e=mine[0];st='Enviado';cls='ok';info='às '+hora(e.at).slice(-5)+(e.rev!=null?' · Rev. '+e.rev:'')+(e.turno==='noite'?' · noite':'')+(e.correcao?' · correção pedida':'');}
-  else if(bk&&bk.x.s==='pendente'){st='Finalizado, esperando internet';cls='pe';info='cópia do celular às '+hora(bk.b.at).slice(-5);}
-  else if(bk&&bk.x.s!=='enviado'){st='Preenchendo';cls='ab';info='última cópia às '+hora(bk.b.at).slice(-5);}
+ var y=+calMes.slice(0,4),m=+calMes.slice(5,7),first=calMes+'-01',nd=new Date(y,m,0).getDate(),off=new Date(y,m-1,1).getDay();
+ var MES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+ var falta=0,g0=null;ITENS.forEach(function(e){if(e.data&&(!g0||e.data<g0))g0=e.data;});
+ var cards=names.map(function(n){var k=nk(n);
+  var sent={},pend={},fill={},ini=null;
+  ITENS.forEach(function(e){if(nk(e.autor)!==k)return;(sent[e.data]=sent[e.data]||[]).push(e);if(!ini||e.data<ini)ini=e.data;});
+  BK.forEach(function(b){Object.keys(b.dias||{}).forEach(function(dd){var x=b.dias[dd];if(nk(x.a)!==k)return;if(!ini||dd<ini)ini=dd;
+   if(x.s==='pendente')pend[dd]={b:b,x:x};else if(x.s!=='enviado'&&(!fill[dd]||String(b.at)>String(fill[dd].b.at)))fill[dd]={b:b,x:x};});});
+  // os apontadores fixos contam desde o primeiro RDO da pasta (quem nunca enviou aparece em vermelho)
+  if(APONT.some(function(a){return nk(a)===k;})&&g0&&(!ini||g0<ini))ini=g0;
+  // situação de hoje (a linha de antes, resumida)
+  var st,cls,info='';var mine=(sent[d]||[]).slice().sort(function(p,q){return String(q.at).localeCompare(String(p.at));});
+  if(mine.length){var e=mine[0];st='Enviado hoje';cls='ok';info='às '+hora(e.at).slice(-5)+(e.rev!=null?' · Rev. '+e.rev:'')+(e.correcao?' · correção pedida':'');}
+  else if(pend[d]){st='Finalizado, esperando internet';cls='pe';info='cópia às '+hora(pend[d].b.at).slice(-5);}
+  else if(fill[d]){st='Preenchendo';cls='ab';info='última cópia às '+hora(fill[d].b.at).slice(-5);}
+  else if(dow===0){st='Domingo';cls='fa';}
   else{st=late?'Faltando · turno acabou':'Ainda não enviou';cls=late?'late':'fa';falta++;}
-  return '<div class="hrow"><b>'+esc(n)+'</b><span class="st '+cls+'">'+st+'</span>'+(info?'<small>'+esc(info)+'</small>':'')+'</div>';});
+  var cells='';for(var i=0;i<off;i++)cells+='<span class="e"></span>';
+  var nOk=0,nLate=0;
+  for(var dia=1;dia<=nd;dia++){var dd=calMes+'-'+(dia<10?'0':'')+dia,wd=new Date(y,m-1,dia).getDay(),c='',t='';
+   if(sent[dd]||pend[dd]){c='g';nOk++;t=sent[dd]?'RDO enviado'+(sent[dd].length>1?' ('+sent[dd].length+' envios)':''):'Finalizado, esperando internet';}
+   else if(dd>d){c='f';t='';}
+   else if(dd===d){c=fill[dd]?'b':'t';t=fill[dd]?'Preenchendo':'Hoje';}
+   else if(wd===0){c='s';t='Domingo';}
+   else if(!ini||dd<ini){c='f';t='Antes do primeiro RDO';}
+   else if(fill[dd]){c='r b2';nLate++;t='Não enviado · ficou preenchendo';}
+   else{c='r';nLate++;t='Sem RDO';}
+   cells+='<button type="button" class="d '+c+(dd===d?' hj':'')+'"'+(sent[dd]?' data-cal="'+dd+'|'+esc(n)+'"':' tabindex="-1"')+' title="'+esc(br(dd)+(t?' · '+t:''))+'">'+dia+'</button>';}
+  return '<article class="cal"><header><b>'+esc(n)+'</b><span class="st '+cls+'">'+st+'</span></header>'+(info?'<small>'+esc(info)+'</small>':'<small>&nbsp;</small>')+
+   '<div class="wk"><span>D</span><span>S</span><span>T</span><span>Q</span><span>Q</span><span>S</span><span>S</span></div><div class="g7">'+cells+'</div>'+
+   '<p class="sum"><i class="g"></i>'+nOk+' enviado'+(nOk===1?'':'s')+'<i class="r"></i>'+nLate+' sem RDO</p></article>';});
  el.hidden=false;
- el.innerHTML='<h2>Hoje · '+esc(br(d))+'</h2>'+(late&&falta?'<p class="al">'+falta+' apontador'+(falta>1?'es':'')+' ainda não enviou o RDO de hoje e o turno do dia já acabou.</p>':'')+rows.join('');}
+ el.innerHTML='<h2><span>Apontamentos</span><span class="mn"><button type="button" data-cm="-1" aria-label="Mês anterior">‹</button><b>'+MES[m-1]+' '+y+'</b><button type="button" data-cm="1" aria-label="Próximo mês"'+(calMes>=d.slice(0,7)?' disabled':'')+'>›</button></span></h2>'+
+  (late&&falta&&calMes===d.slice(0,7)?'<p class="al">'+falta+' apontador'+(falta>1?'es':'')+' ainda não enviou o RDO de hoje e o turno do dia já acabou.</p>':'')+
+  '<div class="cals">'+cards.join('')+'</div><p class="leg"><span><i class="g"></i>Enviado</span><span><i class="b"></i>Preenchendo</span><span><i class="r"></i>Passou o dia sem RDO</span><span><i class="s"></i>Domingo</span><span>Toque num dia verde para ver o RDO</span></p>';
+ Array.prototype.forEach.call(el.querySelectorAll('[data-cm]'),function(bt){bt.onclick=function(){var n=+bt.getAttribute('data-cm'),yy=y,mm=m+n;if(mm<1){mm=12;yy--;}if(mm>12){mm=1;yy++;}calMes=yy+'-'+(mm<10?'0':'')+mm;hoje();};});
+ Array.prototype.forEach.call(el.querySelectorAll('[data-cal]'),function(bt){bt.onclick=function(){var v=bt.getAttribute('data-cal').split('|');$('q').value=br(v[0]);try{$('mes').value='';}catch(e){}draw();var L=$('list');if(L)L.scrollIntoView({behavior:'smooth',block:'start'});};});
+}
 function loadBk(){fetch('/api/rdo/backup',{cache:'no-store'}).then(function(r){return r.ok?r.json():{itens:[]};}).then(function(j){BK=j.itens||[];hoje();}).catch(function(){hoje();});}
 setInterval(function(){if(document.visibilityState==='visible'){loadBk();}},120000);
 function load(){
