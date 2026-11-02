@@ -142,6 +142,8 @@ var IC={pdf:'<svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 
 // Painel "Hoje" (V1.76): quem já mandou o RDO do dia, quem finalizou e espera internet, quem ainda está preenchendo
 // (pela cópia de segurança do celular) e quem falta. Depois das 17h30 (seg. a sex.), quem falta do turno do dia fica em vermelho.
 var APONT=['Anderson Júnior','Kailane Silva','João Paulo'];
+// nomes usados só em teste: não aparecem no calendário (02/11/2026)
+var IGNORA=['Anderson Junior Silva da costa','Mathias Alves de oliveira'];
 var nk=function(s){return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim();};
 function hojeISO(){var d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);}
 // Calendário por apontador (V1.85): no lugar da lista, um mês para cada apontador.
@@ -151,7 +153,7 @@ var calMes=null;
 function addDia(d,n){var x=new Date(d+'T12:00:00');x.setDate(x.getDate()+n);return x.toISOString().slice(0,10);}
 function hoje(){var el=$('hoje');if(!el)return;var d=hojeISO(),now=new Date(),dow=now.getDay(),late=dow>=1&&dow<=5&&(now.getHours()*60+now.getMinutes())>=17*60+30;
  if(!calMes)calMes=d.slice(0,7);
- var names=APONT.slice(),seen={};names.forEach(function(n){seen[nk(n)]=1;});
+ var names=APONT.slice(),seen={};names.forEach(function(n){seen[nk(n)]=1;});IGNORA.forEach(function(n){seen[nk(n)]=1;});
  var lim=addDia(d,-31);
  ITENS.forEach(function(e){if(e.autor&&e.data>=lim&&!seen[nk(e.autor)]){seen[nk(e.autor)]=1;names.push(e.autor);}});
  BK.forEach(function(b){Object.keys(b.dias||{}).forEach(function(k){var a=b.dias[k].a;if(a&&k>=lim&&!seen[nk(a)]){seen[nk(a)]=1;names.push(a);}});});
