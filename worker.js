@@ -177,7 +177,7 @@ async function rdoApi(req, env, url, prof, email) {
   if (acao === 'lista' && req.method === 'GET') {
     if (!canRead) return json({ error: 'sem acesso' }, 403);
     const idx = await rdoIndex(env);
-    return json({ itens: idx.itens, podeExcluir: prof === 'completo' });
+    return json({ itens: idx.itens, podeExcluir: prof === 'completo', voce: email });   // (V1.84) quem entrou, para a pasta avisar quando não é o perfil completo
   }
   if (acao === 'arquivo' && req.method === 'GET') {
     if (!canRead) return json({ error: 'sem acesso' }, 403);

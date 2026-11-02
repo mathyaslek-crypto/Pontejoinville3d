@@ -80,11 +80,13 @@ h1 em{font-style:italic;color:var(--ink2)}
 .foot{margin-top:34px;color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:14px}
 .more{display:block;margin:18px auto 0}
 @media(max-width:720px){.wrap{padding:18px 16px 50px}.hd .meta{margin-left:0;flex-basis:100%}.top span{display:none}h1{margin-top:18px}.stats{gap:18px}.usr{margin-left:auto}}
+.quem{margin:-6px 0 14px;padding:9px 12px;border:1px solid #6b5520;background:#2a2412;color:#f6dc9a;border-radius:10px;font-size:13px}
 </style>
 </head>
 <body>
 <div class="wrap">
  <div class="top"><a class="back" href="./" title="Voltar ao início" aria-label="Voltar ao início">←</a><div class="mk"></div><b>ALYA</b><span>Obra 70.578 · Joinville · SC</span><a class="btn usr" id="usr" href="usuarios" hidden>Usuários do RDO</a></div>
+ <p class="quem" id="quem" hidden></p>
  <h1>Pasta do <em>RDO</em></h1>
  <p class="lead">Os RDOs que os apontadores finalizam no app chegam aqui direto, com o PDF, as fotos e o pacote do 3D. O Modelo 3D, a Pluviometria e as Paralisações leem os pacotes desta pasta sozinhos.</p>
  <div class="stats" id="stats"></div>
@@ -134,7 +136,7 @@ setInterval(function(){if(document.visibilityState==='visible'){loadBk();}},1200
 function load(){
  $('list').innerHTML='<p class="msg">Carregando a pasta…</p>';
  fetch('/api/rdo/lista',{cache:'no-store'}).then(function(r){if(!r.ok||!/json/.test(r.headers.get('content-type')||''))throw Error(r.status===403?'Sem acesso à pasta do RDO.':'Não consegui abrir a pasta agora.');return r.json();})
-  .then(function(j){ITENS=(j.itens||[]).slice().sort(function(a,b){return String(b.data).localeCompare(String(a.data))||String(b.at).localeCompare(String(a.at));});podeExcluir=!!j.podeExcluir;$('usr').hidden=!podeExcluir;months();draw();loadBk();})
+  .then(function(j){ITENS=(j.itens||[]).slice().sort(function(a,b){return String(b.data).localeCompare(String(a.data))||String(b.at).localeCompare(String(a.at));});podeExcluir=!!j.podeExcluir;$('usr').hidden=!podeExcluir;var q=$('quem');if(q){q.hidden=podeExcluir||!j.voce;q.textContent='Você entrou como '+(j.voce||'')+'. Excluir e Pedir correção só aparecem no login com acesso completo; para usar, saia e entre de novo com o e-mail do perfil completo.';}months();draw();loadBk();})
   .catch(function(e){$('list').innerHTML='<p class="msg err">'+esc(e.message)+' Tente de novo em instantes.</p>';});
 }
 function months(){var sel=$('mes'),cur=sel.value,ms={};ITENS.forEach(function(e){if(e.data)ms[e.data.slice(0,7)]=1;});
