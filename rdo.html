@@ -467,7 +467,7 @@ return {Doc,width,enc};
 
 const CATALOG_SEED=window.CATALOG_SEED||{schema:'alya-catalogo-1',generated:'',pieces:[]};   // (V1.76) vem do rdo-catalogo.js
 const LOGO=document.querySelector('header.top img').src;
-const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.22';
+const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.23';
 const PASTA='https://queirozgalvao1.sharepoint.com/:f:/s/PonteJoinville/IgDE4PJCU0C9RJfF4FAkIarTAa_wdhMCQYOGRe-1D9gsBmM?e=5Pvp5v';
 const OBRA={nome:'Ponte de Joinville',numero:'70.578',empresa:'Alya Construtora'};
 const $=id=>document.getElementById(id);
@@ -556,17 +556,19 @@ const sideName=s=>s==='A'?'Adhemar':'Boa Vista';
 
 // ---------- Turnos ----------
 // Dia: seg–qui 07:00–17:00 · sex 07:00–16:00 · sáb/dom 07:00–16:00 (hora extra)
-// Noite: seg–qui 18:00–03:20 · sex/sáb/dom 17:00–24:00
+// Noite: seg–qui 18:00–03:20 · sex/sáb 15:00–24:00 · dom 17:00–24:00
+// (V0.23) os horários das atividades e paradas podem passar do fim do turno (hora extra): até 8 h depois do fim
 const dow=d=>new Date(d+'T12:00:00').getDay();
-function win(d,s){let w=dow(d),he=w===6||w===0;if(s==='noite')return w>=1&&w<=4?{a:1080,b:1640,he:false}:{a:1020,b:1440,he};return w>=1&&w<=4?{a:420,b:1020,he:false}:{a:420,b:960,he};}
+function win(d,s){let w=dow(d),he=w===6||w===0;if(s==='noite')return w>=1&&w<=4?{a:1080,b:1640,he:false}:{a:w===5||w===6?900:1020,b:1440,he};return w>=1&&w<=4?{a:420,b:1020,he:false}:{a:420,b:960,he};}
 const hm=(m,end)=>{m=Math.round(m);if(end&&m===1440)return '24:00';let h=Math.floor(m/60)%24;return String(h).padStart(2,'0')+':'+String(m%60).padStart(2,'0');};
 const span=(a,b)=>hm(a)+'–'+hm(b,true)+(b>1440?' (+1)':'');
 const winLabel=(d,s)=>{let w=win(d,s);return span(w.a,w.b);};
 const workH=(a,b)=>{let h=Math.max(0,(b-a)/60);return h>=6?h-1:h;};
 function times(w,kind){let out=[];for(let m=w.a;m<w.b;m+=15)out.push(m);out.push(w.b);if(kind==='start')out.pop();if(kind==='end')out.shift();return [...new Set(out)];}
-const tp=(id,w,val,dis='')=>{let H=Math.floor(val/60),M=val%60,hs=[];for(let h=Math.floor(w.a/60);h<=Math.floor((w.b-1)/60)+(w.b%60?0:1);h++)hs.push(h);
+const EXT=8*60,wx=w=>({a:w.a,b:Math.min(w.a+1440,w.b+EXT),he:w.he});
+const tp=(id,w0,val,dis='')=>{let w=wx(w0),H=Math.floor(val/60),M=val%60,hs=[];for(let h=Math.floor(w.a/60);h<=Math.floor((w.b-1)/60)+(w.b%60?0:1);h++)hs.push(h);
  return `<div class="tp"><select id="${id}h" aria-label="Hora" ${dis}>${hs.map(h=>`<option value="${h}" ${h===H?'selected':''}>${h===24&&w.b===1440?'24':String(h%24).padStart(2,'0')}h${h>=24&&!(h===24&&w.b===1440)?' (+1)':''}</option>`).join('')}</select><select id="${id}m" aria-label="Minuto" ${dis}>${Array.from({length:60},(_,m)=>`<option value="${m}" ${m===M?'selected':''}>${String(m).padStart(2,'0')}</option>`).join('')}</select></div>`;};
-const rt=(id,w)=>Math.max(w.a,Math.min(w.b,(+$(id+'h').value)*60+(+$(id+'m').value)));
+const rt=(id,w0)=>{let w=wx(w0);return Math.max(w.a,Math.min(w.b,(+$(id+'h').value)*60+(+$(id+'m').value)));};
 const selT=(id,w,val,kind)=>`<select id="${id}">${times(w,kind).map(m=>`<option value="${m}" ${m===val?'selected':''}>${hm(m,kind==='end')}${m>1440?' (+1)':''}</option>`).join('')}</select>`;
 
 // ---------- Dados e migração ----------
@@ -719,7 +721,7 @@ function resumoHTML(x,st,gs){let par=x.stops.reduce((s,p)=>s+(p.em-p.sm)/60,0),m
 // Conferência da equipe (V0.19): cada pessoa da equipe tem que estar em alguma atividade e ninguém pode estar
 // em duas atividades ao mesmo tempo. Por função: no pico do dia o número apontado tem que chegar ao da equipe
 // (senão falta gente) e em nenhum horário pode passar dele (senão está duplicado).
-function crewCheck(d=day){let x=getDay(d),w=win(d,x.shift),acts=listActs(d),out=[];
+function crewCheck(d=day){let x=getDay(d),w0=win(d,x.shift),acts=listActs(d),out=[],w={a:w0.a,b:Math.max(w0.b,...acts.map(a=>a.em||0))};
  for(let c of x.crews){let F=foreman(c.fid);
   for(let [f,nv] of Object.entries(c.counts||{})){let N=+nv||0;if(!N)continue;let mx=0,over=null;
    for(let m=w.a;m<w.b;m+=15){let n=0;for(let a of acts){if(!(a.sm<m+15&&a.em>m))continue;for(let k of a.crews||[])if(k.id===c.id)n+=k.counts?(+k.counts[f]||0):N;}
@@ -1196,7 +1198,7 @@ async function retryPending(){if(retrying||sending||!navigator.onLine)return;let
  retrying=false;if(ok){note(ok===1?'RDO pendente enviado para a pasta do site.':ok+' RDOs pendentes enviados para a pasta do site.');try{render();}catch(e){}}}
 addEventListener('online',()=>setTimeout(retryPending,1500));setTimeout(retryPending,4000);
 // Versão nova do RDO: o app confere sozinho quando volta para a tela e se atualiza (os dados ficam no aparelho).
-const RDO_VER='1.86';
+const RDO_VER='1.87';
 async function checkVer(){try{if(location.protocol==='file:')return;let r=await fetch('/api/rdo/versao',{cache:'no-store'});if(!r.ok||!/json/.test(r.headers.get('content-type')||''))return;let j=await r.json();
  if(!j||!j.rdo||j.rdo===RDO_VER)return;let k='rdo-ver-'+j.rdo;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');}catch(e){}
  if($('sheet').hidden&&!sending&&!retrying){save();location.reload();}else note('Tem uma versão nova do RDO: ela abre quando você fechar esta tela.');}catch(e){}}

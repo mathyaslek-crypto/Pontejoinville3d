@@ -120,7 +120,7 @@ const SMALL=new Set(['da','de','do','das','dos','e']);
 const title=s=>String(s||'').toLowerCase().split(/\s+/).map((w,i)=>/^(i|ii|iii|iv)$/.test(w)?w.toUpperCase():i&&SMALL.has(w)?w:w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
 const short=s=>{let w=String(s||'').split(/\s+/).filter(Boolean);return title(w[0]+(w.length>1?' '+w[w.length-1]:''));};
 const dow=d=>new Date(d+'T12:00:00').getDay();
-function win(d,s){let w=dow(d),he=w===6||w===0;if(s==='noite')return w>=1&&w<=4?{a:1080,b:1640}:{a:1020,b:1440};return w>=1&&w<=4?{a:420,b:1020}:{a:420,b:960};}
+function win(d,s){let w=dow(d),he=w===6||w===0;if(s==='noite')return w>=1&&w<=4?{a:1080,b:1640}:{a:w===5||w===6?900:1020,b:1440};return w>=1&&w<=4?{a:420,b:1020}:{a:420,b:960};}
 function lado(f){f=String(f||'');return /adhemar/i.test(f)?'Adhemar':/boa\s*vista/i.test(f)?'Boa Vista':'';}
 // grupos de função dos gráficos (os mesmos que o 3D usava)
 const FN=[{k:'Encarregado',c:'#3987e5',re:/encarreg|lider|mestre|feitor/},{k:'Carpinteiro',c:'#d95926',re:/carpint/},{k:'Pedreiro',c:'#199e70',re:/pedreir/},
