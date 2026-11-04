@@ -477,7 +477,7 @@ return {Doc,width,enc};
 
 const CATALOG_SEED=window.CATALOG_SEED||{schema:'alya-catalogo-1',generated:'',pieces:[]};   // (V1.76) vem do rdo-catalogo.js
 const LOGO=document.querySelector('header.top img').src;
-const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.26';
+const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.27';
 const PASTA='https://queirozgalvao1.sharepoint.com/:f:/s/PonteJoinville/IgDE4PJCU0C9RJfF4FAkIarTAa_wdhMCQYOGRe-1D9gsBmM?e=5Pvp5v';
 const OBRA={nome:'Ponte de Joinville',numero:'70.578',empresa:'Alya Construtora'};
 const $=id=>document.getElementById(id);
@@ -619,7 +619,7 @@ const crewTotal=c=>1+Object.values(c.counts||{}).reduce((s,n)=>s+(+n||0),0);
 const EMPS=[['SPT','S.Pontes'],['BML','BML'],['BSM','BSM'],['BRG','Berg Mineração']];
 const empName=k=>(EMPS.find(e=>e[0]===k)||[])[1]||k||'';
 const TFUNC=['ARMADOR','AJUDANTE','CARPINTEIRO','PEDREIRO','SOLDADOR','CALDEREIRO','TOPOGRAFO','OPERADOR','OPERADOR DE ESC.','OP. TRATOR','OP. DE MAQUINA','OP. MOTO NIVELADORA','MOTORISTA','ENCARREGADO'];
-const isEnc=p=>/ENCARREG/.test(p.funcao||'');
+const isEnc=p=>!!p.lider||/ENCARREG/.test(p.funcao||'');   // lider: encarregado da equipe mesmo com outra função (ex.: caldeireiro)
 const crewOf=(x,id)=>x.crews.find(k=>k.id===id)||(x.tcrews||[]).find(k=>k.id===id);
 const allCrews=x=>x.crews.concat(x.tcrews||[]);
 const fOf=c=>c&&c.t?{n:c.fid,c:'Encarregado '+empName(c.emp),f:Object.keys(c.counts||{})}:foreman(c.fid);
@@ -845,7 +845,7 @@ function actCard(a,st){let n=(st.assign.get(a.key)||[]).length,cr=a.crews.map(c=
 function stopCard(p,st){let a=st.acts.find(x=>x.key===p.act),c=p.crew==='all'?'Todas as equipes da atividade':short(crewOf(getDay(),p.crew)?.fid||'');
  return `<button type="button" class="it" data-stop="${p.id}"><i class="k-s"></i><span class="p">${esc(p.type)}</span><span class="st k-s">${fmtH((p.em-p.sm)/60)}</span><span class="sb">${span(p.sm,p.em)} · ${esc(actName(a))}</span><span class="mt">${esc(c)}${p.desc?' · '+esc(p.desc):''}</span></button>`;}
 function tCard(c,dis){let aus=new Set(c.aus||[]),live=!dis&&tRoster()[c.enc],list=live?tMembers(c.enc).map(p=>({m:p.m,n:p.nome,f:p.funcao})):(c.pres||[]);
- return `<div class="crew" data-tcrew="${c.id}"><div class="hd"><span class="av">${initials(c.fid)}</span><div class="nm"><b>${esc(title(c.fid))}</b><span>${esc(empName(c.emp))} · Encarregado</span></div><div class="tot">${crewTotal(c)}<small>pessoas</small></div></div>
+ return `<div class="crew" data-tcrew="${c.id}"><div class="hd"><span class="av">${initials(c.fid)}</span><div class="nm"><b>${esc(title(c.fid))}</b><span>${esc(empName(c.emp))} · Encarregado${(tRoster()[c.enc]&&!/ENCARREG/.test(tRoster()[c.enc].funcao))?' · '+esc(title(tRoster()[c.enc].funcao)):''}</span></div><div class="tot">${crewTotal(c)}<small>pessoas</small></div></div>
  ${list.length?`<div class="tm">${list.map(q=>`<button type="button" class="tq" data-tpres="${esc(q.m)}" aria-pressed="${!aus.has(q.m)}" ${dis}><span>${esc(title(q.n))}</span><small>${esc(title(q.f))} · ${esc(q.m)}</small></button>`).join('')}</div>${dis?'':'<p class="hint" style="padding:0 12px;margin:0 0 8px">Toque no nome de quem faltou hoje.</p>'}`:`<p class="hint" style="padding:0 12px">${live?'Equipe sem colaboradores. Toque em Editar equipe para cadastrar.':'Sem colaboradores.'}</p>`}
  ${dis?'':`<div class="ft"><button class="btn sm" type="button" data-troster="${c.id}">Editar equipe</button><button class="btn sm danger" type="button" data-rmt="${c.id}">Remover</button></div>`}</div>`;}
 // Escolher empresa e encarregado de terceiros
@@ -875,7 +875,7 @@ function openRoster(c){let x=getDay(),ed=null,emp=c.emp;
   $('sh-foot').innerHTML=`<button class="btn primary" type="button" id="trok">Pronto</button>`;$('trok').onclick=()=>{tSync(c);refreshWorkers();touch(day);save();closeSheet();};
   const run=async(body,msg)=>{try{await tOp(body);ed=null;tSync(c);refreshWorkers();touch(day);save();note(msg);draw();}catch(e){note('Não consegui salvar: '+e.message+'. Precisa de internet.',true);}};
   document.querySelectorAll('[data-ted]').forEach(b=>b.onclick=()=>{ed=b.dataset.ted;draw();});
-  $('tes')&&($('tes').onclick=()=>{let body={op:'upd',m:ed,nome:$('ten').value,funcao:$('tef').value,turno:$('tet').value};if($('tee'))body.enc=$('tee').value;run(body,'Cadastro atualizado.');});
+  $('tes')&&($('tes').onclick=()=>{let body={op:'upd',m:ed,nome:$('ten').value,funcao:$('tef').value,turno:$('tet').value};if($('tee'))body.enc=$('tee').value;else body.lider=true;run(body,'Cadastro atualizado.');});
   $('tex')&&($('tex').onclick=()=>{ed=null;draw();});
   $('ted')&&($('ted').onclick=e=>{let b=e.currentTarget;if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent='Confirmar desligamento';return;}run({op:'upd',m:ed,ativo:false},'Desligado do cadastro.');});
   $('taok').onclick=()=>{let n=$('tan').value.trim();if(n.length<3)return note('Digite o nome do colaborador.',true);run({op:'add',emp,nome:n,funcao:$('taf').value,enc:c.enc,turno:E.turno||x.shift},'Colaborador cadastrado com matrícula nova.');};
@@ -1287,7 +1287,7 @@ async function retryPending(){if(retrying||sending||!navigator.onLine)return;let
  retrying=false;if(ok){note(ok===1?'RDO pendente enviado para a pasta do site.':ok+' RDOs pendentes enviados para a pasta do site.');try{render();}catch(e){}}}
 addEventListener('online',()=>setTimeout(retryPending,1500));setTimeout(retryPending,4000);
 // Versão nova do RDO: o app confere sozinho quando volta para a tela e se atualiza (os dados ficam no aparelho).
-const RDO_VER='1.90';
+const RDO_VER='1.91';
 async function checkVer(){try{if(location.protocol==='file:')return;let r=await fetch('/api/rdo/versao',{cache:'no-store'});if(!r.ok||!/json/.test(r.headers.get('content-type')||''))return;let j=await r.json();
  if(!j||!j.rdo||j.rdo===RDO_VER)return;let k='rdo-ver-'+j.rdo;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');}catch(e){}
  if($('sheet').hidden&&!sending&&!retrying){save();location.reload();}else note('Tem uma versão nova do RDO: ela abre quando você fechar esta tela.');}catch(e){}}

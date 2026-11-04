@@ -16,7 +16,8 @@
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
 "por": "planilha S.Pontes",
-"sid": "SPT|carlos henrique amaral santos"
+"sid": "SPT|carlos henrique amaral santos",
+"lider": true
 },
 "SPT-0002": {
 "m": "SPT-0002",
@@ -29,7 +30,8 @@
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
 "por": "planilha S.Pontes",
-"sid": "SPT|jose raimundo"
+"sid": "SPT|jose raimundo",
+"lider": true
 },
 "SPT-0003": {
 "m": "SPT-0003",
@@ -42,7 +44,8 @@
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
 "por": "planilha S.Pontes",
-"sid": "SPT|jose leandro de o."
+"sid": "SPT|jose leandro de o.",
+"lider": true
 },
 "SPT-0004": {
 "m": "SPT-0004",
@@ -55,7 +58,8 @@
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
 "por": "planilha S.Pontes",
-"sid": "SPT|jose i. florentino"
+"sid": "SPT|jose i. florentino",
+"lider": true
 },
 "SPT-0005": {
 "m": "SPT-0005",
@@ -68,7 +72,8 @@
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
 "por": "planilha S.Pontes",
-"sid": "SPT|jose eronildo da silva"
+"sid": "SPT|jose eronildo da silva",
+"lider": true
 },
 "SPT-0006": {
 "m": "SPT-0006",
@@ -601,7 +606,8 @@
 "criado": "2026-11-04T15:40:00.000Z",
 "alterado": "2026-11-04T15:40:00.000Z",
 "por": "planilha BRG",
-"sid": "BRG|rafael mario pereira"
+"sid": "BRG|rafael mario pereira",
+"lider": true
 },
 "BRG-0002": {
 "m": "BRG-0002",
@@ -978,14 +984,15 @@
 "criado": "2026-11-04T15:40:00.000Z",
 "alterado": "2026-11-04T15:40:00.000Z",
 "por": "planilha BML",
-"sid": "BML|matheus maciel lourenco"
+"sid": "BML|matheus maciel lourenco",
+"lider": true
 },
 "BML-0002": {
 "m": "BML-0002",
 "emp": "BML",
 "nome": "WALDEMIR GANZERT",
 "funcao": "SOLDADOR VI",
-"enc": "",
+"enc": "BML-0001",
 "turno": "dia",
 "ativo": true,
 "criado": "2026-11-04T15:40:00.000Z",
@@ -998,7 +1005,7 @@
 "emp": "BML",
 "nome": "MARCIO DOS SANTOS LIMA",
 "funcao": "SOLDADOR SENIOR I",
-"enc": "",
+"enc": "BML-0001",
 "turno": "dia",
 "ativo": true,
 "criado": "2026-11-04T15:40:00.000Z",
@@ -1011,7 +1018,7 @@
 "emp": "BML",
 "nome": "THIAGO PEREIRA MEIRA",
 "funcao": "SOLDADOR",
-"enc": "",
+"enc": "BML-0001",
 "turno": "dia",
 "ativo": true,
 "criado": "2026-11-04T15:40:00.000Z",
@@ -1024,7 +1031,7 @@
 "emp": "BML",
 "nome": "JONATHAN RAPHAEL MARINHO PASKO",
 "funcao": "CALDEREIRO",
-"enc": "",
+"enc": "BML-0001",
 "turno": "dia",
 "ativo": true,
 "criado": "2026-11-04T15:40:00.000Z",
@@ -1037,7 +1044,7 @@
 "emp": "BML",
 "nome": "JOÃO GABRIEL MARINHO HOFFMANN",
 "funcao": "CALDEREIRO",
-"enc": "",
+"enc": "BML-0001",
 "turno": "dia",
 "ativo": true,
 "criado": "2026-11-04T15:40:00.000Z",
@@ -1050,7 +1057,7 @@
 "emp": "BML",
 "nome": "CASSIO PINTO BATISTA PRESTES",
 "funcao": "CALDEREIRO",
-"enc": "",
+"enc": "BML-0001",
 "turno": "dia",
 "ativo": true,
 "criado": "2026-11-04T15:40:00.000Z",
@@ -1063,7 +1070,7 @@
 "emp": "BML",
 "nome": "BRUNO PINHEIRO FANTIN",
 "funcao": "CALDEREIRO",
-"enc": "",
+"enc": "BML-0001",
 "turno": "dia",
 "ativo": true,
 "criado": "2026-11-04T15:40:00.000Z",
@@ -1076,7 +1083,7 @@
 "emp": "BML",
 "nome": "RAFAEL RUTHES DIAS",
 "funcao": "SOLDADOR",
-"enc": "",
+"enc": "BML-0001",
 "turno": "dia",
 "ativo": true,
 "criado": "2026-11-04T15:40:00.000Z",

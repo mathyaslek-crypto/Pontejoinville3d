@@ -35,7 +35,7 @@ async function clima() {
 //   rdo:f:<id>:<n>  arquivo (com nome, tipo e tamanho nos metadados)      rdo:m:<id>  ficha do envio
 //   rdo:index       lista de todos os envios (lida pela pasta da página inicial, 3D, pluviometria e paralisações)
 // Apontador e perfil completo enviam; perfil completo e equipe leem; só o perfil completo exclui.
-const RDO_ID = /^[A-Za-z0-9_.-]{6,140}$/, RDO_MAX = 24 * 1024 * 1024, RDO_VER = '1.90';   // RDO_VER igual ao do rdo.html
+const RDO_ID = /^[A-Za-z0-9_.-]{6,140}$/, RDO_MAX = 24 * 1024 * 1024, RDO_VER = '1.91';   // RDO_VER igual ao do rdo.html
 const KINDS = new Set(['pdf', 'pacote', 'foto', 'pluvio', 'outro']);
 async function rdoIndex(env) {
   let idx = await env.DADOS.get('rdo:index', 'json').catch(() => null);
@@ -153,7 +153,7 @@ async function rdoApi(req, env, url, prof, email) {
       const db = (await env.DADOS.get('rdo-terc-v1', 'json').catch(() => null)) || { seq: {}, p: {} };
       const tem = new Set(Object.values(db.p).map(q => q.sid || (q.emp + '|' + nk(q.nome)))), mapa = {};
       let mudou = false;
-      const seeds = Object.values(TERC_SEED.p).sort((a, b) => (a.funcao === 'ENCARREGADO' ? 0 : 1) - (b.funcao === 'ENCARREGADO' ? 0 : 1));
+      const seeds = Object.values(TERC_SEED.p).sort((a, b) => (a.funcao === 'ENCARREGADO' || a.lider ? 0 : 1) - (b.funcao === 'ENCARREGADO' || b.lider ? 0 : 1));
       for (const q of seeds) {
         const sid = q.sid || (q.emp + '|' + nk(q.nome));
         if (tem.has(sid)) { const ja = Object.values(db.p).find(x => (x.sid || (x.emp + '|' + nk(x.nome))) === sid); if (ja) mapa[q.m] = ja.m; continue; }
@@ -162,6 +162,13 @@ async function rdoApi(req, env, url, prof, email) {
         db.p[m] = Object.assign({}, q, { m, sid, enc: q.enc ? (mapa[q.enc] || q.enc) : '' }); mapa[q.m] = m; tem.add(sid); mudou = true;
       }
       for (const [e, n] of Object.entries(TERC_SEED.seq)) if ((db.seq[e] || 0) < n) { db.seq[e] = n; mudou = true; }
+      // correções únicas (guardadas em db.fix): 04/11 · Matheus Maciel Lourenço é o encarregado da BML (função caldeireiro jr II)
+      db.fix = db.fix || {};
+      if (!db.fix.bml1) {
+        const mt = Object.values(db.p).find(x => x.emp === 'BML' && nk(x.nome) === 'matheus maciel lourenco');
+        if (mt) { mt.lider = true; mt.enc = ''; for (const x of Object.values(db.p)) if (x.emp === 'BML' && x.m !== mt.m && !x.enc) x.enc = mt.m; }
+        db.fix.bml1 = new Date().toISOString(); mudou = true;
+      }
       if (mudou) await env.DADOS.put('rdo-terc-v1', JSON.stringify(db));
       return db;
     };
@@ -181,6 +188,8 @@ async function rdoApi(req, env, url, prof, email) {
       if (o.enc != null) { const e = txt(o.enc, 20); r.enc = e && db.p[e] && db.p[e].emp === r.emp ? e : ''; }
       if (o.turno != null) r.turno = o.turno === 'noite' ? 'noite' : 'dia';
       if (o.ativo != null) r.ativo = !!o.ativo;
+      if (o.lider != null) r.lider = !!o.lider;
+      if (/ENCARREG/.test(r.funcao || '')) r.lider = true;
       return r;
     };
     const novo = o => {
