@@ -1,6 +1,8 @@
 {
 "seq": {
-"SPT": 45
+"SPT": 45,
+"BRG": 29,
+"BML": 9
 },
 "p": {
 "SPT-0001": {
@@ -13,7 +15,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|carlos henrique amaral santos"
 },
 "SPT-0002": {
 "m": "SPT-0002",
@@ -25,7 +28,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|jose raimundo"
 },
 "SPT-0003": {
 "m": "SPT-0003",
@@ -37,7 +41,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|jose leandro de o."
 },
 "SPT-0004": {
 "m": "SPT-0004",
@@ -49,7 +54,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|jose i. florentino"
 },
 "SPT-0005": {
 "m": "SPT-0005",
@@ -61,7 +67,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|jose eronildo da silva"
 },
 "SPT-0006": {
 "m": "SPT-0006",
@@ -73,7 +80,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|aucimar gomes da silva"
 },
 "SPT-0007": {
 "m": "SPT-0007",
@@ -85,7 +93,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|ednaldo gomes da silva"
 },
 "SPT-0008": {
 "m": "SPT-0008",
@@ -97,7 +106,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|uelisson de jesus santos"
 },
 "SPT-0009": {
 "m": "SPT-0009",
@@ -109,7 +119,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|jose gomes da silva"
 },
 "SPT-0010": {
 "m": "SPT-0010",
@@ -121,7 +132,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|jose do navegantes"
 },
 "SPT-0011": {
 "m": "SPT-0011",
@@ -133,7 +145,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|rafael soares de athayde"
 },
 "SPT-0012": {
 "m": "SPT-0012",
@@ -145,7 +158,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|ledailson rodrigues barreira"
 },
 "SPT-0013": {
 "m": "SPT-0013",
@@ -157,7 +171,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|alex nascimento costa de jesus"
 },
 "SPT-0014": {
 "m": "SPT-0014",
@@ -169,7 +184,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|werico veras de morais"
 },
 "SPT-0015": {
 "m": "SPT-0015",
@@ -181,7 +197,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|edvaldo dos santos silva"
 },
 "SPT-0016": {
 "m": "SPT-0016",
@@ -193,7 +210,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|sergio barao pereira barbosa"
 },
 "SPT-0017": {
 "m": "SPT-0017",
@@ -205,7 +223,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|adelson s. barbosa"
 },
 "SPT-0018": {
 "m": "SPT-0018",
@@ -217,7 +236,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|antonio dos santos"
 },
 "SPT-0019": {
 "m": "SPT-0019",
@@ -229,7 +249,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|edicarlos davi vieira"
 },
 "SPT-0020": {
 "m": "SPT-0020",
@@ -241,7 +262,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|eliomar da silva de morais"
 },
 "SPT-0021": {
 "m": "SPT-0021",
@@ -253,7 +275,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|geraldo ribeiro da silva filho"
 },
 "SPT-0022": {
 "m": "SPT-0022",
@@ -265,7 +288,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|jaldo carneiro da silva"
 },
 "SPT-0023": {
 "m": "SPT-0023",
@@ -277,7 +301,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|pedro henrique lima aleluia"
 },
 "SPT-0024": {
 "m": "SPT-0024",
@@ -289,7 +314,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|werio veras de morais"
 },
 "SPT-0025": {
 "m": "SPT-0025",
@@ -301,7 +327,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|paulo cesar pereira da silva"
 },
 "SPT-0026": {
 "m": "SPT-0026",
@@ -313,7 +340,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|genivan goncalves dos santos"
 },
 "SPT-0027": {
 "m": "SPT-0027",
@@ -325,7 +353,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|kleber de souza soares"
 },
 "SPT-0028": {
 "m": "SPT-0028",
@@ -337,7 +366,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|raimundo do nascimento rocha"
 },
 "SPT-0029": {
 "m": "SPT-0029",
@@ -349,7 +379,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|douglas ramos santos"
 },
 "SPT-0030": {
 "m": "SPT-0030",
@@ -361,7 +392,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|marciel de vasconcelos luz"
 },
 "SPT-0031": {
 "m": "SPT-0031",
@@ -373,7 +405,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|ederson jose berbiano"
 },
 "SPT-0032": {
 "m": "SPT-0032",
@@ -385,7 +418,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|francisco jose oliveira da silva"
 },
 "SPT-0033": {
 "m": "SPT-0033",
@@ -397,7 +431,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|jose emanuel florentino da silva"
 },
 "SPT-0034": {
 "m": "SPT-0034",
@@ -409,7 +444,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|jose paulo da silva"
 },
 "SPT-0035": {
 "m": "SPT-0035",
@@ -421,7 +457,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|wederson da silva lopes"
 },
 "SPT-0036": {
 "m": "SPT-0036",
@@ -433,7 +470,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|adilson dias viana"
 },
 "SPT-0037": {
 "m": "SPT-0037",
@@ -445,7 +483,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|jose da costa santos"
 },
 "SPT-0038": {
 "m": "SPT-0038",
@@ -457,7 +496,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|gustavo lenk texeira"
 },
 "SPT-0039": {
 "m": "SPT-0039",
@@ -469,7 +509,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|joao carlos mendes furtado"
 },
 "SPT-0040": {
 "m": "SPT-0040",
@@ -481,7 +522,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|nayron rodrigues barreiros"
 },
 "SPT-0041": {
 "m": "SPT-0041",
@@ -493,7 +535,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|wilton rodrigues da silva"
 },
 "SPT-0042": {
 "m": "SPT-0042",
@@ -505,7 +548,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|jeans dos santos"
 },
 "SPT-0043": {
 "m": "SPT-0043",
@@ -517,7 +561,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|valmir silva"
 },
 "SPT-0044": {
 "m": "SPT-0044",
@@ -529,7 +574,8 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|ronald dutra da silva"
 },
 "SPT-0045": {
 "m": "SPT-0045",
@@ -541,7 +587,502 @@
 "ativo": true,
 "criado": "2026-11-04T14:30:00.000Z",
 "alterado": "2026-11-04T14:30:00.000Z",
-"por": "planilha S.Pontes"
+"por": "planilha S.Pontes",
+"sid": "SPT|nilvan de jesus dutra paixao"
+},
+"BRG-0001": {
+"m": "BRG-0001",
+"emp": "BRG",
+"nome": "RAFAEL MARIO PEREIRA",
+"funcao": "ENCARREGADO",
+"enc": "",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|rafael mario pereira"
+},
+"BRG-0002": {
+"m": "BRG-0002",
+"emp": "BRG",
+"nome": "ANDERSON DOS SANTOS",
+"funcao": "OPERADOR DE ESC.",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|anderson dos santos"
+},
+"BRG-0003": {
+"m": "BRG-0003",
+"emp": "BRG",
+"nome": "ALEXSSANDRO GONÇALVES",
+"funcao": "OPERADOR DE ESC.",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|alexssandro goncalves"
+},
+"BRG-0004": {
+"m": "BRG-0004",
+"emp": "BRG",
+"nome": "GEAN DA SILVA MONTEIRO",
+"funcao": "OPERADOR DE ESC.",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|gean da silva monteiro"
+},
+"BRG-0005": {
+"m": "BRG-0005",
+"emp": "BRG",
+"nome": "THIAGO MANOEL DA FONSECA DUARTE",
+"funcao": "TOPOGRAFO",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|thiago manoel da fonseca duarte"
+},
+"BRG-0006": {
+"m": "BRG-0006",
+"emp": "BRG",
+"nome": "ALAN VITOR AQUINO PEREIRA",
+"funcao": "PEDREIRO",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|alan vitor aquino pereira"
+},
+"BRG-0007": {
+"m": "BRG-0007",
+"emp": "BRG",
+"nome": "PAULO JOSE PEREIRA",
+"funcao": "PEDREIRO",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|paulo jose pereira"
+},
+"BRG-0008": {
+"m": "BRG-0008",
+"emp": "BRG",
+"nome": "RUBENS DE OLIVEIRA",
+"funcao": "PEDREIRO",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|rubens de oliveira"
+},
+"BRG-0009": {
+"m": "BRG-0009",
+"emp": "BRG",
+"nome": "MANOEL DA SILVA MARINHO",
+"funcao": "PEDREIRO",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|manoel da silva marinho"
+},
+"BRG-0010": {
+"m": "BRG-0010",
+"emp": "BRG",
+"nome": "GABRIEL CAMPOS",
+"funcao": "PEDREIRO",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|gabriel campos"
+},
+"BRG-0011": {
+"m": "BRG-0011",
+"emp": "BRG",
+"nome": "JONIEL ANTONIO LOPES",
+"funcao": "PEDREIRO",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|joniel antonio lopes"
+},
+"BRG-0012": {
+"m": "BRG-0012",
+"emp": "BRG",
+"nome": "WILLIAM JOSE HURTADO RODRIGUEZ",
+"funcao": "PEDREIRO",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|william jose hurtado rodriguez"
+},
+"BRG-0013": {
+"m": "BRG-0013",
+"emp": "BRG",
+"nome": "WARMISON MORAIS DOS SANTOS",
+"funcao": "AJUDANTE",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|warmison morais dos santos"
+},
+"BRG-0014": {
+"m": "BRG-0014",
+"emp": "BRG",
+"nome": "LUIZ CARLOS DA CONCEIÇÃO",
+"funcao": "AJUDANTE",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|luiz carlos da conceicao"
+},
+"BRG-0015": {
+"m": "BRG-0015",
+"emp": "BRG",
+"nome": "VITOR GUGO MAZZOLLI COLACO",
+"funcao": "TOPOGRAFO",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|vitor gugo mazzolli colaco"
+},
+"BRG-0016": {
+"m": "BRG-0016",
+"emp": "BRG",
+"nome": "ALECIO LIMAS SALVADOR",
+"funcao": "OPERADOR DE ESC.",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|alecio limas salvador"
+},
+"BRG-0017": {
+"m": "BRG-0017",
+"emp": "BRG",
+"nome": "JOÃO MARIA DE BASTOS",
+"funcao": "PEDREIRO",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|joao maria de bastos"
+},
+"BRG-0018": {
+"m": "BRG-0018",
+"emp": "BRG",
+"nome": "LUCIANO DUARTE DA COSTA",
+"funcao": "PEDREIRO",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|luciano duarte da costa"
+},
+"BRG-0019": {
+"m": "BRG-0019",
+"emp": "BRG",
+"nome": "ARCIR ORTIZ",
+"funcao": "OPERADOR DE ESC.",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|arcir ortiz"
+},
+"BRG-0020": {
+"m": "BRG-0020",
+"emp": "BRG",
+"nome": "ANTÔNIO ROSA",
+"funcao": "OP. MOTO NIVELADORA",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|antonio rosa"
+},
+"BRG-0021": {
+"m": "BRG-0021",
+"emp": "BRG",
+"nome": "SANDRO JOSÉ VARGAS",
+"funcao": "OP. TRATOR",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|sandro jose vargas"
+},
+"BRG-0022": {
+"m": "BRG-0022",
+"emp": "BRG",
+"nome": "JEFERSON LAURINDO",
+"funcao": "OP. DE MAQUINA",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|jeferson laurindo"
+},
+"BRG-0023": {
+"m": "BRG-0023",
+"emp": "BRG",
+"nome": "WILLIAN ZOMMER",
+"funcao": "TOPOGRAFO",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|willian zommer"
+},
+"BRG-0024": {
+"m": "BRG-0024",
+"emp": "BRG",
+"nome": "CLEVERSON CARDOSO",
+"funcao": "PEDREIRO",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|cleverson cardoso"
+},
+"BRG-0025": {
+"m": "BRG-0025",
+"emp": "BRG",
+"nome": "JUAREZ",
+"funcao": "OPERADOR DE ESC.",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|juarez"
+},
+"BRG-0026": {
+"m": "BRG-0026",
+"emp": "BRG",
+"nome": "DANILO BARBOSA FERREIRA",
+"funcao": "PEDREIRO",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|danilo barbosa ferreira"
+},
+"BRG-0027": {
+"m": "BRG-0027",
+"emp": "BRG",
+"nome": "JOSE DE SOUZA",
+"funcao": "PEDREIRO",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|jose de souza"
+},
+"BRG-0028": {
+"m": "BRG-0028",
+"emp": "BRG",
+"nome": "REGINALDO MARINHO LAUTERIO",
+"funcao": "PEDREIRO",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|reginaldo marinho lauterio"
+},
+"BRG-0029": {
+"m": "BRG-0029",
+"emp": "BRG",
+"nome": "VAILTON IRIS GONÇALVES",
+"funcao": "PEDREIRO",
+"enc": "BRG-0001",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BRG",
+"sid": "BRG|vailton iris goncalves"
+},
+"BML-0001": {
+"m": "BML-0001",
+"emp": "BML",
+"nome": "MATHEUS MACIEL LOURENCO",
+"funcao": "CALDEREIRO JR II",
+"enc": "",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BML",
+"sid": "BML|matheus maciel lourenco"
+},
+"BML-0002": {
+"m": "BML-0002",
+"emp": "BML",
+"nome": "WALDEMIR GANZERT",
+"funcao": "SOLDADOR VI",
+"enc": "",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BML",
+"sid": "BML|waldemir ganzert"
+},
+"BML-0003": {
+"m": "BML-0003",
+"emp": "BML",
+"nome": "MARCIO DOS SANTOS LIMA",
+"funcao": "SOLDADOR SENIOR I",
+"enc": "",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BML",
+"sid": "BML|marcio dos santos lima"
+},
+"BML-0004": {
+"m": "BML-0004",
+"emp": "BML",
+"nome": "THIAGO PEREIRA MEIRA",
+"funcao": "SOLDADOR",
+"enc": "",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BML",
+"sid": "BML|thiago pereira meira"
+},
+"BML-0005": {
+"m": "BML-0005",
+"emp": "BML",
+"nome": "JONATHAN RAPHAEL MARINHO PASKO",
+"funcao": "CALDEREIRO",
+"enc": "",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BML",
+"sid": "BML|jonathan raphael marinho pasko"
+},
+"BML-0006": {
+"m": "BML-0006",
+"emp": "BML",
+"nome": "JOÃO GABRIEL MARINHO HOFFMANN",
+"funcao": "CALDEREIRO",
+"enc": "",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BML",
+"sid": "BML|joao gabriel marinho hoffmann"
+},
+"BML-0007": {
+"m": "BML-0007",
+"emp": "BML",
+"nome": "CASSIO PINTO BATISTA PRESTES",
+"funcao": "CALDEREIRO",
+"enc": "",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BML",
+"sid": "BML|cassio pinto batista prestes"
+},
+"BML-0008": {
+"m": "BML-0008",
+"emp": "BML",
+"nome": "BRUNO PINHEIRO FANTIN",
+"funcao": "CALDEREIRO",
+"enc": "",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BML",
+"sid": "BML|bruno pinheiro fantin"
+},
+"BML-0009": {
+"m": "BML-0009",
+"emp": "BML",
+"nome": "RAFAEL RUTHES DIAS",
+"funcao": "SOLDADOR",
+"enc": "",
+"turno": "dia",
+"ativo": true,
+"criado": "2026-11-04T15:40:00.000Z",
+"alterado": "2026-11-04T15:40:00.000Z",
+"por": "planilha BML",
+"sid": "BML|rafael ruthes dias"
 }
 }
 }

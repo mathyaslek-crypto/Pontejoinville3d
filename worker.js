@@ -146,7 +146,25 @@ async function rdoApi(req, env, url, prof, email) {
   if (acao === 'terceiros') {
     const EMPS = ['SPT', 'BML', 'BSM', 'BRG'];
     // começa com a equipe da S.Pontes da planilha de 04/11/2026 (terceiros-seed.json, fora dos arquivos públicos)
-    const ler = async () => (await env.DADOS.get('rdo-terc-v1', 'json').catch(() => null)) || JSON.parse(JSON.stringify(TERC_SEED));
+    // (04/11) planilhas novas entram no cadastro que já existe: quem ainda não está (pela empresa + nome) é acrescentado,
+    // com a matrícula da planilha se estiver livre (senão a próxima da empresa); nada que já foi editado é mexido.
+    const nk = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+    const ler = async () => {
+      const db = (await env.DADOS.get('rdo-terc-v1', 'json').catch(() => null)) || { seq: {}, p: {} };
+      const tem = new Set(Object.values(db.p).map(q => q.sid || (q.emp + '|' + nk(q.nome)))), mapa = {};
+      let mudou = false;
+      const seeds = Object.values(TERC_SEED.p).sort((a, b) => (a.funcao === 'ENCARREGADO' ? 0 : 1) - (b.funcao === 'ENCARREGADO' ? 0 : 1));
+      for (const q of seeds) {
+        const sid = q.sid || (q.emp + '|' + nk(q.nome));
+        if (tem.has(sid)) { const ja = Object.values(db.p).find(x => (x.sid || (x.emp + '|' + nk(x.nome))) === sid); if (ja) mapa[q.m] = ja.m; continue; }
+        let m = q.m;
+        if (db.p[m]) { db.seq[q.emp] = Math.max(db.seq[q.emp] || 0, TERC_SEED.seq[q.emp] || 0) + 1; m = q.emp + '-' + String(db.seq[q.emp]).padStart(4, '0'); }
+        db.p[m] = Object.assign({}, q, { m, sid, enc: q.enc ? (mapa[q.enc] || q.enc) : '' }); mapa[q.m] = m; tem.add(sid); mudou = true;
+      }
+      for (const [e, n] of Object.entries(TERC_SEED.seq)) if ((db.seq[e] || 0) < n) { db.seq[e] = n; mudou = true; }
+      if (mudou) await env.DADOS.put('rdo-terc-v1', JSON.stringify(db));
+      return db;
+    };
     if (req.method === 'GET') {
       if (!canSend && !canRead) return json({ error: 'sem acesso' }, 403);
       return json(await ler());

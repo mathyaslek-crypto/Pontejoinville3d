@@ -618,7 +618,7 @@ const crewTotal=c=>1+Object.values(c.counts||{}).reduce((s,n)=>s+(+n||0),0);
 // counts sai de pres por função e entra na mesma distribuição e conferência das equipes da Alya.
 const EMPS=[['SPT','S.Pontes'],['BML','BML'],['BSM','BSM'],['BRG','Berg Mineração']];
 const empName=k=>(EMPS.find(e=>e[0]===k)||[])[1]||k||'';
-const TFUNC=['ARMADOR','AJUDANTE','CARPINTEIRO','PEDREIRO','SOLDADOR','OPERADOR','MOTORISTA','ENCARREGADO'];
+const TFUNC=['ARMADOR','AJUDANTE','CARPINTEIRO','PEDREIRO','SOLDADOR','CALDEREIRO','TOPOGRAFO','OPERADOR','OPERADOR DE ESC.','OP. TRATOR','OP. DE MAQUINA','OP. MOTO NIVELADORA','MOTORISTA','ENCARREGADO'];
 const isEnc=p=>/ENCARREG/.test(p.funcao||'');
 const crewOf=(x,id)=>x.crews.find(k=>k.id===id)||(x.tcrews||[]).find(k=>k.id===id);
 const allCrews=x=>x.crews.concat(x.tcrews||[]);
