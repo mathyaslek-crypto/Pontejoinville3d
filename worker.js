@@ -34,7 +34,7 @@ async function clima() {
 //   rdo:f:<id>:<n>  arquivo (com nome, tipo e tamanho nos metadados)      rdo:m:<id>  ficha do envio
 //   rdo:index       lista de todos os envios (lida pela pasta da página inicial, 3D, pluviometria e paralisações)
 // Apontador e perfil completo enviam; perfil completo e equipe leem; só o perfil completo exclui.
-const RDO_ID = /^[A-Za-z0-9_.-]{6,140}$/, RDO_MAX = 24 * 1024 * 1024, RDO_VER = '1.89';   // RDO_VER igual ao do rdo.html
+const RDO_ID = /^[A-Za-z0-9_.-]{6,140}$/, RDO_MAX = 24 * 1024 * 1024, RDO_VER = '1.90';   // RDO_VER igual ao do rdo.html
 const KINDS = new Set(['pdf', 'pacote', 'foto', 'pluvio', 'outro']);
 async function rdoIndex(env) {
   let idx = await env.DADOS.get('rdo:index', 'json').catch(() => null);
@@ -138,6 +138,56 @@ async function rdoApi(req, env, url, prof, email) {
     if (a === '*') { let cur; do { const r = await env.DADOS.list({ prefix: 'rdo-at:' + ek + '|', cursor: cur }); for (const k of r.keys) await env.DADOS.delete(k.name); cur = r.list_complete ? null : r.cursor; } while (cur); }
     else await env.DADOS.delete('rdo-at:' + ek + '|' + a);
     return json({ ok: true });
+  }
+  // (V1.86) Terceiros: cadastro único de colaboradores das empresas terceiras, compartilhado por todos os apontadores.
+  //   KV 'rdo-terc-v1' = { seq: { SPT: 12 }, p: { 'SPT-0001': { m, nome, funcao, emp, enc, turno, ativo, criado, alterado, por } } }
+  //   A matrícula é criada aqui (sigla da empresa + número) e nunca muda. enc = matrícula do encarregado ('' = sem encarregado).
+  if (acao === 'terceiros') {
+    const EMPS = ['SPT', 'BML', 'BSM', 'BRG'];
+    const ler = async () => (await env.DADOS.get('rdo-terc-v1', 'json').catch(() => null)) || { seq: {}, p: {} };
+    if (req.method === 'GET') {
+      if (!canSend && !canRead) return json({ error: 'sem acesso' }, 403);
+      return json(await ler());
+    }
+    if (req.method !== 'POST') return json({ error: 'método não permitido' }, 405);
+    if (!canSend) return json({ error: 'sem acesso' }, 403);
+    let b; try { b = await req.json(); } catch (e) { return json({ error: 'corpo inválido' }, 400); }
+    const txt = (v, n) => String(v == null ? '' : v).replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
+    const db = await ler(), now = new Date().toISOString();
+    const limpa = (o, base) => {
+      const r = Object.assign({}, base);
+      if (o.nome != null) r.nome = txt(o.nome, 80);
+      if (o.funcao != null) r.funcao = txt(o.funcao, 40).toUpperCase();
+      if (o.enc != null) { const e = txt(o.enc, 20); r.enc = e && db.p[e] && db.p[e].emp === r.emp ? e : ''; }
+      if (o.turno != null) r.turno = o.turno === 'noite' ? 'noite' : 'dia';
+      if (o.ativo != null) r.ativo = !!o.ativo;
+      return r;
+    };
+    const novo = o => {
+      const emp = EMPS.includes(o.emp) ? o.emp : null; if (!emp) throw new Error('empresa inválida');
+      const nome = txt(o.nome, 80); if (nome.length < 3) throw new Error('nome inválido');
+      db.seq[emp] = (db.seq[emp] || 0) + 1;
+      const m = emp + '-' + String(db.seq[emp]).padStart(4, '0');
+      db.p[m] = limpa(o, { m, emp, nome, funcao: 'AJUDANTE', enc: '', turno: 'dia', ativo: true, criado: now, alterado: now, por: email });
+      return m;
+    };
+    let mat = '';
+    try {
+      if (b.op === 'add') mat = novo(b);
+      else if (b.op === 'upd') {
+        const cur = db.p[txt(b.m, 20)]; if (!cur) return json({ error: 'colaborador não encontrado' }, 404);
+        db.p[cur.m] = Object.assign(limpa(b, cur), { alterado: now, por: email }); mat = cur.m;
+        if (db.p[mat].enc === mat) db.p[mat].enc = '';
+      } else if (b.op === 'import' && prof === 'completo' && Array.isArray(b.itens)) {
+        // planilha: primeiro os encarregados (para ligar a equipe pelo nome), depois os demais
+        const key = s => txt(s, 80).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+        const its = b.itens.slice(0, 2000), enc = {};
+        for (const o of its.filter(o => /encarreg/i.test(o.funcao || ''))) { const m = novo(Object.assign({}, o, { enc: '' })); enc[o.emp + '|' + key(o.nome)] = m; }
+        for (const o of its.filter(o => !/encarreg/i.test(o.funcao || ''))) novo(Object.assign({}, o, { enc: enc[o.emp + '|' + key(o.encNome)] || '' }));
+      } else return json({ error: 'operação inválida' }, 400);
+    } catch (e) { return json({ error: e.message || 'dados inválidos' }, 400); }
+    await env.DADOS.put('rdo-terc-v1', JSON.stringify(db));
+    return json(Object.assign({ ok: true, m: mat }, db));
   }
   if (acao === 'arquivo' && req.method === 'PUT') {
     if (!canSend) return json({ error: 'sem acesso' }, 403);

@@ -193,6 +193,16 @@ a.btn{text-decoration:none}
 .it .mt{font-size:12px;color:var(--muted);grid-column:2/-1}
 .it .cc{color:#9fd3ff}
 .addrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.addrow .btn{white-space:nowrap;padding-left:8px;padding-right:8px}
+.tm{display:grid;gap:6px;padding:4px 12px 8px}
+.tq{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;padding:10px 12px;border-radius:10px;border:1px solid var(--line2);background:transparent;color:inherit;font:inherit;cursor:pointer}
+.tq small{color:var(--muted);font-size:11.5px;white-space:nowrap}
+.tq[aria-pressed=true]{border-color:#3fb37f88}
+.tq[aria-pressed=false]{opacity:.55;text-decoration:line-through}
+.trow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line2);border-radius:10px;margin-bottom:6px}
+.trow span{display:block;color:var(--muted);font-size:12px}
+.tg3{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:1px 7px;border-radius:999px;background:#5b3fd133;color:#c9b8ff;margin-right:6px;vertical-align:1px}
+html.light .tg3{background:#5b3fd122;color:#4a2fb0}
 .empty{color:var(--muted);font-size:13.5px;margin:2px 0 10px;text-align:center;padding:16px 10px;border:1px dashed var(--line2);border-radius:10px}
 details.card{padding:0}
 details.card>summary{padding:15px 16px;font-size:15px;font-weight:600;cursor:pointer}
@@ -467,7 +477,7 @@ return {Doc,width,enc};
 
 const CATALOG_SEED=window.CATALOG_SEED||{schema:'alya-catalogo-1',generated:'',pieces:[]};   // (V1.76) vem do rdo-catalogo.js
 const LOGO=document.querySelector('header.top img').src;
-const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.25';
+const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.26';
 const PASTA='https://queirozgalvao1.sharepoint.com/:f:/s/PonteJoinville/IgDE4PJCU0C9RJfF4FAkIarTAa_wdhMCQYOGRe-1D9gsBmM?e=5Pvp5v';
 const OBRA={nome:'Ponte de Joinville',numero:'70.578',empresa:'Alya Construtora'};
 const $=id=>document.getElementById(id);
@@ -591,8 +601,8 @@ let tab='Hoje',day=today();
 const live=()=>db.events.filter(e=>!e.deleted);
 const dayEvents=d=>live().filter(e=>e.date===d).sort((a,b)=>(a.sm??0)-(b.sm??0)||String(a.created).localeCompare(String(b.created)));
 const unsent=()=>{let s=String(db.sentAt||'');return db.events.filter(e=>String(e.updated||e.created)>s).length+Object.values(db.days).filter(d=>String(d.updated||'')>s).length;};
-function getDay(d=day){let x=db.days[d]??={author:db.profile,shift:db.lastShift||'dia',front:'',rainP:[null,null,null],pluv:db.lastPluv||'',mm07:'',mm17:'',ph07:'',ph17:'',grid:{},wstops:[],photos:[],crews:[],extras:[],stops:[],notes:'',equipment:{},finalized:null,revs:[]};
- for(let [k,v] of Object.entries({rainP:[null,null,null],grid:{},wstops:[],photos:[],crews:[],extras:[],stops:[],equipment:{},revs:[]}))if(x[k]==null)x[k]=structuredClone(v);
+function getDay(d=day){let x=db.days[d]??={author:db.profile,shift:db.lastShift||'dia',front:'',rainP:[null,null,null],pluv:db.lastPluv||'',mm07:'',mm17:'',ph07:'',ph17:'',grid:{},wstops:[],photos:[],crews:[],tcrews:[],extras:[],stops:[],notes:'',equipment:{},finalized:null,revs:[]};
+ for(let [k,v] of Object.entries({rainP:[null,null,null],grid:{},wstops:[],photos:[],crews:[],tcrews:[],extras:[],stops:[],equipment:{},revs:[]}))if(x[k]==null)x[k]=structuredClone(v);
  if(x.pluv==null)x.pluv='';
  if(!x.finalized&&x.author){let c=apCanon(x.author);if(c!==x.author)x.author=c;}
  if(db.profile){let c=apCanon(db.profile);if(c!==db.profile)db.profile=c;}
@@ -602,6 +612,24 @@ function note(t,err){let n=$('notice');n.textContent=t;n.classList.toggle('err',
 const allForemen=()=>FOREMEN.concat(db.customForemen||[]);
 const foreman=n=>allForemen().find(f=>f.n===n)||{n,c:'ENCARREGADO',f:['AJUDANTE']};
 const crewTotal=c=>1+Object.values(c.counts||{}).reduce((s,n)=>s+(+n||0),0);
+// ---------- Terceiros (V0.26) ----------
+// Cadastro único no site (/api/rdo/terceiros): colaboradores com matrícula automática (sigla + número), função, encarregado e turno.
+// No dia, cada equipe de terceiros é x.tcrews[] = {id,t:1,emp,enc,fid,counts,aus,pres}: pres é a foto de quem veio (vai no pacote);
+// counts sai de pres por função e entra na mesma distribuição e conferência das equipes da Alya.
+const EMPS=[['SPT','S.Pontes'],['BML','BML'],['BSM','BSM'],['BRG','Berg Mineração']];
+const empName=k=>(EMPS.find(e=>e[0]===k)||[])[1]||k||'';
+const TFUNC=['ARMADOR','AJUDANTE','CARPINTEIRO','PEDREIRO','SOLDADOR','OPERADOR','MOTORISTA','ENCARREGADO'];
+const isEnc=p=>/ENCARREG/.test(p.funcao||'');
+const crewOf=(x,id)=>x.crews.find(k=>k.id===id)||(x.tcrews||[]).find(k=>k.id===id);
+const allCrews=x=>x.crews.concat(x.tcrews||[]);
+const fOf=c=>c&&c.t?{n:c.fid,c:'Encarregado '+empName(c.emp),f:Object.keys(c.counts||{})}:foreman(c.fid);
+const tRoster=()=>(db.terc&&db.terc.p)||{};
+const tMembers=enc=>Object.values(tRoster()).filter(p=>p.ativo!==false&&p.enc===enc&&p.m!==enc).sort((a,b)=>String(a.funcao).localeCompare(b.funcao)||String(a.nome).localeCompare(b.nome));
+function tSync(c){let E=tRoster()[c.enc];if(!E)return;c.fid=title(E.nome);let aus=new Set(c.aus||[]);c.pres=tMembers(c.enc).filter(p=>!aus.has(p.m)).map(p=>({m:p.m,n:p.nome,f:p.funcao}));let k={};for(let q of c.pres)k[q.f]=(k[q.f]||0)+1;c.counts=k;}
+let tercBusy=null;
+function tLoad(force){if(tercBusy)return tercBusy;if(!force&&db.terc&&Date.now()-(db.terc.lt||0)<60e3)return Promise.resolve(false);
+ tercBusy=fetch('/api/rdo/terceiros',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{if(!j||!j.p)return false;let sig=JSON.stringify(j.p),ch=!db.terc||db.terc.sig!==sig;db.terc={p:j.p,lt:Date.now(),sig};save();return ch;}).catch(()=>false).finally(()=>{tercBusy=null;});return tercBusy;}
+async function tOp(body){let r=await fetch('/api/rdo/terceiros',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});let j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.error||('erro '+r.status));db.terc={p:j.p,lt:Date.now(),sig:JSON.stringify(j.p)};save();return j;}
 
 // ---------- Fotos do pluviômetro (guardadas no aparelho) ----------
 const PDB=new Promise(res=>{try{let r=indexedDB.open('alya-rdo-fotos',1);r.onupgradeneeded=()=>r.result.createObjectStore('f');r.onsuccess=()=>res(r.result);r.onerror=()=>res(null);}catch(e){res(null);}});
@@ -624,14 +652,14 @@ const services=u=>{let p=pieceMap.get(u);return p?Object.keys(p.v).filter(s=>svc
 function place(p){return [p.b&&!p.a.includes(p.b)?'Bloco '+p.b:'',p.a,sideName(p.s)].filter(Boolean).join(' · ');}
 // Todas as atividades do dia (3D e extras) num formato só.
 function listActs(d=day){let x=getDay(d),w=win(d,x.shift);
- let a=dayEvents(d).map(e=>{let p=pieceMap.get(e.uid);return {key:'e:'+e.id,kind:'3d',id:e.id,label:p?.l||e.piece||e.uid,sub:svcLabel(e.service),place:p?place(p):'',status:e.status,sm:e.sm??w.a,em:e.em??w.b,crews:e.crews||[],concrete:e.concrete,desc:e.description||''};});
- let b=x.extras.map(t=>({key:'x:'+t.id,kind:'extra',id:t.id,label:t.desc,sub:'Atividade extra',place:'',status:'Extra',sm:t.sm,em:t.em,crews:t.crews||[],concrete:t.concrete,desc:t.obs||''}));
+ let a=dayEvents(d).map(e=>{let p=pieceMap.get(e.uid);return {key:'e:'+e.id,kind:'3d',id:e.id,label:p?.l||e.piece||e.uid,sub:svcLabel(e.service),place:p?place(p):'',status:e.status,sm:e.sm??w.a,em:e.em??w.b,crews:e.crews||[],concrete:e.concrete,desc:e.description||'',terc:!!e.terc};});
+ let b=x.extras.map(t=>({key:'x:'+t.id,kind:'extra',id:t.id,label:t.desc,sub:'Atividade extra',place:'',status:'Extra',sm:t.sm,em:t.em,crews:t.crews||[],concrete:t.concrete,desc:t.obs||'',terc:!!t.terc}));
  return a.concat(b).sort((p,q)=>p.sm-q.sm||p.em-q.em);}
-const actName=a=>a?(a.kind==='3d'?a.label+' · '+a.sub:'Extra · '+a.label):'Atividade removida';
+const actName=a=>a?((a.terc?'Terceiros · ':'')+(a.kind==='3d'?a.label+' · '+a.sub:'Extra · '+a.label)):'Atividade removida';
 // Distribui as pessoas de cada equipe pelas atividades sem contar duas vezes quem trabalhou em horários diferentes.
 function assign(d=day){let x=getDay(d),pools=new Map,out=new Map;
  for(let a of listActs(d)){let ws=[],h=workH(a.sm,a.em);
-  for(let c of a.crews){let crew=x.crews.find(k=>k.id===c.id);if(!crew)continue;let F=foreman(crew.fid);
+  for(let c of a.crews){let crew=crewOf(x,c.id);if(!crew)continue;let F=fOf(crew);
    let need=[['__LIDER',1],...Object.entries(crew.counts).map(([f,n])=>[f,Math.min(+n||0,c.counts&&c.counts[f]!=null?+c.counts[f]:+n||0)])];
    for(let [f,n] of need){if(!n)continue;let k=crew.id+'|'+f,pool=pools.get(k)||[];pools.set(k,pool);let got=0;
     for(let i=0;i<pool.length&&got<n;i++)if(pool[i].every(([s,e])=>a.em<=s||a.sm>=e)){pool[i].push([a.sm,a.em]);ws.push(worker(F,f,i,h,a));got++;}
@@ -639,12 +667,12 @@ function assign(d=day){let x=getDay(d),pools=new Map,out=new Map;
   out.set(a.key,ws);}
  return out;}
 const worker=(F,f,i,h,a)=>f==='__LIDER'?{name:title(F.n),role:title(F.c),hours:h,crew:F.n,a:a.sm,b:a.em}:{name:short(F.n)+' · '+title(f)+' '+(i+1),role:title(f),hours:h,crew:F.n,a:a.sm,b:a.em};
-function refreshWorkers(d=day){let m=assign(d);for(let e of dayEvents(d))if(e.crews){let ws=m.get('e:'+e.id)||[];e.workers=ws.map(({name,role,hours})=>({name,role,hours}));e.teamName=[...new Set(e.crews.map(c=>getDay(d).crews.find(k=>k.id===c.id)).filter(Boolean).map(c=>title(c.fid)))].join(', ');}return m;}
+function refreshWorkers(d=day){let m=assign(d);for(let e of dayEvents(d))if(e.crews){let ws=m.get('e:'+e.id)||[];e.workers=ws.map(({name,role,hours})=>({name,role,hours}));e.teamName=[...new Set(e.crews.map(c=>crewOf(getDay(d),c.id)).filter(Boolean).map(c=>title(c.fid)))].join(', ');}return m;}
 function dayStats(d=day){let x=getDay(d),m=assign(d),acts=listActs(d),people=new Map;
  for(let ws of m.values())for(let w of ws){let p=people.get(w.name)||{...w,iv:[]};p.iv.push([w.a,w.b]);people.set(w.name,p);}
  let hh=0;for(let p of people.values()){p.iv.sort((a,b)=>a[0]-b[0]);let h=0,cs=-1,ce=-1;const add=()=>{if(ce>cs)h+=workH(cs,ce);};for(let [a,b] of p.iv){if(a>ce){add();cs=a;ce=b;}else ce=Math.max(ce,b);}add();p.h=h;hh+=h;}
- let efetivo=x.crews.reduce((s,c)=>s+crewTotal(c),0),concrete=acts.reduce((s,a)=>s+(a.concrete!=null?+a.concrete:0),0);
- return {acts,people:[...people.values()],hh,efetivo,concrete,assign:m};}
+ let efetivo=x.crews.reduce((s,c)=>s+crewTotal(c),0),tefetivo=(x.tcrews||[]).reduce((s,c)=>s+crewTotal(c),0),concrete=acts.reduce((s,a)=>s+(a.concrete!=null?+a.concrete:0),0);
+ return {acts,people:[...people.values()],hh,efetivo,tefetivo,concrete,assign:m};}
 function gridToStops(d,x){let w=win(d,x.shift),out=[],cur=null;for(let m=w.a;m<w.b;m+=15){let t=x.grid[m],e=Math.min(m+15,w.b);if(t){if(cur&&cur.t===t&&cur.em===m)cur.em=e;else{cur={id:uid(),t,sm:m,em:e};out.push(cur);}}else cur=null;}return out;}
 function gridStats(d=day){let x=getDay(d),out={c:0,r:0,iv:[]};for(let w2 of [...x.wstops].sort((a,b)=>a.sm-b.sm)){if(!(w2.em>w2.sm))continue;out[w2.t]+=(w2.em-w2.sm)/60;out.iv.push({t:w2.t,m:w2.sm,e:w2.em});}return out;}
 const ownP=x=>x.shift==='noite'?[2]:[0,1];
@@ -664,6 +692,8 @@ function keepScroll(fn){let y=scrollY;fn();scrollTo(0,y);}
 
 // ---------- Hoje ----------
 function pageToday(){
+ let x0=getDay();if(!x0.finalized)for(let c of x0.tcrews)tSync(c);
+ if(x0.tcrews.length||!db.terc)tLoad().then(ch=>{if(ch&&tab==='Hoje'&&$('sheet').hidden){let y=getDay();if(!y.finalized)for(let c of y.tcrews)tSync(c);keepScroll(render);}});
  let x=getDay(),fin=x.finalized,dis=fin?'disabled':'',st=dayStats(),w=win(day,x.shift),gs=gridStats(),stops=x.stops,nWx=ownP(x).filter(i=>x.rainP[i]!=null).length;
  const ok={t:!!x.author,p:pluvioDone(x),e:x.crews.length>0,a:st.acts.length>0&&!crewCheck().length,s:true,q:eqCount(x)>0};
  $('content').innerHTML=`
@@ -691,10 +721,15 @@ function pageToday(){
   ${fin?'':`<div class="addrow" style="grid-template-columns:${prevCrewsDay()?'1fr 1fr':'1fr'}"><button class="btn dash" type="button" id="addCrew">${ICON.plus}Encarregado</button>${prevCrewsDay()?`<button class="btn dash" type="button" id="copyCrews" title="Copia equipes, equipamentos e atividades em andamento">Repetir de ${br(prevCrewsDay())}</button>`:''}</div>`}
  </section>
 
+ <section class="card sec" id="s3t"><div class="sh"><span class="ix">3T</span><h2>Terceiros do dia</h2><span class="pill ${x.tcrews.length?'ok':''}">${x.tcrews.length?x.tcrews.length+' equipe'+(x.tcrews.length>1?'s':'')+' · '+st.tefetivo+' pessoas':'Nenhuma'}</span></div>
+  ${x.tcrews.map(c=>tCard(c,dis)).join('')||'<p class="empty">Mão de obra das empresas terceiras (S.Pontes, BML, BSM, Berg Mineração). Escolha o encarregado: a equipe cadastrada aparece e você marca quem faltou.</p>'}
+  ${fin?'':`<button class="btn dash" type="button" id="addTerc">${ICON.plus}Equipe de terceiros</button>`}
+ </section>
+
  <section class="card sec" id="s4"><div class="sh"><span class="ix">04</span><h2>Atividades</h2><span class="pill ${ok.a?'ok':'warn'}">${st.acts.length?st.acts.length+' · '+fmtH(st.hh)+' H-H':'Nenhuma'}</span></div>
   ${(()=>{let L=st.acts.length?crewCheck():[];return L.length?`<div class="alert err" style="margin-bottom:10px"><b>Conferir a equipe nas atividades:</b><ul style="margin:6px 0 0 18px;padding:0">${L.map(m=>`<li>${esc(m)}</li>`).join('')}</ul></div>`:'';})()}
   ${st.acts.map(a=>actCard(a,st)).join('')||'<p class="empty">Lance as atividades do dia. Pode ser ao longo do turno ou tudo no final.</p>'}
-  ${fin?'':`<div class="addrow"><button class="btn primary" type="button" id="new3d">${ICON.plus}Do 3D</button><button class="btn" type="button" id="newExtra">${ICON.plus}Extra</button></div><p class="hint">Extra: serviços fora do escopo do 3D (limpeza, apoio, mobilização…). Ficam no RDO, mas não mexem no avanço da ponte.</p>`}
+  ${fin?'':`<div class="addrow" style="grid-template-columns:1fr 1fr 1fr"><button class="btn primary" type="button" id="new3d">${ICON.plus}Do 3D</button><button class="btn" type="button" id="newExtra">${ICON.plus}Extra</button><button class="btn" type="button" id="newTerc">${ICON.plus}Terceiros</button></div><p class="hint">Extra: serviços fora do escopo do 3D (limpeza, apoio, mobilização…). Ficam no RDO, mas não mexem no avanço da ponte. Terceiros: atividades (do 3D ou extra) feitas pelas equipes das empresas terceiras.</p>`}
  </section>
 
  <section class="card sec" id="s5"><div class="sh"><span class="ix">05</span><h2>Paralisações</h2><span class="pill ${stops.length?'warn':''}">${stops.length?stops.length+' · '+fmtH(stops.reduce((s,p)=>s+(p.em-p.sm)/60,0)):'Nenhuma'}</span></div>
@@ -719,16 +754,16 @@ function pageToday(){
 const eqCount=x=>Object.values(x.equipment||{}).reduce((n,v)=>n+eqVals(v).length,0);
 function resumoHTML(x,st,gs){let par=x.stops.reduce((s,p)=>s+(p.em-p.sm)/60,0),mm=(x.mm07!==''||x.mm17!=='')?fmt((+x.mm07||0)+(+x.mm17||0))+' mm':'—';
  const it=(t,v)=>`<div><span>${t}</span><b>${v}</b></div>`;
- return `<section class="card resumo" aria-label="Resumo do dia"><h3 style="margin:0 0 8px">Confira antes de enviar</h3><div class="rgrid">${it('Efetivo',st.efetivo+' pessoas')}${it('Atividades',st.acts.length+' · '+fmtH(st.hh)+' H-H')}${it('Paralisações',fmtH(par))}${it('Chuva / raio',fmtH(gs.c)+' / '+fmtH(gs.r))}${it('Chuva medida',mm)}${it('Pluviômetro',pluvName(x.pluv)||'—')}${it('Equipamentos',eqCount(x)+' ativos')}${it('Fotos',photoCount(x))}</div></section>`;}
+ return `<section class="card resumo" aria-label="Resumo do dia"><h3 style="margin:0 0 8px">Confira antes de enviar</h3><div class="rgrid">${it('Efetivo',st.efetivo+' pessoas')}${st.tefetivo?it('Terceiros',st.tefetivo+' pessoas'):''}${it('Atividades',st.acts.length+' · '+fmtH(st.hh)+' H-H')}${it('Paralisações',fmtH(par))}${it('Chuva / raio',fmtH(gs.c)+' / '+fmtH(gs.r))}${it('Chuva medida',mm)}${it('Pluviômetro',pluvName(x.pluv)||'—')}${it('Equipamentos',eqCount(x)+' ativos')}${it('Fotos',photoCount(x))}</div></section>`;}
 // Conferência da equipe (V0.19): cada pessoa da equipe tem que estar em alguma atividade e ninguém pode estar
 // em duas atividades ao mesmo tempo. Por função: no pico do dia o número apontado tem que chegar ao da equipe
 // (senão falta gente) e em nenhum horário pode passar dele (senão está duplicado).
 function crewCheck(d=day){let x=getDay(d),w0=win(d,x.shift),acts=listActs(d),out=[],w={a:Math.min(w0.a,...acts.map(a=>a.sm??w0.a)),b:Math.max(w0.b,...acts.map(a=>a.em||0))};
- for(let c of x.crews){let F=foreman(c.fid);
+ for(let c of allCrews(x)){
   for(let [f,nv] of Object.entries(c.counts||{})){let N=+nv||0;if(!N)continue;let mx=0,over=null;
    for(let m=w.a;m<w.b;m+=15){let n=0;for(let a of acts){if(!(a.sm<m+15&&a.em>m))continue;for(let k of a.crews||[])if(k.id===c.id)n+=k.counts?(+k.counts[f]||0):N;}
     mx=Math.max(mx,n);if(n>N){if(!over)over={a:m,b:m+15,n};else if(over.b===m){over.b=m+15;over.n=Math.max(over.n,n);}}}
-   let fn=title(f).toLowerCase(),eq=short(c.fid);
+   let fn=title(f).toLowerCase(),eq=(c.t?empName(c.emp)+' · ':'')+short(c.fid);
    if(over)out.push(`${eq}: ${over.n} ${fn}${over.n>1?'s':''} apontados ao mesmo tempo (${span(over.a,over.b)}), a equipe tem ${N}`);
    else if(mx<N)out.push(`${eq}: ${N-mx} ${fn}${N-mx>1?'s':''} sem atividade (equipe tem ${N}, apontados ${mx})`);}}
  return out;}
@@ -799,17 +834,59 @@ let tool='c';
 const count=s=>new Set(String(s||'').split(',').map(x=>x.trim()).filter(Boolean)).size;
 function wsRow(p,i,w,dis){return `<div class="ws" data-ws="${p.id}"><div class="wsh"><b>${i+1}ª</b><div class="seg">${[['c',ICON.rain,'Chuva'],['r',ICON.bolt,'Raio']].map(([k,ic,t])=>`<button type="button" data-wt="${k}" aria-pressed="${p.t===k}" ${dis}>${ic}${t}</button>`).join('')}</div>${dis?'':'<button type="button" class="x" data-wrm aria-label="Excluir parada">✕</button>'}</div>
  <div class="grid2"><label class="f">Início${tp('ws'+p.id+'a',w,p.sm,dis)}</label><label class="f">Fim${tp('ws'+p.id+'b',w,p.em,dis)}</label></div>${p.em<=p.sm?'<p class="alert err" style="margin-top:8px">O fim precisa ser depois do início.</p>':`<p class="hint" style="margin-top:6px">Duração ${fmtH((p.em-p.sm)/60)}</p>`}</div>`;}
-function phCard(g,st,dis){let a=st.acts.find(k=>k.key===g.act),c=getDay().crews.find(k=>k.id===g.crew);return `<div class="pg"><div class="pgh"><div><b>${esc(actName(a))}</b><span>${esc(c?title(c.fid):'Sem encarregado')} · ${g.items.length} foto${g.items.length===1?'':'s'}</span></div>${dis?'':`<button class="btn sm" type="button" data-pg="${g.id}">Editar</button>`}</div><div class="thumbs">${g.items.map(id=>`<img data-th="${id}" alt="">`).join('')}</div></div>`;}
+function phCard(g,st,dis){let a=st.acts.find(k=>k.key===g.act),c=crewOf(getDay(),g.crew);return `<div class="pg"><div class="pgh"><div><b>${esc(actName(a))}</b><span>${esc(c?title(c.fid):'Sem encarregado')} · ${g.items.length} foto${g.items.length===1?'':'s'}</span></div>${dis?'':`<button class="btn sm" type="button" data-pg="${g.id}">Editar</button>`}</div><div class="thumbs">${g.items.map(id=>`<img data-th="${id}" alt="">`).join('')}</div></div>`;}
 function tlRows(d){let cells=grid(d),rows=new Map;for(let c of cells){let h=Math.floor(c.m/60);if(!rows.has(h))rows.set(h,[]);rows.get(h).push(c);}
  return [...rows.entries()].map(([h,cs])=>{let pad=[];let first=cs[0].m%60/15;for(let i=0;i<first;i++)pad.push('<span></span>');return `<div class="h"><button type="button" data-hr="${h}">${String(h%24).padStart(2,'0')}h</button>${pad.join('')}${cs.map(c=>`<button type="button" class="cl${c.t?' t'+c.t:''}${c.e-c.m<15?' part':''}" data-m="${c.m}" aria-label="${hm(c.m)} a ${hm(c.e,true)}${c.t?': '+(c.t==='c'?'chuva':'raio'):''}" aria-pressed="${!!c.t}"></button>`).join('')}</div>`;}).join('');}
 function crewCard(c,dis){let F=foreman(c.fid);return `<div class="crew" data-crew="${c.id}"><div class="hd"><span class="av">${initials(F.n)}</span><div class="nm"><b>${esc(title(F.n))}</b><span>${esc(title(F.c))}</span></div><div class="tot">${crewTotal(c)}<small>pessoas</small></div></div>
  ${F.f.map(f=>{let n=+c.counts[f]||0;return `<div class="fn"><span>${esc(title(f))}</span><div class="stp ${n?'':'z'}"><button type="button" data-f="${esc(f)}" data-d="-1" ${dis||(!n?'disabled':'')} aria-label="Menos ${esc(title(f))}">−</button><b>${n}</b><button type="button" data-f="${esc(f)}" data-d="1" ${dis} aria-label="Mais ${esc(title(f))}">+</button></div></div>`;}).join('')}
  ${dis?'':`<div class="ft"><button class="btn sm danger" type="button" data-rmcrew="${c.id}">Remover equipe</button></div>`}</div>`;}
-function actCard(a,st){let n=(st.assign.get(a.key)||[]).length,cr=a.crews.map(c=>getDay().crews.find(k=>k.id===c.id)).filter(Boolean).map(c=>short(c.fid)),k=a.kind==='extra'?'k-x':a.status==='Concluído'?'k-ok':'';
- return `<button type="button" class="it" data-act="${a.key}"><i class="${k}"></i><span class="p">${esc(a.label)}</span><span class="st ${k}">${a.kind==='extra'?'Extra':esc(a.status)}</span><span class="sb">${a.kind==='3d'?esc(a.sub)+' · ':''}${span(a.sm,a.em)}${a.concrete!=null?` · <span class="cc">${fmt(a.concrete,2)} m³ concreto</span>`:''}</span><span class="mt">${cr.length?esc(cr.join(', ')):'Sem equipe'} · ${n} pessoa${n===1?'':'s'}${a.desc?' · '+esc(a.desc):''}</span></button>`;}
-function stopCard(p,st){let a=st.acts.find(x=>x.key===p.act),c=p.crew==='all'?'Todas as equipes da atividade':short(getDay().crews.find(k=>k.id===p.crew)?.fid||'');
+function actCard(a,st){let n=(st.assign.get(a.key)||[]).length,cr=a.crews.map(c=>crewOf(getDay(),c.id)).filter(Boolean).map(c=>short(c.fid)),k=a.kind==='extra'?'k-x':a.status==='Concluído'?'k-ok':'';
+ return `<button type="button" class="it" data-act="${a.key}"><i class="${k}"></i><span class="p">${a.terc?'<span class="tg3">Terceiros</span>':''}${esc(a.label)}</span><span class="st ${k}">${a.kind==='extra'?'Extra':esc(a.status)}</span><span class="sb">${a.kind==='3d'?esc(a.sub)+' · ':''}${span(a.sm,a.em)}${a.concrete!=null?` · <span class="cc">${fmt(a.concrete,2)} m³ concreto</span>`:''}</span><span class="mt">${cr.length?esc(cr.join(', ')):'Sem equipe'} · ${n} pessoa${n===1?'':'s'}${a.desc?' · '+esc(a.desc):''}</span></button>`;}
+function stopCard(p,st){let a=st.acts.find(x=>x.key===p.act),c=p.crew==='all'?'Todas as equipes da atividade':short(crewOf(getDay(),p.crew)?.fid||'');
  return `<button type="button" class="it" data-stop="${p.id}"><i class="k-s"></i><span class="p">${esc(p.type)}</span><span class="st k-s">${fmtH((p.em-p.sm)/60)}</span><span class="sb">${span(p.sm,p.em)} · ${esc(actName(a))}</span><span class="mt">${esc(c)}${p.desc?' · '+esc(p.desc):''}</span></button>`;}
-function prevCrewsDay(){let ks=Object.keys(db.days).filter(k=>k<day&&db.days[k].crews?.length).sort();return ks.at(-1)||'';}
+function tCard(c,dis){let aus=new Set(c.aus||[]),live=!dis&&tRoster()[c.enc],list=live?tMembers(c.enc).map(p=>({m:p.m,n:p.nome,f:p.funcao})):(c.pres||[]);
+ return `<div class="crew" data-tcrew="${c.id}"><div class="hd"><span class="av">${initials(c.fid)}</span><div class="nm"><b>${esc(title(c.fid))}</b><span>${esc(empName(c.emp))} · Encarregado</span></div><div class="tot">${crewTotal(c)}<small>pessoas</small></div></div>
+ ${list.length?`<div class="tm">${list.map(q=>`<button type="button" class="tq" data-tpres="${esc(q.m)}" aria-pressed="${!aus.has(q.m)}" ${dis}><span>${esc(title(q.n))}</span><small>${esc(title(q.f))} · ${esc(q.m)}</small></button>`).join('')}</div>${dis?'':'<p class="hint" style="padding:0 12px;margin:0 0 8px">Toque no nome de quem faltou hoje.</p>'}`:`<p class="hint" style="padding:0 12px">${live?'Equipe sem colaboradores. Toque em Editar equipe para cadastrar.':'Sem colaboradores.'}</p>`}
+ ${dis?'':`<div class="ft"><button class="btn sm" type="button" data-troster="${c.id}">Editar equipe</button><button class="btn sm danger" type="button" data-rmt="${c.id}">Remover</button></div>`}</div>`;}
+// Escolher empresa e encarregado de terceiros
+function openTercAdd(after){let x=getDay(),emp=db.lastEmp||'SPT';
+ const done=c=>{if(after)after(c);else closeSheet();};
+ const draw=()=>{sheet('Equipe de terceiros',br(day)+' · empresa e encarregado');
+  let R=tRoster(),used=new Set(x.tcrews.map(c=>c.enc)),encs=Object.values(R).filter(q=>q.emp===emp&&q.ativo!==false&&isEnc(q)).sort((a,b)=>(a.turno===x.shift?0:1)-(b.turno===x.shift?0:1)||String(a.nome).localeCompare(b.nome));
+  $('sh-body').innerHTML=`<p class="q">Qual empresa?</p><div class="chips" id="temp">${EMPS.map(([k,t])=>`<button type="button" data-v="${k}" aria-pressed="${k===emp}">${t}</button>`).join('')}</div>
+  <p class="q" style="margin-top:16px">Qual encarregado?</p>${db.terc?'':'<p class="hint">Carregando o cadastro… (precisa de internet na primeira vez)</p>'}
+  <div class="fl">${encs.map(q=>`<button type="button" class="fopt" data-tenc="${esc(q.m)}" ${used.has(q.m)?'disabled':''}><span class="av">${initials(q.nome)}</span><div><b>${esc(title(q.nome))}</b><span>Turno ${q.turno==='noite'?'da noite':'do dia'} · ${tMembers(q.m).length} colaboradores${used.has(q.m)?' · já lançado hoje':''}</span></div></button>`).join('')||(db.terc?`<p class="empty">Nenhum encarregado da ${esc(empName(emp))} cadastrado.</p>`:'')}</div>
+  <h3>Cadastrar encarregado</h3><div class="grid2"><label class="f">Nome<input id="tnn" maxlength="80" placeholder="Nome completo"></label><label class="f">Turno<select id="tnt"><option value="dia" ${x.shift==='dia'?'selected':''}>Dia</option><option value="noite" ${x.shift==='noite'?'selected':''}>Noite</option></select></label></div><button class="btn sm" type="button" id="tnok" style="margin-top:8px">Cadastrar encarregado</button>`;
+  $('sh-foot').innerHTML=`<button class="btn" type="button" id="tcx">Cancelar</button>`;$('tcx').onclick=()=>done(null);
+  document.querySelectorAll('#temp button').forEach(b=>b.onclick=()=>{emp=b.dataset.v;db.lastEmp=emp;draw();});
+  document.querySelectorAll('[data-tenc]').forEach(b=>b.onclick=()=>{let c={id:uid(),t:1,emp,enc:b.dataset.tenc,fid:'',counts:{},aus:[],pres:[]};tSync(c);x.tcrews.push(c);refreshWorkers();touch(day);save();note(title(c.fid)+' adicionado. Marque quem faltou, se alguém faltou.');done(c);});
+  $('tnok').onclick=async()=>{let n=$('tnn').value.trim();if(n.length<3)return note('Digite o nome do encarregado.',true);$('tnok').disabled=true;try{await tOp({op:'add',emp,nome:n,funcao:'ENCARREGADO',turno:$('tnt').value});note('Encarregado cadastrado.');draw();}catch(e){$('tnok').disabled=false;note('Não consegui cadastrar: '+e.message+'. Precisa de internet.',true);}};};
+ draw();tLoad(true).then(()=>{if(!$('sheet').hidden&&$('temp'))draw();});}
+// Editar a equipe de um encarregado de terceiros (vale para todos os apontadores)
+function openRoster(c){let x=getDay(),ed=null,emp=c.emp;
+ const draw=()=>{let R=tRoster(),E=R[c.enc]||{m:c.enc,nome:c.fid,funcao:'ENCARREGADO',turno:x.shift},mem=tMembers(c.enc),encs=Object.values(R).filter(q=>q.emp===emp&&q.ativo!==false&&isEnc(q)),others=Object.values(R).filter(q=>q.emp===emp&&q.ativo!==false&&!isEnc(q)&&q.enc!==c.enc).sort((a,b)=>String(a.nome).localeCompare(b.nome));
+  sheet('Equipe de '+title(E.nome),empName(emp)+' · o cadastro vale para todos os apontadores');
+  const fsel=(id,v)=>`<select id="${id}">${[...new Set(TFUNC.concat(v?[v]:[]))].map(f=>`<option value="${esc(f)}" ${f===v?'selected':''}>${esc(title(f))}</option>`).join('')}</select>`;
+  const row=q=>ed===q.m?`<div class="crew" style="padding:12px"><label class="f">Nome<input id="ten" value="${esc(q.nome)}" maxlength="80"></label><div class="grid2" style="margin-top:8px"><label class="f">Função${fsel('tef',q.funcao)}</label><label class="f">Turno<select id="tet"><option value="dia" ${q.turno!=='noite'?'selected':''}>Dia</option><option value="noite" ${q.turno==='noite'?'selected':''}>Noite</option></select></label></div>${q.m===c.enc?'':`<label class="f" style="margin-top:8px">Encarregado<select id="tee">${encs.map(e=>`<option value="${esc(e.m)}" ${e.m===q.enc?'selected':''}>${esc(title(e.nome))} · ${e.turno==='noite'?'noite':'dia'}</option>`).join('')}<option value="">Sem encarregado</option></select></label>`}<p class="hint">Matrícula ${esc(q.m)}</p><div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn sm primary" type="button" id="tes">Salvar</button><button class="btn sm" type="button" id="tex">Cancelar</button><button class="btn sm danger" type="button" id="ted">Desligar</button></div></div>`
+   :`<div class="trow"><div><b>${esc(title(q.nome))}</b><span>${esc(title(q.funcao))} · ${esc(q.m)} · ${q.turno==='noite'?'noite':'dia'}</span></div><button class="btn sm" type="button" data-ted="${esc(q.m)}">Editar</button></div>`;
+  $('sh-body').innerHTML=`<h3 style="margin-top:0">Encarregado</h3>${row(E)}<h3>Colaboradores (${mem.length})</h3>${mem.map(row).join('')||'<p class="empty">Nenhum colaborador nesta equipe.</p>'}
+   <h3>Cadastrar colaborador novo</h3><label class="f">Nome<input id="tan" maxlength="80" placeholder="Nome completo"></label><div class="grid2" style="margin-top:8px"><label class="f">Função${fsel('taf','AJUDANTE')}</label><label class="f">Matrícula<input value="Criada automaticamente" disabled></label></div><button class="btn sm" type="button" id="taok" style="margin-top:8px">Cadastrar nesta equipe</button>
+   ${others.length?`<h3>Trazer de outra equipe</h3><label class="f">Colaborador<select id="tmv"><option value="">Escolha…</option>${others.map(q=>`<option value="${esc(q.m)}">${esc(title(q.nome))} · ${esc(title(q.funcao))} · ${q.enc?esc(title((R[q.enc]||{}).nome||'')):'sem encarregado'}</option>`).join('')}</select></label><button class="btn sm" type="button" id="tmvok" style="margin-top:8px">Trazer para esta equipe</button>`:''}`;
+  $('sh-foot').innerHTML=`<button class="btn primary" type="button" id="trok">Pronto</button>`;$('trok').onclick=()=>{tSync(c);refreshWorkers();touch(day);save();closeSheet();};
+  const run=async(body,msg)=>{try{await tOp(body);ed=null;tSync(c);refreshWorkers();touch(day);save();note(msg);draw();}catch(e){note('Não consegui salvar: '+e.message+'. Precisa de internet.',true);}};
+  document.querySelectorAll('[data-ted]').forEach(b=>b.onclick=()=>{ed=b.dataset.ted;draw();});
+  $('tes')&&($('tes').onclick=()=>{let body={op:'upd',m:ed,nome:$('ten').value,funcao:$('tef').value,turno:$('tet').value};if($('tee'))body.enc=$('tee').value;run(body,'Cadastro atualizado.');});
+  $('tex')&&($('tex').onclick=()=>{ed=null;draw();});
+  $('ted')&&($('ted').onclick=e=>{let b=e.currentTarget;if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent='Confirmar desligamento';return;}run({op:'upd',m:ed,ativo:false},'Desligado do cadastro.');});
+  $('taok').onclick=()=>{let n=$('tan').value.trim();if(n.length<3)return note('Digite o nome do colaborador.',true);run({op:'add',emp,nome:n,funcao:$('taf').value,enc:c.enc,turno:E.turno||x.shift},'Colaborador cadastrado com matrícula nova.');};
+  $('tmvok')&&($('tmvok').onclick=()=>{let m=$('tmv').value;if(!m)return;run({op:'upd',m,enc:c.enc,turno:E.turno||x.shift},'Colaborador trazido para esta equipe.');});};
+ draw();tLoad(true).then(ch=>{if(ch&&!$('sheet').hidden&&$('trok')&&!ed)draw();});}
+// Atividade de terceiros: do 3D ou extra
+function openTercAct(){sheet('Atividade de terceiros',br(day)+' · equipes das empresas terceiras');
+ $('sh-body').innerHTML=`<p class="q">Que tipo de atividade?</p><div class="addrow"><button class="btn primary" type="button" id="ta3">${ICON.plus}Do 3D</button><button class="btn" type="button" id="tax">${ICON.plus}Extra</button></div><p class="hint">Do 3D: peça e serviço da ponte (mexe no avanço). Extra: serviço fora do escopo do 3D.</p>`;
+ $('sh-foot').innerHTML=`<button class="btn" type="button" id="tacx">Cancelar</button>`;$('tacx').onclick=closeSheet;
+ $('ta3').onclick=()=>openWizard(null,{terc:true});$('tax').onclick=()=>openExtra(null,true);}
+function prevCrewsDay(){let ks=Object.keys(db.days).filter(k=>k<day&&(db.days[k].crews?.length||db.days[k].tcrews?.length)).sort();return ks.at(-1)||'';}
 function bindToday(){
  let x=getDay(),fin=x.finalized,w=win(day,x.shift);
  ['07','17'].forEach(k=>thumb(x['ph'+k]).then(u=>{let im=$('pht'+k);if(u&&im)im.src=u;}));
@@ -844,8 +921,15 @@ function bindToday(){
   box.querySelector('[data-rmcrew]').onclick=e=>{let b=e.currentTarget,used=listActs().some(a=>a.crews.some(k=>k.id===c.id));if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent=used?'Está em atividades · remover mesmo assim?':'Toque de novo para remover';return;}
    x.crews=x.crews.filter(k=>k!==c);for(let e of dayEvents(day))if(e.crews){e.crews=e.crews.filter(k=>k.id!==c.id);e.updated=new Date().toISOString();}for(let t of x.extras)t.crews=t.crews.filter(k=>k.id!==c.id);for(let p of x.stops)if(p.crew===c.id)p.crew='all';refreshWorkers();touch(day);save();keepScroll(render);};});
  $('addCrew').onclick=()=>openForemen(()=>closeSheet());
+ $('addTerc').onclick=()=>openTercAdd();
+ document.querySelectorAll('[data-tcrew]').forEach(box=>{let c=x.tcrews.find(k=>k.id===box.dataset.tcrew);
+  box.querySelectorAll('[data-tpres]').forEach(b=>b.onclick=()=>{let m=b.dataset.tpres,a=new Set(c.aus||[]);a.has(m)?a.delete(m):a.add(m);c.aus=[...a];tSync(c);refreshWorkers();touch(day);save();keepScroll(render);});
+  box.querySelector('[data-troster]').onclick=()=>openRoster(c);
+  box.querySelector('[data-rmt]').onclick=e=>{let b=e.currentTarget,used=listActs().some(a=>a.crews.some(k=>k.id===c.id));if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent=used?'Está em atividades · remover mesmo assim?':'Toque de novo para remover';return;}
+   x.tcrews=x.tcrews.filter(k=>k!==c);for(let e of dayEvents(day))if(e.crews){e.crews=e.crews.filter(k=>k.id!==c.id);e.updated=new Date().toISOString();}for(let t of x.extras)t.crews=t.crews.filter(k=>k.id!==c.id);for(let p of x.stops)if(p.crew===c.id)p.crew='all';refreshWorkers();touch(day);save();keepScroll(render);};});
  $('copyCrews')&&($('copyCrews').onclick=()=>{let pd=prevCrewsDay(),src=db.days[pd];let n=0,ne=0,na=0,map=new Map;
   for(let c of src.crews){let k=x.crews.find(z=>z.fid===c.fid);if(!k){k={id:uid(),fid:c.fid,counts:{...c.counts}};x.crews.push(k);n++;}map.set(c.id,k.id);}
+  for(let c of src.tcrews||[]){let k=x.tcrews.find(z=>z.enc===c.enc);if(!k){k={id:uid(),t:1,emp:c.emp,enc:c.enc,fid:c.fid,counts:{...c.counts},aus:[],pres:[...(c.pres||[])]};tSync(k);x.tcrews.push(k);n++;}map.set(c.id,k.id);}
   // equipamentos do dia anterior que ainda não estão marcados hoje
   for(let [t,v] of Object.entries(src.equipment||{})){let cur=eqVals(x.equipment[t]),add=eqVals(v).filter(a=>!cur.includes(a));if(add.length){x.equipment[t]=[...cur,...add].join(', ');ne+=add.length;}}
   // atividades do 3D que ficaram em andamento (não concluídas) viram atividades de hoje, em andamento, com as mesmas equipes
@@ -858,6 +942,7 @@ function bindToday(){
   note(n||ne||na?`Copiado de ${br(pd)}: ${n} equipe${n===1?'':'s'}, ${ne} ativo${ne===1?'':'s'} de equipamento e ${na} atividade${na===1?'':'s'} em andamento. Confira as quantidades e os horários.`:'Tudo do dia anterior já estava lançado.');});
  $('new3d').onclick=()=>openWizard();
  $('newExtra').onclick=()=>openExtra();
+ $('newTerc').onclick=()=>openTercAct();
  $('newStop')&&($('newStop').onclick=()=>openStop());
  $('newPh')&&($('newPh').onclick=()=>openPhotos());
  document.querySelectorAll('[data-pg]').forEach(b=>b.onclick=()=>openPhotos(x.photos.find(g=>g.id===b.dataset.pg)));
@@ -882,13 +967,13 @@ function openForemen(after){let x=getDay(),used=new Set(x.crews.map(c=>c.fid));
 }
 
 // Seleção de equipes numa atividade (com ajuste opcional de quantas pessoas de cada função).
-function crewPicker(state){let x=getDay();if(!x.crews.length)return `<p class="alert">Nenhuma equipe lançada hoje. Adicione o encarregado e as quantidades.</p><button class="btn dash" type="button" id="csAdd" style="margin-top:10px">${ICON.plus}Adicionar equipe</button>`;
- return `<div class="chips" id="csChips">${x.crews.map(c=>`<button type="button" data-cs="${c.id}" aria-pressed="${state.crews.some(k=>k.id===c.id)}">${esc(short(c.fid))} · ${crewTotal(c)}</button>`).join('')}<button type="button" id="csAdd">+ Outra equipe</button></div>
- <div class="cs" style="margin-top:10px">${state.crews.map(sc=>{let c=x.crews.find(k=>k.id===sc.id);if(!c)return '';let F=foreman(c.fid);return `<div class="crew" data-csc="${c.id}"><div class="hd"><span class="av">${initials(F.n)}</span><div class="nm"><b>${esc(title(F.n))}</b><span>${sc.counts?'Parte da equipe nesta atividade':'Equipe inteira nesta atividade'}</span></div></div>${F.f.filter(f=>+c.counts[f]).map(f=>{let max=+c.counts[f],n=sc.counts&&sc.counts[f]!=null?Math.min(+sc.counts[f],max):max;return `<div class="fn"><span>${esc(title(f))} <small class="muted">de ${max}</small></span><div class="stp ${n?'':'z'}"><button type="button" data-cf="${esc(f)}" data-d="-1" ${n?'':'disabled'}>−</button><b>${n}</b><button type="button" data-cf="${esc(f)}" data-d="1" ${n>=max?'disabled':''}>+</button></div></div>`;}).join('')||'<p class="hint" style="padding:0 12px 10px">Equipe sem quantidades. Ajuste em 03 · Equipes.</p>'}</div>`;}).join('')}</div>`;}
+function crewPicker(state){let x=getDay(),L=state.terc?x.tcrews:x.crews;if(!L.length)return `<p class="alert">${state.terc?'Nenhuma equipe de terceiros lançada hoje. Escolha a empresa e o encarregado.':'Nenhuma equipe lançada hoje. Adicione o encarregado e as quantidades.'}</p><button class="btn dash" type="button" id="csAdd" style="margin-top:10px">${ICON.plus}Adicionar equipe</button>`;
+ return `<div class="chips" id="csChips">${L.map(c=>`<button type="button" data-cs="${c.id}" aria-pressed="${state.crews.some(k=>k.id===c.id)}">${c.t?esc(empName(c.emp))+' · ':''}${esc(short(c.fid))} · ${crewTotal(c)}</button>`).join('')}<button type="button" id="csAdd">+ Outra equipe</button></div>
+ <div class="cs" style="margin-top:10px">${state.crews.map(sc=>{let c=crewOf(x,sc.id);if(!c)return '';let F=fOf(c);return `<div class="crew" data-csc="${c.id}"><div class="hd"><span class="av">${initials(F.n)}</span><div class="nm"><b>${esc(title(F.n))}</b><span>${sc.counts?'Parte da equipe nesta atividade':'Equipe inteira nesta atividade'}</span></div></div>${F.f.filter(f=>+c.counts[f]).map(f=>{let max=+c.counts[f],n=sc.counts&&sc.counts[f]!=null?Math.min(+sc.counts[f],max):max;return `<div class="fn"><span>${esc(title(f))} <small class="muted">de ${max}</small></span><div class="stp ${n?'':'z'}"><button type="button" data-cf="${esc(f)}" data-d="-1" ${n?'':'disabled'}>−</button><b>${n}</b><button type="button" data-cf="${esc(f)}" data-d="1" ${n>=max?'disabled':''}>+</button></div></div>`;}).join('')||'<p class="hint" style="padding:0 12px 10px">Equipe sem quantidades. Ajuste em '+(c.t?'3T · Terceiros':'03 · Equipes')+'.</p>'}</div>`;}).join('')}</div>`;}
 function bindCrewPicker(state,redraw){let x=getDay();
- $('csAdd')&&($('csAdd').onclick=()=>{let snap=state;openForemen(c=>{if(c)snap.crews.push({id:c.id,counts:null});redraw();});});
+ $('csAdd')&&($('csAdd').onclick=()=>{let snap=state;(state.terc?openTercAdd:openForemen)(c=>{if(c)snap.crews.push({id:c.id,counts:null});redraw();});});
  document.querySelectorAll('[data-cs]').forEach(b=>b.onclick=()=>{let id=b.dataset.cs,i=state.crews.findIndex(k=>k.id===id);if(i<0)state.crews.push({id,counts:null});else state.crews.splice(i,1);redraw();});
- document.querySelectorAll('[data-csc]').forEach(box=>{let sc=state.crews.find(k=>k.id===box.dataset.csc),c=x.crews.find(k=>k.id===sc.id);
+ document.querySelectorAll('[data-csc]').forEach(box=>{let sc=state.crews.find(k=>k.id===box.dataset.csc),c=crewOf(x,sc.id);
   box.querySelectorAll('[data-cf]').forEach(b=>b.onclick=()=>{let f=b.dataset.cf;if(!sc.counts)sc.counts={...c.counts};sc.counts[f]=Math.max(0,Math.min(+c.counts[f],(+sc.counts[f]||0)+(+b.dataset.d)));if(Object.keys(c.counts).every(k=>(+sc.counts[k]||0)===(+c.counts[k]||0)))sc.counts=null;redraw();});});}
 
 // ---------- Passo a passo: atividade do 3D ----------
@@ -903,15 +988,15 @@ const svcUse=sv=>{let a=getDay().author;return live().filter(e=>e.service===sv&&
 let wz=null;
 const STEPS=['Peça','Serviço','Situação e horário','Equipes','Conferir'];
 function openWizard(ev,preset){let x=getDay(),w=win(day,x.shift);
- wz=ev?{id:ev.id,uid:ev.uid,service:ev.service,status:ev.status==='Paralisada'?'Em andamento':ev.status,sm:ev.sm??w.a,em:ev.em??w.b,crews:structuredClone(ev.crews||[]),concrete:ev.concrete,hasC:ev.concrete!=null?true:null,description:ev.description,step:4,confirm:false}
-  :{step:0,sm:preset?.sm??w.a,em:preset?.em??w.b,crews:structuredClone(preset?.crews||[]),hasC:null,confirm:false};
+ wz=ev?{terc:!!ev.terc,id:ev.id,uid:ev.uid,service:ev.service,status:ev.status==='Paralisada'?'Em andamento':ev.status,sm:ev.sm??w.a,em:ev.em??w.b,crews:structuredClone(ev.crews||[]),concrete:ev.concrete,hasC:ev.concrete!=null?true:null,description:ev.description,step:4,confirm:false}
+  :{terc:!!preset?.terc,step:0,sm:preset?.sm??w.a,em:preset?.em??w.b,crews:structuredClone(preset?.crews||[]),hasC:null,confirm:false};
  drawStep();}
 function chosen(p,sv){return `<div class="chosen"><div class="ck">${esc(p.k)}${p.t?' · T'+p.t:''}</div><div class="cl">${esc(p.l)}${sv?' · '+esc(svcLabel(sv)):''}</div><div class="ca">${esc(place(p))}</div></div>`;}
 function concreteBlock(st){return `<h3>Teve concreto nesta atividade?</h3><div class="toggle" id="hasC"><button type="button" data-v="0" aria-pressed="${st.hasC===false}">Não</button><button type="button" data-v="1" aria-pressed="${st.hasC===true}">Sim, teve concreto</button></div>${st.hasC?`<label class="f" style="margin-top:10px">Volume aplicado hoje (m³)<div class="mm" style="margin-top:0"><input id="qc" type="number" min="0" step="0.1" inputmode="decimal" value="${st.concrete??''}" placeholder="0,0"><i>m³</i></div></label><p class="hint">Só o aplicado hoje nesta atividade.</p>`:''}`;}
 function bindConcrete(st,redraw){document.querySelectorAll('#hasC button').forEach(b=>b.onclick=()=>{keepWz();st.hasC=b.dataset.v==='1';if(!st.hasC)st.concrete=null;redraw();});}
 function drawStep(){
  let s=wz.step,p=pieceMap.get(wz.uid),x=getDay(),w=win(day,x.shift);
- sheet(wz.id?'Corrigir atividade':'Atividade do 3D',`Passo ${s+1} de 5 · ${STEPS[s]}`,(s+1)*20);
+ sheet((wz.terc?'Terceiros · ':'')+(wz.id?'Corrigir atividade':'Atividade do 3D'),`Passo ${s+1} de 5 · ${STEPS[s]}`,(s+1)*20);
  let body='',canNext=true;
  if(s===0){body=`<p class="q">Qual peça?</p><div class="picker"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4.5 4.5"/></svg><input id="pq" type="search" autocomplete="off" placeholder="VPM 23, AP05, aduela A12, estaca E-03" aria-label="Buscar peça"></div><div class="results" id="pres" role="listbox"></div>
   ${(()=>{let L=inProgress(x);return L.length?`<h3>Em andamento${frParse(x.front).l?' · '+frParse(x.front).l:''}</h3><div class="chips">${L.map(r=>`<button type="button" data-u="${esc(r.u)}">${esc(r.l)}</button>`).join('')}</div>`:'';})()}
@@ -925,7 +1010,7 @@ function drawStep(){
  if(s===3){body=`${chosen(p,wz.service)}<p class="q">Quais equipes?</p>${crewPicker(wz)}<p class="hint">Toque no encarregado para incluir a equipe. Se só parte dela trabalhou aqui, diminua as quantidades.</p>`;canNext=wz.crews.length>0;}
  if(s===4){let n=assignPreview();
   if(wz.hasC==null&&/^CONCRETAGEM/.test(wz.service))wz.hasC=true;
-  body=`<p class="q">Conferir e salvar</p><div class="sum"><span>Peça</span><b>${esc(p.l)}</b><span>Serviço</span><b>${esc(svcLabel(wz.service))}</b><span>Situação</span><b>${esc(wz.status)}</b><span>Horário</span><b>${span(wz.sm,wz.em)}</b><span>Equipes</span><b>${esc(wz.crews.map(c=>short(x.crews.find(k=>k.id===c.id)?.fid||'')).join(', ')||'—')} · ${n} pessoas</b></div>
+  body=`<p class="q">Conferir e salvar</p><div class="sum"><span>Peça</span><b>${esc(p.l)}</b><span>Serviço</span><b>${esc(svcLabel(wz.service))}</b><span>Situação</span><b>${esc(wz.status)}</b><span>Horário</span><b>${span(wz.sm,wz.em)}</b><span>Equipes</span><b>${esc(wz.crews.map(c=>short(crewOf(x,c.id)?.fid||'')).join(', ')||'—')} · ${n} pessoas</b></div>
   ${concreteBlock(wz)}
   <label class="f" style="margin-top:12px">Observação (opcional)<textarea id="desc">${esc(wz.description||'')}</textarea></label>
   <div id="walert"></div>
@@ -936,7 +1021,7 @@ function drawStep(){
  $('next').onclick=()=>{keepWz();if(s===4)return saveWizard();if(s===2&&wz.em<=wz.sm)return note('O fim precisa ser depois do início.',true);wz.step++;drawStep();};
  bindStep(s);
 }
-function assignPreview(){let x=getDay(),n=0;for(let sc of wz.crews){let c=x.crews.find(k=>k.id===sc.id);if(!c)continue;n+=1+Object.keys(c.counts).reduce((s,f)=>s+Math.min(+c.counts[f]||0,sc.counts&&sc.counts[f]!=null?+sc.counts[f]:+c.counts[f]||0),0);}return n;}
+function assignPreview(){let x=getDay(),n=0;for(let sc of wz.crews){let c=crewOf(x,sc.id);if(!c)continue;n+=1+Object.keys(c.counts).reduce((s,f)=>s+Math.min(+c.counts[f]||0,sc.counts&&sc.counts[f]!=null?+sc.counts[f]:+c.counts[f]||0),0);}return n;}
 function keepWz(){if(!wz)return;let W=win(day,getDay().shift);if($('t1h'))wz.sm=rt('t1',W);if($('t2h'))wz.em=rt('t2',W);if($('desc'))wz.description=$('desc').value;if($('qc'))wz.concrete=$('qc').value===''?null:+$('qc').value;}
 function bindStep(s){
  if(s===0){let pq=$('pq');const run=()=>{let toks=norm(pq.value).split(/\s+/).filter(Boolean);if(!toks.length){$('pres').innerHTML='';return;}let word=t=>new RegExp('(^|[^a-z0-9])'+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'([^a-z0-9]|$)'),out=[];
@@ -961,9 +1046,9 @@ function saveWizard(){
  if(live().some(e=>e.id!==wz.id&&e.date===day&&e.uid===wz.uid&&e.service===wz.service&&e.status===wz.status&&e.sm===wz.sm))return alert('Já existe esta mesma atividade neste horário. Abra a existente para corrigir.');
  let st=svcState(wz.uid,wz.service);if(wz.status==='Concluído'&&st.k==='done'&&!wz.id&&!wz.confirm){wz.confirm=true;return alert('Este serviço já consta concluído em '+br(st.d)+'. Toque em Salvar de novo para registrar mesmo assim.');}
  let now=new Date().toISOString();
- let ev={id:wz.id||uid(),date:day,author:x.author,device:db.device,uid:wz.uid,piece:p.l,service:wz.service,status:wz.status,sm:wz.sm,em:wz.em,startTime:hm(wz.sm),endTime:hm(wz.em,true),shift:x.shift,crews:wz.crews,teamName:'',workers:[],concrete:wz.hasC?+wz.concrete:null,steel:null,description:String(wz.description||'').trim(),front:x.front,created:now,updated:now};
+ let ev={id:wz.id||uid(),date:day,author:x.author,device:db.device,uid:wz.uid,piece:p.l,service:wz.service,status:wz.status,sm:wz.sm,em:wz.em,startTime:hm(wz.sm),endTime:hm(wz.em,true),shift:x.shift,crews:wz.crews,terc:wz.terc||undefined,teamName:'',workers:[],concrete:wz.hasC?+wz.concrete:null,steel:null,description:String(wz.description||'').trim(),front:x.front,created:now,updated:now};
  if(wz.id){let i=db.events.findIndex(e=>e.id===wz.id);ev.created=db.events[i].created;db.events[i]=ev;}else db.events.push(ev);
- refreshWorkers();touch(day);let edit=!!wz.id,keep={sm:wz.sm,em:wz.em,crews:wz.crews};save();
+ refreshWorkers();touch(day);let edit=!!wz.id,keep={sm:wz.sm,em:wz.em,crews:wz.crews,terc:wz.terc};save();
  if(edit){closeSheet();return note('Correção salva.');}
  sheet('Atividade salva',p.l+' · '+svcLabel(ev.service));
  $('sh-body').innerHTML=`<p class="q">✓ Atividade salva</p><div class="sum"><span>Peça</span><b>${esc(p.l)}</b><span>Serviço</span><b>${esc(svcLabel(ev.service))} · ${esc(ev.status)}</b><span>Horário</span><b>${span(ev.sm,ev.em)}</b></div><p class="hint" style="margin-top:14px">A mesma equipe fez outra atividade? Lance já, aproveitando equipe e horário.</p>`;
@@ -972,9 +1057,9 @@ function saveWizard(){
 }
 
 // ---------- Atividade extra ----------
-function openExtra(t){let x=getDay(),w=win(day,x.shift);
- let st=t?{id:t.id,desc:t.desc,sm:t.sm,em:t.em,crews:structuredClone(t.crews||[]),hasC:t.concrete!=null,concrete:t.concrete,obs:t.obs||''}:{desc:'',sm:w.a,em:w.b,crews:[],hasC:null,concrete:null,obs:''};wz=st;
- const draw=()=>{sheet(t?'Corrigir atividade extra':'Atividade extra','Fora do escopo do 3D · '+br(day));
+function openExtra(t,terc){let x=getDay(),w=win(day,x.shift);
+ let st=t?{terc:!!t.terc,id:t.id,desc:t.desc,sm:t.sm,em:t.em,crews:structuredClone(t.crews||[]),hasC:t.concrete!=null,concrete:t.concrete,obs:t.obs||''}:{terc:!!terc,desc:'',sm:w.a,em:w.b,crews:[],hasC:null,concrete:null,obs:''};wz=st;
+ const draw=()=>{sheet((st.terc?'Terceiros · ':'')+(t?'Corrigir atividade extra':'Atividade extra'),'Fora do escopo do 3D · '+br(day));
   $('sh-body').innerHTML=`<p class="q">O que foi feito?</p><label class="f">Descrição da atividade<input id="xd" value="${esc(st.desc)}" placeholder="Ex.: Limpeza do canteiro, apoio à topografia" maxlength="120"></label>
   ${db.extrasLib.length?`<div class="chips" id="xlib">${db.extrasLib.slice(0,12).map(s=>`<button type="button" data-x="${esc(s)}" aria-pressed="${s===st.desc}">${esc(s)}</button>`).join('')}</div>`:''}
   <h3>Horário</h3><div class="grid2"><label class="f">Começou às${tp('t1',w,st.sm)}</label><label class="f">Terminou às${tp('t2',w,st.em)}</label></div>
@@ -991,7 +1076,7 @@ function openExtra(t){let x=getDay(),w=win(day,x.shift);
   $('xdel')&&($('xdel').onclick=()=>{let b=$('xdel');if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent='Confirmar exclusão';return;}x.extras=x.extras.filter(k=>k.id!==t.id);x.stops=x.stops.filter(p=>p.act!=='x:'+t.id);x.photos=x.photos.filter(g=>g.act!=='x:'+t.id);refreshWorkers();touch(day);save();closeSheet();note('Atividade extra excluída.');});
   $('xsave').onclick=()=>{keepX();let al=m=>{$('walert').innerHTML=`<p class="alert err">${esc(m)}</p>`;note(m,true);};
    if(!x.author)return al('Informe o nome do apontador em 01 · Turno.');if(st.desc.length<3)return al('Descreva a atividade.');if(st.em<=st.sm)return al('O fim precisa ser depois do início.');if(!st.crews.length)return al('Escolha pelo menos uma equipe.');if(st.hasC==null)return al('Responda se teve concreto.');if(st.hasC&&!(st.concrete>0))return al('Informe os m³ de concreto.');
-   let now=new Date().toISOString(),rec={id:st.id||uid(),desc:st.desc,sm:st.sm,em:st.em,crews:st.crews,concrete:st.hasC?+st.concrete:null,obs:st.obs.trim(),created:t?.created||now,updated:now};
+   let now=new Date().toISOString(),rec={id:st.id||uid(),terc:st.terc||undefined,desc:st.desc,sm:st.sm,em:st.em,crews:st.crews,concrete:st.hasC?+st.concrete:null,obs:st.obs.trim(),created:t?.created||now,updated:now};
    if(t){let i=x.extras.findIndex(k=>k.id===t.id);x.extras[i]=rec;}else x.extras.push(rec);
    db.extrasLib=[st.desc,...db.extrasLib.filter(s=>norm(s)!==norm(st.desc))].slice(0,30);refreshWorkers();touch(day);save();closeSheet();note(t?'Correção salva.':'Atividade extra salva.');};};
  draw();}
@@ -999,7 +1084,7 @@ function openExtra(t){let x=getDay(),w=win(day,x.shift);
 // ---------- Paralisação ----------
 function openStop(p){let x=getDay(),w=win(day,x.shift),acts=listActs();
  let st=p?{...p}:{act:acts[0]?.key||'',crew:'all',sm:acts[0]?.sm??w.a,em:Math.min((acts[0]?.sm??w.a)+60,w.b),type:'',desc:''};
- const draw=()=>{let a=acts.find(k=>k.key===st.act),crs=(a?.crews||[]).map(c=>x.crews.find(k=>k.id===c.id)).filter(Boolean);if(st.crew!=='all'&&!crs.some(c=>c.id===st.crew))st.crew='all';
+ const draw=()=>{let a=acts.find(k=>k.key===st.act),crs=(a?.crews||[]).map(c=>crewOf(x,c.id)).filter(Boolean);if(st.crew!=='all'&&!crs.some(c=>c.id===st.crew))st.crew='all';
   sheet(p?'Corrigir paralisação':'Paralisação',br(day)+' · '+(x.author||''));
   $('sh-body').innerHTML=`<p class="q">Qual atividade parou?</p><label class="f">Atividade<select id="pa">${acts.map(k=>`<option value="${k.key}" ${k.key===st.act?'selected':''}>${esc(actName(k))} · ${span(k.sm,k.em)}</option>`).join('')}</select></label>
   <label class="f" style="margin-top:10px">Equipe parada<select id="pc"><option value="all">Todas as equipes da atividade</option>${crs.map(c=>`<option value="${c.id}" ${c.id===st.crew?'selected':''}>${esc(title(c.fid))} · ${crewTotal(c)} pessoas</option>`).join('')}</select></label>
@@ -1020,7 +1105,7 @@ function openStop(p){let x=getDay(),w=win(day,x.shift),acts=listActs();
 // ---------- Registro fotográfico ----------
 function openPhotos(g){let x=getDay(),acts=listActs(),st=g?{...g,items:[...g.items]}:{act:acts[0]?.key||'',crew:'',items:[]},busy=false;
  const used=k=>x.photos.filter(p=>p.act===k&&p.id!==st.id).reduce((n,p)=>n+p.items.length,0);
- const draw=()=>{let a=acts.find(k=>k.key===st.act),crs=(a?.crews||[]).map(c=>x.crews.find(k=>k.id===c.id)).filter(Boolean);if(!crs.some(c=>c.id===st.crew))st.crew=crs[0]?.id||'';let tot=used(st.act)+st.items.length,left=6-tot;
+ const draw=()=>{let a=acts.find(k=>k.key===st.act),crs=(a?.crews||[]).map(c=>crewOf(x,c.id)).filter(Boolean);if(!crs.some(c=>c.id===st.crew))st.crew=crs[0]?.id||'';let tot=used(st.act)+st.items.length,left=6-tot;
   sheet(g?'Editar fotos':'Registro fotográfico',br(day)+' · até 6 fotos por atividade');
   $('sh-body').innerHTML=`<p class="q">Fotos de qual atividade?</p><label class="f">Atividade<select id="fa">${acts.map(k=>`<option value="${k.key}" ${k.key===st.act?'selected':''}>${esc(actName(k))} · ${span(k.sm,k.em)}</option>`).join('')}</select></label>
   <label class="f" style="margin-top:10px">Encarregado<select id="fc">${crs.map(c=>`<option value="${c.id}" ${c.id===st.crew?'selected':''}>${esc(title(c.fid))}</option>`).join('')||'<option value="">Sem equipe nesta atividade</option>'}</select></label>
@@ -1047,8 +1132,8 @@ function pageOpen(){
  $('content').innerHTML=`<section class="card"><h2>Em aberto</h2><p class="hint" style="margin-top:-4px">Serviços do 3D iniciados e ainda não concluídos.</p><input id="oq" type="search" placeholder="Filtrar por peça, serviço ou encarregado" style="margin-top:10px"></section><div id="olist"></div>`;
  const draw=()=>{let q=norm($('oq').value);$('olist').innerHTML=gs.filter(g=>norm([pieceMap.get(g.uid)?.l,svcLabel(g.service),g.last.teamName].join(' ')).includes(q)).map(g=>{let p=pieceMap.get(g.uid);return `<div class="card"><div class="row" style="justify-content:space-between;align-items:flex-start"><div style="min-width:0;flex:1"><b style="font-size:15px">${esc(p?.l||g.uid)}</b><div style="font-size:13px;color:#c9d3dc">${esc(svcLabel(g.service))} · ${esc(g.last.status)}</div><div class="hint" style="margin-top:4px">Início ${br(g.start)} · último registro ${br(g.last.date)} · ${esc(g.last.teamName||'sem encarregado')}</div></div><button class="btn primary sm" type="button" data-go="${esc(g.uid)}|${esc(g.service)}|${esc(g.last.id)}">Apontar hoje</button></div></div>`;}).join('')||'<p class="empty">Nada em aberto.</p>';
   $('olist').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{let [u,s,lid]=b.dataset.go.split('|');day=today();tab='Hoje';let x=getDay();render();if(x.finalized)return note('O RDO de hoje está finalizado. Reabra para lançar.',true);
-   let last=db.events.find(e=>e.id===lid),fids=new Set((last?.crews||[]).map(c=>db.days[last.date]?.crews?.find(k=>k.id===c.id)?.fid).filter(Boolean)),w=win(day,x.shift);
-   wz={step:2,uid:u,service:s,status:'Em andamento',sm:w.a,em:w.b,crews:x.crews.filter(c=>fids.has(c.fid)).map(c=>({id:c.id,counts:null})),hasC:null,confirm:false};drawStep();});};
+   let last=db.events.find(e=>e.id===lid),ld=db.days[last?.date]||{crews:[]},tc=!!last?.terc,fids=new Set((last?.crews||[]).map(c=>{let k=crewOf(ld,c.id);return k?(k.t?k.enc:k.fid):null;}).filter(Boolean)),w=win(day,x.shift);
+   wz={step:2,uid:u,service:s,status:'Em andamento',sm:w.a,em:w.b,crews:(tc?x.tcrews.filter(c=>fids.has(c.enc)):x.crews.filter(c=>fids.has(c.fid))).map(c=>({id:c.id,counts:null})),terc:tc,hasC:null,confirm:false};drawStep();});};
  $('oq').oninput=draw;draw();
 }
 
@@ -1103,7 +1188,8 @@ function finalize(){
  if(!eqCount(x))block.push('equipamentos na frente (07)');
  for(let m of crewCheck())block.push(m);
  let empty=x.crews.filter(c=>crewTotal(c)===1);if(empty.length)warn.push('equipe sem quantidades: '+empty.map(c=>short(c.fid)).join(', '));
- let idle=x.crews.filter(c=>!st.acts.some(a=>a.crews.some(k=>k.id===c.id)));if(idle.length)warn.push('equipe sem atividade: '+idle.map(c=>short(c.fid)).join(', '));
+ let idle=allCrews(x).filter(c=>!st.acts.some(a=>a.crews.some(k=>k.id===c.id)));if(idle.length)warn.push('equipe sem atividade: '+idle.map(c=>(c.t?empName(c.emp)+' · ':'')+short(c.fid)).join(', '));
+ let tE=x.tcrews.filter(c=>crewTotal(c)===1);if(tE.length)warn.push('equipe de terceiros sem colaboradores: '+tE.map(c=>short(c.fid)).join(', '));
  // chuva medida × "não choveu" (17h mede 07h–17h: manhã e tarde; 07h mede a noite)
  if(x.shift!=='noite'&&+x.mm17>0&&x.rainP[0]===false&&x.rainP[1]===false)warn.push(`leitura das 17h com ${fmt(x.mm17)} mm, mas manhã e tarde marcadas como "Não choveu"`);
  if(x.shift==='noite'&&+x.mm07>0&&x.rainP[2]===false)warn.push(`leitura das 07h com ${fmt(x.mm07)} mm, mas a noite está marcada como "Não choveu"`);
@@ -1141,13 +1227,14 @@ function slideCommit(root,onConfirm){const t=root.querySelector('.sc-t'),cap=roo
  cap.addEventListener('keydown',e=>{if(phase==='pending'||phase==='done')return;if(e.key==='End'||e.key==='Enter'){e.preventDefault();commit();}else if(e.key==='ArrowRight'){e.preventDefault();x=Math.min(T(),x+T()/10);draw();if(x>=T())commit();}else if(e.key==='ArrowLeft'||e.key==='Home'||e.key==='Escape'){e.preventDefault();x=e.key==='ArrowLeft'?Math.max(0,x-T()/10):0;draw();}});
  addEventListener('resize',draw);set('idle');draw();}
 // Dados prontos para as planilhas (pluviometria, paralisações, mão de obra e atividades).
-function sheets(){let out={pluviometria:[],paralisacoes:[],maoDeObra:[],atividades:[]};
+function sheets(){let out={pluviometria:[],paralisacoes:[],maoDeObra:[],maoDeObraTerceiros:[],atividades:[]};
  for(let [d,x] of Object.entries(db.days).sort()){let w=win(d,x.shift),acts=listActs(d),gs=gridStats(d),m=assign(d),base={data:d,apontador:x.author||'',turno:x.shift,frente:x.front||''};
   if(x.rainP.some(v=>v!=null)||x.mm07!==''||x.mm17!==''||gs.iv.length)out.pluviometria.push({...base,pluviometro:pluvName(x.pluv),chuvaManha:ownP(x).includes(0)?x.rainP[0]:null,chuvaTarde:ownP(x).includes(1)?x.rainP[1]:null,chuvaNoite:ownP(x).includes(2)?x.rainP[2]:null,mm07:x.mm07===''?null:+x.mm07,mm17:x.mm17===''?null:+x.mm17,horasChuva:gs.c,horasRaio:gs.r,intervalos:gs.iv.map(v=>({tipo:v.t==='c'?'Chuva':'Raio',inicio:hm(v.m),fim:hm(v.e,true),horas:(v.e-v.m)/60})),fotos:[x.ph07?fotoName(d,x,'07'):'',x.ph17?fotoName(d,x,'17'):''].filter(Boolean)});
-  for(let p of x.stops){let a=acts.find(k=>k.key===p.act),c=x.crews.find(k=>k.id===p.crew),crs=p.crew==='all'?(a?.crews||[]).map(k=>x.crews.find(z=>z.id===k.id)).filter(Boolean):c?[c]:[];
+  for(let p of x.stops){let a=acts.find(k=>k.key===p.act),c=crewOf(x,p.crew),crs=p.crew==='all'?(a?.crews||[]).map(k=>crewOf(x,k.id)).filter(Boolean):c?[c]:[];
    out.paralisacoes.push({...base,inicio:hm(p.sm),fim:hm(p.em,true),horas:(p.em-p.sm)/60,atividade:a?(a.kind==='3d'?a.label:a.label):'',servico:a?.kind==='3d'?a.sub:'Atividade extra',tipoAtividade:a?.kind==='3d'?'3D':'Extra',encarregados:crs.map(k=>title(k.fid)),pessoas:p.crew==='all'?(m.get(p.act)||[]).length:(m.get(p.act)||[]).filter(w=>w.crew===c?.fid).length,tipoMotivo:p.type,motivo:p.desc});}
   for(let c of x.crews){let F=foreman(c.fid);out.maoDeObra.push({...base,encarregado:title(F.n),cargo:title(F.c),funcao:title(F.c),quantidade:1});for(let [f,n] of Object.entries(c.counts))if(+n)out.maoDeObra.push({...base,encarregado:title(F.n),cargo:title(F.c),funcao:title(f),quantidade:+n});}
-  for(let a of acts)out.atividades.push({...base,tipo:a.kind==='3d'?'3D':'Extra',atividade:a.label,servico:a.kind==='3d'?a.sub:'',situacao:a.kind==='3d'?a.status:'',inicio:hm(a.sm),fim:hm(a.em,true),encarregados:a.crews.map(k=>x.crews.find(z=>z.id===k.id)).filter(Boolean).map(k=>title(k.fid)),pessoas:(m.get(a.key)||[]).length,horasHomem:(m.get(a.key)||[]).reduce((s,w2)=>s+w2.hours,0),concretoM3:a.concrete??null,fotos:photoCount(x,a.key)});}
+  for(let c of x.tcrews||[]){out.maoDeObraTerceiros.push({...base,empresa:empName(c.emp),encarregado:title(c.fid),matricula:c.enc,funcao:'Encarregado',quantidade:1});for(let [f,n] of Object.entries(c.counts||{}))if(+n)out.maoDeObraTerceiros.push({...base,empresa:empName(c.emp),encarregado:title(c.fid),matricula:c.enc,funcao:title(f),quantidade:+n,matriculas:(c.pres||[]).filter(q=>q.f===f).map(q=>q.m)});}
+  for(let a of acts)out.atividades.push({...base,equipe:a.terc?'Terceiros':'Alya',tipo:a.kind==='3d'?'3D':'Extra',atividade:a.label,servico:a.kind==='3d'?a.sub:'',situacao:a.kind==='3d'?a.status:'',inicio:hm(a.sm),fim:hm(a.em,true),encarregados:a.crews.map(k=>crewOf(x,k.id)).filter(Boolean).map(k=>title(k.fid)),pessoas:(m.get(a.key)||[]).length,horasHomem:(m.get(a.key)||[]).reduce((s,w2)=>s+w2.hours,0),concretoM3:a.concrete??null,fotos:photoCount(x,a.key)});}
  return out;}
 const fotoName=(d,x,k)=>`PLUV_${d}_${x.pluv?slug(pluvName(x.pluv))+'_':''}${slug(x.author)}_${k}h.jpg`;
 function pkg(){for(let d of Object.keys(db.days))refreshWorkers(d);return {schema:'alya-rdo-pacote-1',versao:'0.4',app:APP,from:db.profile||'',device:db.device,exported:new Date().toISOString(),catalog:catalog.generated,days:db.days,events:db.events,...sheets()};}
@@ -1200,7 +1287,7 @@ async function retryPending(){if(retrying||sending||!navigator.onLine)return;let
  retrying=false;if(ok){note(ok===1?'RDO pendente enviado para a pasta do site.':ok+' RDOs pendentes enviados para a pasta do site.');try{render();}catch(e){}}}
 addEventListener('online',()=>setTimeout(retryPending,1500));setTimeout(retryPending,4000);
 // Versão nova do RDO: o app confere sozinho quando volta para a tela e se atualiza (os dados ficam no aparelho).
-const RDO_VER='1.89';
+const RDO_VER='1.90';
 async function checkVer(){try{if(location.protocol==='file:')return;let r=await fetch('/api/rdo/versao',{cache:'no-store'});if(!r.ok||!/json/.test(r.headers.get('content-type')||''))return;let j=await r.json();
  if(!j||!j.rdo||j.rdo===RDO_VER)return;let k='rdo-ver-'+j.rdo;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');}catch(e){}
  if($('sheet').hidden&&!sending&&!retrying){save();location.reload();}else note('Tem uma versão nova do RDO: ela abre quando você fechar esta tela.');}catch(e){}}
@@ -1256,18 +1343,26 @@ async function buildPdf(d){
   let roles=new Map;for(let c of x.crews){let F=foreman(c.fid);roles.set(title(F.c),(roles.get(title(F.c))||0)+1);for(let [f,n] of Object.entries(c.counts))if(+n)roles.set(title(f),(roles.get(title(f))||0)+(+n));}
   table([{t:'Função',w:.75,bold:true},{t:'Pessoas',w:.25,align:'right'}],[...roles.entries()].sort((a,b)=>b[1]-a[1]).map(([r,n])=>({cells:[r,String(n)]})).concat([{cells:['Total',String(st.efetivo)],bold:true}]));}   // sem horas-homem no PDF (V0.20)
  else none('Nenhuma equipe lançada.');
+ // Mão de obra de terceiros (V0.26): só funções e quantidades, sem nomes
+ if(x.tcrews.length){need(30);doc.text(M,y,'Mão de obra de terceiros',{size:9,bold:true,color:INK});y+=14;
+  table([{t:'Empresa',w:.18,bold:true},{t:'Encarregado',w:.26},{t:'Funções e quantidades',w:.44},{t:'Efetivo',w:.12,align:'right'}],x.tcrews.map(c=>({cells:[empName(c.emp),title(c.fid),Object.entries(c.counts||{}).filter(([,n])=>+n).map(([f,n])=>title(f)+' '+n).join(' · ')||'—',String(crewTotal(c))]})).concat([{cells:['Total','','',String(st.tefetivo)],bold:true}]));
+  let tr=new Map;for(let c of x.tcrews){let k=empName(c.emp)+' · Encarregado';tr.set(k,(tr.get(k)||0)+1);for(let [f,n] of Object.entries(c.counts||{}))if(+n){let kk=empName(c.emp)+' · '+title(f);tr.set(kk,(tr.get(kk)||0)+(+n));}}
+  table([{t:'Empresa · função',w:.75,bold:true},{t:'Pessoas',w:.25,align:'right'}],[...tr.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([r,n])=>({cells:[r,String(n)]})).concat([{cells:['Total terceiros',String(st.tefetivo)],bold:true}]));}
  section('4. Atividades');
- let a3=st.acts.filter(a=>a.kind==='3d'),ax=st.acts.filter(a=>a.kind==='extra');
- const crewNames=a=>a.crews.map(k=>x.crews.find(z=>z.id===k.id)).filter(Boolean).map(k=>short(k.fid)).join(', ')||'—';
+ let a3=st.acts.filter(a=>a.kind==='3d'&&!a.terc),ax=st.acts.filter(a=>a.kind==='extra'&&!a.terc),at=st.acts.filter(a=>a.terc);
+ const crewNames=a=>a.crews.map(k=>crewOf(x,k.id)).filter(Boolean).map(k=>(k.t?empName(k.emp)+' · ':'')+short(k.fid)).join(', ')||'—';
  if(a3.length)table([{t:'#',w:.04},{t:'Peça / local',w:.25,bold:true},{t:'Serviço',w:.15},{t:'Situação',w:.11},{t:'Horário',w:.12},{t:'Equipes',w:.15},{t:'Efetivo',w:.07,align:'right'},{t:'Concreto',w:.11,align:'right'}],
   a3.map((a,i)=>({cells:[String(i+1),a.label+(a.place?'\n'+a.place:''),a.sub,a.status,span(a.sm,a.em),crewNames(a),String((st.assign.get(a.key)||[]).length),a.concrete!=null?fmt(a.concrete,2)+' m³':'—'],sub:a.desc?'Obs.: '+a.desc:''})));
  else none('Nenhuma atividade do 3D.');
  if(ax.length){need(30);doc.text(M,y,'Atividades extras (fora do escopo do 3D)',{size:9,bold:true,color:INK});y+=14;
   table([{t:'#',w:.04},{t:'Atividade',w:.4,bold:true},{t:'Horário',w:.14},{t:'Equipes',w:.2},{t:'Efetivo',w:.1,align:'right'},{t:'Concreto',w:.12,align:'right'}],ax.map((a,i)=>({cells:[String(i+1),a.label,span(a.sm,a.em),crewNames(a),String((st.assign.get(a.key)||[]).length),a.concrete!=null?fmt(a.concrete,2)+' m³':'—'],sub:a.desc?'Obs.: '+a.desc:''})));}
+ if(at.length){need(30);doc.text(M,y,'Atividades de terceiros',{size:9,bold:true,color:INK});y+=14;
+  table([{t:'#',w:.04},{t:'Tipo',w:.07},{t:'Peça / atividade',w:.25,bold:true},{t:'Serviço',w:.14},{t:'Horário',w:.12},{t:'Equipes',w:.2},{t:'Efetivo',w:.07,align:'right'},{t:'Concreto',w:.11,align:'right'}],
+   at.map((a,i)=>({cells:[String(i+1),a.kind==='3d'?'3D':'Extra',a.label+(a.place?'\n'+a.place:''),a.kind==='3d'?a.sub+' · '+a.status:'—',span(a.sm,a.em),crewNames(a),String((st.assign.get(a.key)||[]).length),a.concrete!=null?fmt(a.concrete,2)+' m³':'—'],sub:a.desc?'Obs.: '+a.desc:''})));}
  if(st.concrete){need(16);doc.text(M,y,`Concreto aplicado no dia: ${fmt(st.concrete,2)} m³`,{size:9,bold:true,color:INK});y+=18;}
  section('5. Paralisações');
  if(x.stops.length)table([{t:'#',w:.04},{t:'Horário',w:.13},{t:'Duração',w:.08,align:'right'},{t:'Atividade',w:.25,bold:true},{t:'Equipe',w:.17},{t:'Tipo do motivo',w:.33}],
-  [...x.stops].sort((p,q)=>p.sm-q.sm).map((p,i)=>{let a=st.acts.find(k=>k.key===p.act),c=p.crew==='all'?'Todas da atividade':short(x.crews.find(k=>k.id===p.crew)?.fid||'');return {cells:[String(i+1),span(p.sm,p.em),fmtH((p.em-p.sm)/60),actName(a),c,p.type],sub:'Motivo: '+p.desc};}));
+  [...x.stops].sort((p,q)=>p.sm-q.sm).map((p,i)=>{let a=st.acts.find(k=>k.key===p.act),c=p.crew==='all'?'Todas da atividade':short(crewOf(x,p.crew)?.fid||'');return {cells:[String(i+1),span(p.sm,p.em),fmtH((p.em-p.sm)/60),actName(a),c,p.type],sub:'Motivo: '+p.desc};}));
  else none('Sem paralisações no dia.');
  section('6. Equipamentos na frente');
  let eqo=eqTypes(),eq=Object.keys(x.equipment).filter(t=>count(x.equipment[t])).sort((a,b)=>(eqo.indexOf(a)+1||999)-(eqo.indexOf(b)+1||999));
@@ -1283,7 +1378,7 @@ async function buildPdf(d){
  if(!groups.length){}
  for(let [k,g] of groups){let a=st.acts.find(z=>z.key===k),urls=[];for(let id of g.items.slice(0,6)){let bl=await getPhoto(id);if(bl)urls.push(await blobURL(bl));}if(!urls.length)continue;
   doc.addPage();header();section('Anexo · Registro fotográfico',0);
-  let crs=[...g.crews].map(id=>x.crews.find(z=>z.id===id)).filter(Boolean).map(c=>title(c.fid)).join(', ')||'—';
+  let crs=[...g.crews].map(id=>crewOf(x,id)).filter(Boolean).map(c=>title(c.fid)).join(', ')||'—';
   doc.rect(M,y,W,40,{fill:'#fbf7ec',stroke:LINE,lw:.6});doc.rect(M,y,4,40,{fill:AMB});
   doc.text(M+12,y+6,doc.wrap(a?(a.kind==='3d'?a.label+' · '+a.sub:'Atividade extra · '+a.label):'Atividade',11,true,W-24)[0],{size:11,bold:true,color:INK});
   doc.text(M+12,y+23,doc.wrap(`${a?span(a.sm,a.em):''} · ${a?.kind==='3d'?(a.place?a.place+' · ':'')+a.status+' · ':''}Encarregado: ${crs} · ${urls.length} foto${urls.length>1?'s':''}`,8,false,W-24)[0],{size:8,color:MUTE});

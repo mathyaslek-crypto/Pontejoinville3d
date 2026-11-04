@@ -100,7 +100,10 @@ tbody tr:hover td{background:#17212b}
 <div id="tip"></div><div id="toast"></div>
 <script>
 'use strict';
-const KEY='alya-mo-v1',$=id=>document.getElementById(id);
+// (V1.86) a mesma página mostra os terceiros com ?terceiros (aba Terceiros do início): equipes das empresas terceiras e o cadastro
+const TERC=/[?&]terceiros\b/.test(location.search);
+const EMPS=[['SPT','S.Pontes'],['BML','BML'],['BSM','BSM'],['BRG','Berg Mineração']],empName=k=>(EMPS.find(e=>e[0]===k)||[])[1]||k||'';
+const KEY=TERC?'alya-terc-v1':'alya-mo-v1',$=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=(n,d=1)=>Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:d});
 const br=d=>d?d.split('-').reverse().join('/'):'—';
@@ -137,16 +140,17 @@ function readDay(o,d,x){
  const rowsMO=(o.maoDeObra||[]).filter(r=>r.data===d&&(r.apontador||'')===(x.author||'')&&(r.turno||'dia')===shift);
  const cargo=new Map;for(const r of rowsMO)if(r.encarregado&&r.cargo)cargo.set(norm(r.encarregado),r.cargo);
  const crewById=new Map,crews=[];
- for(const c of x.crews||[]){const n=title(c.fid),cg=cargo.get(norm(n))||'Encarregado',counts={};
+ for(const c of (TERC?x.tcrews:x.crews)||[]){const n=title(c.fid),cg=TERC?'Encarregado':cargo.get(norm(n))||'Encarregado',counts={};
   for(const [f,v] of Object.entries(c.counts||{}))if(+v)counts[title(f)]=(counts[title(f)]||0)+(+v);
-  const cr={id:c.id,enc:n,cargo:cg,counts,total:1+Object.values(counts).reduce((s,v)=>s+v,0)};crews.push(cr);crewById.set(c.id,{raw:c,cr});}
+  const cr={id:c.id,enc:n,cargo:cg,emp:TERC?empName(c.emp):'',counts,total:1+Object.values(counts).reduce((s,v)=>s+v,0)};crews.push(cr);crewById.set(c.id,{raw:c,cr});}
  // atividades na mesma ordem do RDO (listActs) para casar com as linhas de "atividades" do pacote
  const evs=(o.events||[]).filter(e=>!e.deleted&&e.date===d).sort((a,b)=>(a.sm??0)-(b.sm??0)||String(a.created).localeCompare(String(b.created)));
- let acts=evs.map(e=>({kind:'3d',label:e.piece||e.uid||'Peça',sub:e.service||'',status:e.status||'',sm:e.sm??w.a,em:e.em??w.b,crews:e.crews||[]}))
-  .concat((x.extras||[]).map(t=>({kind:'extra',label:t.desc||'Atividade extra',sub:'Atividade extra',status:'Extra',sm:t.sm,em:t.em,crews:t.crews||[]})));
+ let acts=evs.map(e=>({kind:'3d',label:e.piece||e.uid||'Peça',sub:e.service||'',status:e.status||'',sm:e.sm??w.a,em:e.em??w.b,crews:e.crews||[],terc:!!e.terc}))
+  .concat((x.extras||[]).map(t=>({kind:'extra',label:t.desc||'Atividade extra',sub:'Atividade extra',status:'Extra',sm:t.sm,em:t.em,crews:t.crews||[],terc:!!t.terc})));
  acts=acts.map((a,i)=>({...a,i})).sort((p,q)=>p.sm-q.sm||p.em-q.em||p.i-q.i);
  const rowsA=(o.atividades||[]).filter(r=>r.data===d&&(r.apontador||'')===(x.author||'')&&(r.turno||'dia')===shift);
  if(rowsA.length===acts.length)acts.forEach((a,i)=>{const r=rowsA[i];a.label=r.atividade||a.label;if(r.tipo==='3D'){a.sub=r.servico||a.sub;a.status=r.situacao||a.status;}});
+ acts=acts.filter(a=>a.terc===TERC);   // Alya e terceiros separados (V1.86)
  // distribui as pessoas (assign do RDO)
  const pools=new Map,out=[];
  for(const a of acts){const ps=[];
@@ -157,7 +161,7 @@ function readDay(o,d,x){
     for(let i=0;i<pool.length&&got<n;i++)if(pool[i].every(([s,e])=>a.em<=s||a.sm>=e)){pool[i].push([a.sm,a.em]);ps.push(mk(i));got++;}
     while(got<n){pool.push([[a.sm,a.em]]);ps.push(mk(pool.length-1));got++;}}}
   out.push({tipo:a.kind==='3d'?'3D':'Extra',atividade:a.label,servico:a.kind==='3d'?a.sub:'',situacao:a.kind==='3d'?a.status:'',sm:a.sm,em:a.em,
-   encs:[...new Set(a.crews.map(c=>crewById.get(c.id)).filter(Boolean).map(k=>k.cr.enc))],pessoas:ps});}
+   encs:[...new Set(a.crews.map(c=>crewById.get(c.id)).filter(Boolean).map(k=>k.cr.enc))],emps:[...new Set(a.crews.map(c=>crewById.get(c.id)).filter(Boolean).map(k=>k.cr.emp))],pessoas:ps});}
  return {key,data:d,apontador:x.author||o.from||'',turno:shift,frente:x.front||'',lado:lado(x.front)||lado(x.pluv==='boavista'?'Boa Vista':x.pluv==='adhemar'?'Adhemar':''),crews,acts:out};}
 
 let db={days:{},at:{},files:{}};
@@ -184,11 +188,12 @@ async function siteScan(manual){if(busy||location.protocol==='file:')return;busy
 $('upd').onclick=()=>siteScan(true);
 
 // ---------- filtros ----------
-let st={per:'mes',dia:'',mes:'',lado:'todos',turno:'todos',act:'',fnOff:[]};
+let st={per:'mes',dia:'',mes:'',lado:'todos',turno:'todos',emp:'todos',act:'',fnOff:[]};
 try{Object.assign(st,JSON.parse(localStorage.getItem(KEY+'-ui')||'{}'));}catch(e){}
 const saveUI=()=>{try{localStorage.setItem(KEY+'-ui',JSON.stringify(st));}catch(e){}};
 const allDays=()=>Object.values(db.days);
-function base(){return allDays().filter(r=>(st.lado==='todos'||r.lado===st.lado)&&(st.turno==='todos'||r.turno===st.turno));}
+function base(){let L=allDays().filter(r=>(st.lado==='todos'||r.lado===st.lado)&&(st.turno==='todos'||r.turno===st.turno));
+ if(TERC&&st.emp!=='todos')L=L.map(r=>({...r,crews:r.crews.filter(c=>c.emp===st.emp),acts:r.acts.filter(a=>(a.emps||[]).includes(st.emp))})).filter(r=>r.crews.length||r.acts.length);return L;}
 function lastDate(){const ds=allDays().map(r=>r.data).sort();return ds.at(-1)||today();}
 function range(){const last=lastDate();
  if(st.per==='dia'){const d=st.dia||last;return [d,d];}
@@ -242,7 +247,7 @@ function legend(){return `<span class="legend">${FN.map(f=>`<button type="button
 function seg(name,opts,val){return `<div class="seg" role="group" aria-label="${name}">${opts.map(([v,t])=>`<button type="button" data-${name}="${v}" aria-pressed="${v===val}">${t}</button>`).join('')}</div>`;}
 function render(){
  const all=allDays();
- if(!all.length){$('app').innerHTML=`<div class="empty"><b>Nenhum RDO com mão de obra ainda</b>Os RDOs enviados pelos apontadores aparecem aqui sozinhos (Pasta do RDO).</div>`;return;}
+ if(!all.length){$('app').innerHTML=`<div class="empty"><b>${TERC?'Nenhum RDO com terceiros ainda':'Nenhum RDO com mão de obra ainda'}</b>Os RDOs enviados pelos apontadores aparecem aqui sozinhos (Pasta do RDO).</div>${TERC?'<div id="cad"></div>':''}`;if(TERC)drawCad();return;}
  const [a,b]=range(),rs=inRange(base(),a,b),dayM=perDay(rs);
  const last=lastDate();
  const perCtl=st.per==='dia'?`<div class="per"><button type="button" data-step="-1" aria-label="Dia anterior">‹</button><input type="date" id="fd" value="${st.dia||last}" aria-label="Dia"><button type="button" data-step="1" aria-label="Próximo dia">›</button></div>`
@@ -283,7 +288,7 @@ function render(){
    ${items.length>40?`<p class="note">Mostrando os 40 registros mais recentes de ${items.length}.</p>`:''}</div>`;}
 
  $('sub').textContent=perTxt+' · '+scopeTxt;
- $('app').innerHTML=`<div class="bar">${seg('per',[['dia','Dia'],['mes','Mês'],['30','30 dias'],['tudo','Tudo']],st.per)}${perCtl}${seg('lado',[['todos','Todos'],['Adhemar','Adhemar'],['Boa Vista','Boa Vista']],st.lado)}${seg('turno',[['todos','Todos os turnos'],['dia','☀ Dia'],['noite','☾ Noite']],st.turno)}</div>
+ $('app').innerHTML=`<div class="bar">${seg('per',[['dia','Dia'],['mes','Mês'],['30','30 dias'],['tudo','Tudo']],st.per)}${perCtl}${seg('lado',[['todos','Todos'],['Adhemar','Adhemar'],['Boa Vista','Boa Vista']],st.lado)}${seg('turno',[['todos','Todos os turnos'],['dia','☀ Dia'],['noite','☾ Noite']],st.turno)}${TERC?seg('emp',[['todos','Todas as empresas'],...EMPS.map(([k,t])=>[t,t])],st.emp):''}</div>
  <div class="grid kpis">${kp.map(([t,v,u,s])=>`<div class="card kpi"><i></i><h2>${t}</h2><div class="v">${v}${u?`<small>${u}</small>`:''}</div><div class="s">${esc(s)}</div></div>`).join('')}</div>
  <div class="card" style="margin-top:14px"><h2>Efetivo por dia${one?' · 30 dias até '+brs(a):''} ${legend()}</h2>${stackChart(s,{h:250,sel:one?a:'',label:'Efetivo por dia'})}<p class="note" style="margin:6px 0 0">${one?'Toque numa barra para ver aquele dia.':'Cada barra é a soma das pessoas das equipes no dia (encarregado + equipe).'}${s.some(d=>d.month)?' Período longo: barras por mês (diárias).':''}</p></div>
  <div class="grid two" style="margin-top:14px">
@@ -292,13 +297,34 @@ function render(){
  </div>
  <div class="card" style="margin-top:14px"><h2>Mão de obra por atividade <span>${one?'pessoas':'diárias'} de cada função · toque numa atividade para ver quem trabalhou</span></h2>
   ${acts.length?`<div class="tw mx"><table><thead><tr><th>Atividade</th>${cols.map(f=>`<th class="n" style="text-align:center"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${f.c};margin-right:5px"></i>${esc(f.k)}</th>`).join('')}<th class="n">Total</th></tr></thead><tbody>${mxRows}</tbody></table></div>${det}`:'<p class="note">Nenhuma atividade no período.</p>'}</div>
- <p class="note" style="margin-top:14px">${all.length} RDO${all.length===1?'':'s'} lidos da Pasta do RDO. Quando a mesma equipe trabalha em atividades em horários diferentes, cada pessoa conta uma vez por atividade. Não mostra horas-homem.</p>`;
- bind();}
+ <p class="note" style="margin-top:14px">${all.length} RDO${all.length===1?'':'s'} lidos da Pasta do RDO. Quando a mesma equipe trabalha em atividades em horários diferentes, cada pessoa conta uma vez por atividade. Não mostra horas-homem.</p>${TERC?'<div id="cad"></div>':''}`;
+ bind();if(TERC)drawCad();}
 
+// ---------- cadastro de terceiros (só na aba Terceiros) ----------
+let CAD=null,cadQ='',cadDesl=false;
+function loadCad(){return fetch('/api/rdo/terceiros',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{if(j&&j.p){CAD=j.p;drawCad();}}).catch(()=>{});}
+function drawCad(){const el=$('cad');if(!el)return;
+ if(!CAD){el.innerHTML='<div class="card" style="margin-top:14px"><h2>Cadastro de terceiros</h2><p class="note">Carregando…</p></div>';return;}
+ const all=Object.values(CAD),q=norm(cadQ),emp=st.emp==='todos'?null:(EMPS.find(e=>e[1]===st.emp)||[])[0];
+ const ok=p=>(!emp||p.emp===emp)&&(cadDesl?p.ativo===false:p.ativo!==false)&&(!q||norm(p.nome+' '+p.m+' '+p.funcao).includes(q));
+ const encs=all.filter(p=>/ENCARREG/.test(p.funcao)&&(!emp||p.emp===emp)),byEnc=new Map;
+ for(const p of all.filter(ok)){const k=/ENCARREG/.test(p.funcao)?p.m:(p.enc||'');if(!byEnc.has(k))byEnc.set(k,[]);byEnc.get(k).push(p);}
+ const ativos=all.filter(p=>p.ativo!==false&&(!emp||p.emp===emp)),fn={};for(const p of ativos)fn[title(p.funcao)]=(fn[title(p.funcao)]||0)+1;
+ const grupos=[...encs.map(e=>e.m),''].filter(k=>byEnc.has(k)).map(k=>{const E=CAD[k],L=byEnc.get(k).sort((a,b)=>(/ENCARREG/.test(a.funcao)?-1:0)-(/ENCARREG/.test(b.funcao)?-1:0)||String(a.funcao).localeCompare(b.funcao)||String(a.nome).localeCompare(b.nome));
+  return `<details class="cg" ${q?'open':''}><summary><b>${E?esc(title(E.nome)):'Sem encarregado'}</b><span>${E?esc(empName(E.emp))+' · turno '+(E.turno==='noite'?'da noite':'do dia')+' · ':''}${L.length} pessoa${L.length===1?'':'s'}</span></summary><div class="tw"><table><thead><tr><th>Matrícula</th><th>Nome</th><th>Função</th><th>Turno</th><th>Alterado</th></tr></thead><tbody>${L.map(p=>`<tr><td>${esc(p.m)}</td><td>${esc(title(p.nome))}</td><td>${esc(title(p.funcao))}</td><td>${p.turno==='noite'?'Noite':'Dia'}</td><td class="note">${p.alterado?br(p.alterado.slice(0,10)):''}</td></tr>`).join('')}</tbody></table></div></details>`;}).join('');
+ el.innerHTML=`<div class="card" style="margin-top:14px"><h2>Cadastro de terceiros <span>${ativos.length} ativo${ativos.length===1?'':'s'} · ${Object.entries(fn).sort((a,b)=>b[1]-a[1]).map(([f,n])=>f+' '+n).join(' · ')||'nenhum'}</span></h2>
+  <div class="bar" style="margin:0 0 10px"><input id="cq" type="search" placeholder="Buscar nome, matrícula ou função" value="${esc(cadQ)}" style="flex:1;min-width:200px;min-height:38px;border-radius:8px;border:1px solid var(--line2);background:var(--raise);padding:0 12px">${seg('desl',[['0','Ativos'],['1','Desligados']],cadDesl?'1':'0')}</div>
+  ${grupos||'<p class="note">Ninguém encontrado. Os apontadores cadastram os colaboradores no RDO (3T · Terceiros do dia › Editar equipe).</p>'}
+  <p class="note" style="margin:10px 0 0">A matrícula é criada automaticamente (sigla da empresa + número) e acompanha o colaborador mesmo se ele mudar de equipe ou turno.</p></div>`;
+ const cq=$('cq');cq.oninput=()=>{cadQ=cq.value;const pos=cq.selectionStart;drawCad();const n=$('cq');n.focus();try{n.setSelectionRange(pos,pos);}catch(e){}};
+ document.querySelectorAll('[data-desl]').forEach(b=>b.onclick=()=>{cadDesl=b.dataset.desl==='1';drawCad();});}
+if(TERC){document.title='Terceiros · Ponte Joinville';const h=document.querySelector('header h1');if(h)h.textContent='Terceiros · Ponte Joinville';const sb=$('sub');if(sb)sb.textContent='Mão de obra das empresas terceiras';loadCad();$('upd').addEventListener('click',loadCad);
+ const cs=document.createElement('style');cs.textContent='.cg{border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:#111920}.cg summary{cursor:pointer;padding:10px 12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.cg summary span{color:var(--muted);font-size:12.5px}.cg .tw{border:0;border-top:1px solid var(--line);border-radius:0 0 10px 10px}';document.head.appendChild(cs);}
 function bind(){
  document.querySelectorAll('[data-per]').forEach(b=>b.onclick=()=>{st.per=b.dataset.per;saveUI();render();});
  document.querySelectorAll('[data-lado]').forEach(b=>b.onclick=()=>{st.lado=b.dataset.lado;saveUI();render();});
  document.querySelectorAll('[data-turno]').forEach(b=>b.onclick=()=>{st.turno=b.dataset.turno;saveUI();render();});
+ document.querySelectorAll('[data-emp]').forEach(b=>b.onclick=()=>{st.emp=b.dataset.emp;saveUI();render();});
  document.querySelectorAll('[data-fn]').forEach(b=>b.onclick=()=>{const k=b.dataset.fn;st.fnOff=st.fnOff.includes(k)?st.fnOff.filter(x=>x!==k):st.fnOff.concat(k);saveUI();render();});
  const fd=$('fd'),fm=$('fm');
  if(fd)fd.onchange=()=>{if(fd.value){st.dia=fd.value;saveUI();render();}};
