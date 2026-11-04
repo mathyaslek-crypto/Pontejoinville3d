@@ -6,3 +6,4 @@ worker.js
 rdo-worker.js
 rdo-auth.js
 wrangler.rdo.jsonc
+terceiros-seed.json

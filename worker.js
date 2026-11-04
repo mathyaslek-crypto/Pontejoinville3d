@@ -1,3 +1,4 @@
+import TERC_SEED from './terceiros-seed.json';   // (V1.86) cadastro inicial dos terceiros
 // Ponte Joinville — Worker do site: entrega as páginas e guarda os dados compartilhados entre aparelhos.
 // GET /api/state?keys=a,b  → {chave:{t,by,size}} (só metadados); com &full=1 inclui o valor (v)
 // PUT /api/state/<chave>    → grava {v,t} se for mais novo que o que está salvo (último a gravar vence)
@@ -144,7 +145,8 @@ async function rdoApi(req, env, url, prof, email) {
   //   A matrícula é criada aqui (sigla da empresa + número) e nunca muda. enc = matrícula do encarregado ('' = sem encarregado).
   if (acao === 'terceiros') {
     const EMPS = ['SPT', 'BML', 'BSM', 'BRG'];
-    const ler = async () => (await env.DADOS.get('rdo-terc-v1', 'json').catch(() => null)) || { seq: {}, p: {} };
+    // começa com a equipe da S.Pontes da planilha de 04/11/2026 (terceiros-seed.json, fora dos arquivos públicos)
+    const ler = async () => (await env.DADOS.get('rdo-terc-v1', 'json').catch(() => null)) || JSON.parse(JSON.stringify(TERC_SEED));
     if (req.method === 'GET') {
       if (!canSend && !canRead) return json({ error: 'sem acesso' }, 403);
       return json(await ler());
