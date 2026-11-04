@@ -477,7 +477,7 @@ return {Doc,width,enc};
 
 const CATALOG_SEED=window.CATALOG_SEED||{schema:'alya-catalogo-1',generated:'',pieces:[]};   // (V1.76) vem do rdo-catalogo.js
 const LOGO=document.querySelector('header.top img').src;
-const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.27';
+const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.28';
 const PASTA='https://queirozgalvao1.sharepoint.com/:f:/s/PonteJoinville/IgDE4PJCU0C9RJfF4FAkIarTAa_wdhMCQYOGRe-1D9gsBmM?e=5Pvp5v';
 const OBRA={nome:'Ponte de Joinville',numero:'70.578',empresa:'Alya Construtora'};
 const $=id=>document.getElementById(id);
@@ -951,7 +951,11 @@ function bindToday(){
 }
 
 // ---------- Folha ----------
-function sheet(t,sub,progress){$('sheet').hidden=false;document.body.classList.add('lock');$('sh-t').textContent=t;$('sh-s').textContent=sub||'';$('sh-bar').style.width=(progress??100)+'%';$('sh-x').onclick=closeSheet;$('sh-body').scrollTop=0;}
+// (V0.28) redesenhar a mesma folha (ex.: + / − da equipe na atividade extra) mantém a rolagem; só volta ao topo quando muda de folha ou de passo
+let shKey='';
+function sheet(t,sub,progress){let k=t+'|'+(sub||''),same=!$('sheet').hidden&&k===shKey,b=$('sh-body'),top=b.scrollTop;shKey=k;
+ $('sheet').hidden=false;document.body.classList.add('lock');$('sh-t').textContent=t;$('sh-s').textContent=sub||'';$('sh-bar').style.width=(progress??100)+'%';$('sh-x').onclick=closeSheet;
+ if(same)requestAnimationFrame(()=>{b.scrollTop=top;});else b.scrollTop=0;}
 function closeSheet(){$('sheet').hidden=true;document.body.classList.remove('lock');wz=null;keepScroll(render);}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('sheet').hidden)closeSheet();});
 
@@ -1287,7 +1291,7 @@ async function retryPending(){if(retrying||sending||!navigator.onLine)return;let
  retrying=false;if(ok){note(ok===1?'RDO pendente enviado para a pasta do site.':ok+' RDOs pendentes enviados para a pasta do site.');try{render();}catch(e){}}}
 addEventListener('online',()=>setTimeout(retryPending,1500));setTimeout(retryPending,4000);
 // Versão nova do RDO: o app confere sozinho quando volta para a tela e se atualiza (os dados ficam no aparelho).
-const RDO_VER='1.91';
+const RDO_VER='1.92';
 async function checkVer(){try{if(location.protocol==='file:')return;let r=await fetch('/api/rdo/versao',{cache:'no-store'});if(!r.ok||!/json/.test(r.headers.get('content-type')||''))return;let j=await r.json();
  if(!j||!j.rdo||j.rdo===RDO_VER)return;let k='rdo-ver-'+j.rdo;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');}catch(e){}
  if($('sheet').hidden&&!sending&&!retrying){save();location.reload();}else note('Tem uma versão nova do RDO: ela abre quando você fechar esta tela.');}catch(e){}}
