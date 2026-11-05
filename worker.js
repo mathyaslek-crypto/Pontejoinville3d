@@ -15,7 +15,8 @@ const KEYS = new Set([
   'ponte-cantitravel-v62', // 3D: posição, guindaste e medidas dos dois cantitravels
   'ponte-planejamento-v66', // Planejamento: cenários (data de corte, base, pintura, cantitravels, treliças e aparência)
   'alya-pluvio-v1',        // painel de pluviometria
-  'alya-paral-v1'          // painel de paralisações
+  'alya-paral-v1',         // painel de paralisações
+  'alya-terc-peso-v1'      // Terceiros: peso armado estimado por colaborador por dia (V1.87)
 ]);
 const json = (o, s = 200) => new Response(JSON.stringify(o), { status: s, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 

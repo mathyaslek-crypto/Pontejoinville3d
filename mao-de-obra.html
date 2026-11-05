@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
+<script src="sync.js?v=1" data-keys="alya-terc-peso-v1"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b1117">
 <title>Mão de obra · Ponte Joinville</title>
@@ -103,7 +104,7 @@ tbody tr:hover td{background:#17212b}
 // (V1.86) a mesma página mostra os terceiros com ?terceiros (aba Terceiros do início): equipes das empresas terceiras e o cadastro
 const TERC=/[?&]terceiros\b/.test(location.search);
 const EMPS=[['SPT','S.Pontes'],['BML','BML'],['BSM','BSM'],['BRG','Berg Mineração']],empName=k=>(EMPS.find(e=>e[0]===k)||[])[1]||k||'';
-const KEY=TERC?'alya-terc-v1':'alya-mo-v1',$=id=>document.getElementById(id);
+const KEY=TERC?'alya-terc-v2':'alya-mo-v1',$=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=(n,d=1)=>Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:d});
 const br=d=>d?d.split('-').reverse().join('/'):'—';
@@ -142,7 +143,7 @@ function readDay(o,d,x){
  const crewById=new Map,crews=[];
  for(const c of (TERC?x.tcrews:x.crews)||[]){const n=title(c.fid),cg=TERC?'Encarregado':cargo.get(norm(n))||'Encarregado',counts={};
   for(const [f,v] of Object.entries(c.counts||{}))if(+v)counts[title(f)]=(counts[title(f)]||0)+(+v);
-  const cr={id:c.id,enc:n,cargo:cg,emp:TERC?empName(c.emp):'',counts,total:1+Object.values(counts).reduce((s,v)=>s+v,0)};crews.push(cr);crewById.set(c.id,{raw:c,cr});}
+  const cr={id:c.id,enc:n,cargo:cg,emp:TERC?empName(c.emp):'',pres:TERC?(c.pres||[]).map(q=>({m:q.m,n:q.n,f:q.f})):undefined,counts,total:1+Object.values(counts).reduce((s,v)=>s+v,0)};crews.push(cr);crewById.set(c.id,{raw:c,cr});}
  // atividades na mesma ordem do RDO (listActs) para casar com as linhas de "atividades" do pacote
  const evs=(o.events||[]).filter(e=>!e.deleted&&e.date===d).sort((a,b)=>(a.sm??0)-(b.sm??0)||String(a.created).localeCompare(String(b.created)));
  let acts=evs.map(e=>({kind:'3d',label:e.piece||e.uid||'Peça',sub:e.service||'',status:e.status||'',sm:e.sm??w.a,em:e.em??w.b,crews:e.crews||[],terc:!!e.terc}))
@@ -290,7 +291,7 @@ function render(){
  $('sub').textContent=perTxt+' · '+scopeTxt;
  $('app').innerHTML=`<div class="bar">${seg('per',[['dia','Dia'],['mes','Mês'],['30','30 dias'],['tudo','Tudo']],st.per)}${perCtl}${seg('lado',[['todos','Todos'],['Adhemar','Adhemar'],['Boa Vista','Boa Vista']],st.lado)}${seg('turno',[['todos','Todos os turnos'],['dia','☀ Dia'],['noite','☾ Noite']],st.turno)}${TERC?seg('emp',[['todos','Todas as empresas'],...EMPS.map(([k,t])=>[t,t])],st.emp):''}</div>
  <div class="grid kpis">${kp.map(([t,v,u,s])=>`<div class="card kpi"><i></i><h2>${t}</h2><div class="v">${v}${u?`<small>${u}</small>`:''}</div><div class="s">${esc(s)}</div></div>`).join('')}</div>
- <div class="card" style="margin-top:14px"><h2>Efetivo por dia${one?' · 30 dias até '+brs(a):''} ${legend()}</h2>${stackChart(s,{h:250,sel:one?a:'',label:'Efetivo por dia'})}<p class="note" style="margin:6px 0 0">${one?'Toque numa barra para ver aquele dia.':'Cada barra é a soma das pessoas das equipes no dia (encarregado + equipe).'}${s.some(d=>d.month)?' Período longo: barras por mês (diárias).':''}</p></div>
+ ${TERC?'<div id="mx31"></div>':''}<div class="card" style="margin-top:14px${TERC?';display:none':''}"><h2>Efetivo por dia${one?' · 30 dias até '+brs(a):''} ${legend()}</h2>${stackChart(s,{h:250,sel:one?a:'',label:'Efetivo por dia'})}<p class="note" style="margin:6px 0 0">${one?'Toque numa barra para ver aquele dia.':'Cada barra é a soma das pessoas das equipes no dia (encarregado + equipe).'}${s.some(d=>d.month)?' Período longo: barras por mês (diárias).':''}</p></div>
  <div class="grid two" style="margin-top:14px">
   <div class="card"><h2>Por função <span>${one?'pessoas no dia':'diárias no período'}</span></h2>${roles.length?`<div class="hb">${roleRows}</div>`:'<p class="note">Sem equipes no período.</p>'}</div>
   <div class="card"><h2>Por encarregado <span>${fore.length} equipe${fore.length===1?'':'s'}</span></h2>${fore.length?`<div class="tw"><table><thead><tr><th>Encarregado</th><th class="n">Dias</th><th class="n">Média</th><th class="n">${one?'Pessoas':'Diárias'}</th><th>Funções</th></tr></thead><tbody>${foreRows}</tbody></table></div>`:'<p class="note">Sem equipes no período.</p>'}</div>
@@ -298,8 +299,54 @@ function render(){
  <div class="card" style="margin-top:14px"><h2>Mão de obra por atividade <span>${one?'pessoas':'diárias'} de cada função · toque numa atividade para ver quem trabalhou</span></h2>
   ${acts.length?`<div class="tw mx"><table><thead><tr><th>Atividade</th>${cols.map(f=>`<th class="n" style="text-align:center"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${f.c};margin-right:5px"></i>${esc(f.k)}</th>`).join('')}<th class="n">Total</th></tr></thead><tbody>${mxRows}</tbody></table></div>${det}`:'<p class="note">Nenhuma atividade no período.</p>'}</div>
  <p class="note" style="margin-top:14px">${all.length} RDO${all.length===1?'':'s'} lidos da Pasta do RDO. Quando a mesma equipe trabalha em atividades em horários diferentes, cada pessoa conta uma vez por atividade. Não mostra horas-homem.</p>${TERC?'<div id="cad"></div>':''}`;
- bind();if(TERC)drawCad();}
+ bind();if(TERC){drawMx();drawCad();}}
 
+// ---------- presença por colaborador no mês (V1.87, igual à planilha "Visualização de terceiros") ----------
+// Linhas = colaboradores (sem os encarregados), colunas = dias do mês; 1 = veio trabalhar (pela equipe do RDO, sem quem faltou).
+// No fim: total de dias de cada um, total por dia, peso armado estimado por colaborador/dia (editável, se preenche sozinho
+// com o valor padrão) e o previsto armado por dia = colaboradores do dia × peso. O peso fica salvo no site para todos.
+const PKEY='alya-terc-peso-v1';
+function pesoDb(){try{const o=JSON.parse(localStorage.getItem(PKEY)||'null');if(o&&typeof o==='object')return Object.assign({def:229.5,d:{}},o);}catch(e){}return {def:229.5,d:{}};}
+function pesoSave(o){try{localStorage.setItem(PKEY,JSON.stringify(o));}catch(e){}}
+const kg=n=>Number(n||0).toLocaleString('pt-BR',{maximumFractionDigits:1});
+let mxMes='';
+function drawMx(){const el=$('mx31');if(!el)return;
+ const last=lastDate(),mes=mxMes||(st.per==='mes'?(st.mes||last.slice(0,7)):(st.per==='dia'?(st.dia||last).slice(0,7):last.slice(0,7)));
+ const y=+mes.slice(0,4),m=+mes.slice(5,7),nd=new Date(y,m,0).getDate(),dias=[];for(let i=1;i<=nd;i++)dias.push(mes+'-'+String(i).padStart(2,'0'));
+ const rs=base().filter(r=>r.data.slice(0,7)===mes),P=new Map;
+ for(const r of rs)for(const c of r.crews)for(const q of c.pres||[]){let p=P.get(q.m);if(!p){p={m:q.m,n:q.n,f:q.f,emp:c.emp,t:new Set,d:new Set};P.set(q.m,p);}p.d.add(r.data);p.t.add(r.turno);p.f=q.f;}
+ const L=[...P.values()].sort((a,b)=>(a.t.has('noite')?1:0)-(b.t.has('noite')?1:0)||String(a.f).localeCompare(b.f)||String(a.n).localeCompare(b.n));
+ const pdb=pesoDb(),peso=dias.map(d=>pdb.d[d]!=null?+pdb.d[d]:+pdb.def);
+ const wd=d=>new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','');
+ const head=`<tr><th class="nm">Colaborador</th><th>Função</th><th>Turno</th>${dias.map(d=>`<th class="dc${new Date(d+'T12:00:00').getDay()===0?' dom':''}"><small>${wd(d)}</small>${d.slice(8)}</th>`).join('')}<th class="n">Total</th></tr>`;
+ // uma tabela por empresa; o aço armado (peso e previsto) só na S.Pontes
+ const emps=[...new Set(L.map(p=>p.emp))].sort((a,b)=>(a==='S.Pontes'?-1:0)-(b==='S.Pontes'?-1:0)||a.localeCompare(b));
+ const tabela=emp=>{const G=L.filter(p=>p.emp===emp),tot=dias.map(d=>G.filter(p=>p.d.has(d)).length),sum=G.reduce((s,p)=>s+p.d.size,0),aco=emp==='S.Pontes';
+  const prev=dias.map((d,i)=>tot[i]*peso[i]),cap=prev.reduce((s,v)=>s+v,0);
+  const rows=G.map(p=>`<tr><td class="nm" title="${esc(p.m)}">${esc(title(p.n))}<small>${esc(p.m)}</small></td><td>${esc(title(p.f))}</td><td>${p.t.has('noite')&&p.t.has('dia')?'Dia/Noite':p.t.has('noite')?'Noturno':'Diurno'}</td>${dias.map(d=>p.d.has(d)?'<td class="dc v">1</td>':'<td class="dc z">0</td>').join('')}<td class="n"><b>${p.d.size}</b></td></tr>`).join('');
+  return `<h3 class="mxh">${esc(emp)} <span>${G.length} colaborador${G.length===1?'':'es'}</span></h3><div class="tw mxp"><table><thead>${head}</thead><tbody>${rows}</tbody><tfoot>
+   <tr class="tg"><td class="nm"><b>Total por dia</b></td><td></td><td></td>${tot.map(v=>`<td class="dc"><b>${v}</b></td>`).join('')}<td class="n"><b>${sum}</b></td></tr>
+   ${aco?`<tr class="pw"><td class="nm"><b>Peso / dia / colaborador</b><small>kg · toque para mudar</small></td><td></td><td></td>${dias.map((d,i)=>`<td class="dc"><input type="number" min="0" step="0.1" inputmode="decimal" data-pd="${d}" value="${+peso[i].toFixed(1)}" aria-label="Peso por colaborador em ${br(d)}"${pdb.d[d]!=null?' class="ov"':''}></td>`).join('')}<td></td></tr>
+   <tr class="tg"><td class="nm"><b>Previsto armado / dia</b><small>kg = total × peso</small></td><td></td><td></td>${prev.map(v=>`<td class="dc"><b>${v?kg(v):'0'}</b></td>`).join('')}<td class="n"><b>${kg(cap)}</b></td></tr>`:''}
+  </tfoot></table></div>
+  ${aco?`<div class="bar" style="margin:12px 0 0;gap:14px"><span class="note" style="margin:0"><b style="color:var(--ink)">Capacidade de produção no mês: ${kg(cap)} kg</b> (${(cap/1000).toLocaleString('pt-BR',{maximumFractionDigits:2})} t)</span>
+   <label class="note" style="display:flex;align-items:center;gap:8px;margin:0">Peso padrão por colaborador/dia <input type="number" min="0" step="0.1" id="pdef" value="${+(+pdb.def).toFixed(1)}" style="width:90px;min-height:34px;border-radius:8px;border:1px solid var(--line2);background:var(--raise);padding:0 8px"> kg</label>
+   <button class="btn" type="button" id="preset" style="min-height:34px">Usar o padrão em todos os dias do mês</button></div>
+  <p class="note" style="margin:8px 0 0">Cada dia já vem com o peso padrão. Mudou um dia, só ele muda (fica em amarelo).</p>`:''}`;};
+ el.innerHTML=`<div class="card" style="margin-top:14px"><h2>Presença dos colaboradores · ${esc(MES[m-1])} de ${y}<span class="per" style="display:inline-flex;gap:6px"><button type="button" data-mx="-1" aria-label="Mês anterior">‹</button><button type="button" data-mx="1" aria-label="Próximo mês">›</button></span></h2>
+  ${L.length?emps.map(tabela).join('')+'<p class="note" style="margin:10px 0 0">1 = veio trabalhar no dia (pela equipe lançada no RDO; quem faltou o apontador desmarca). Encarregados não entram na lista.</p>'
+  :`<p class="note">Nenhum colaborador de terceiros lançado em ${esc(MES[m-1])} de ${y}. As equipes lançadas no RDO (3T · Terceiros do dia) aparecem aqui, uma linha por colaborador.</p>`}</div>`;
+ el.querySelectorAll('[data-mx]').forEach(b=>b.onclick=()=>{let yy=y,mm=m+(+b.dataset.mx);if(mm<1){mm=12;yy--;}if(mm>12){mm=1;yy++;}mxMes=yy+'-'+String(mm).padStart(2,'0');drawMx();});
+ el.querySelectorAll('[data-pd]').forEach(i=>i.onchange=()=>{const o=pesoDb(),v=i.value===''?null:Math.max(0,+i.value);if(v==null||v===+o.def)delete o.d[i.dataset.pd];else o.d[i.dataset.pd]=v;pesoSave(o);setTimeout(drawMx,0);});
+ const pd=$('pdef');if(pd)pd.onchange=()=>{const o=pesoDb();o.def=Math.max(0,+pd.value||0);pesoSave(o);setTimeout(drawMx,0);};
+ const pr=$('preset');if(pr)pr.onclick=()=>{const o=pesoDb();for(const d of dias)delete o.d[d];pesoSave(o);drawMx();};}
+if(TERC){const ms=document.createElement('style');ms.textContent=`.mxp{max-height:none}.mxp table{font-size:12px;border-collapse:separate;border-spacing:0}
+.mxp th,.mxp td{padding:5px 6px;white-space:nowrap}.mxp th.dc,.mxp td.dc{text-align:center;min-width:34px}.mxp th.dc small{display:block;font-weight:400;font-size:10px;text-transform:lowercase}
+.mxp th.dom{color:#5d6873}.mxp .nm{position:sticky;left:0;background:var(--panel);z-index:1;min-width:190px;max-width:240px;overflow:hidden;text-overflow:ellipsis}.mxp thead .nm{background:#18212a;z-index:3}
+.mxp .nm small{display:block;color:var(--muted);font-size:10.5px}.mxp td.v{background:#1f7a5233;color:#8ee0b5;font-weight:700}.mxp td.z{color:#3b4a58}
+.mxp tfoot td{border-top:1px solid var(--line2);background:#18212a}.mxp tfoot .nm{background:#18212a}.mxp tr.pw input{width:52px;min-height:28px;border-radius:6px;border:1px solid var(--line2);background:var(--raise);color:var(--ink);text-align:center;font:inherit;font-size:11.5px;padding:0 2px;-moz-appearance:textfield}
+.mxp tr.pw input.ov{border-color:var(--amber);color:#ffd27a}.mxp tr.pw input::-webkit-inner-spin-button{display:none}.mxh{font-size:14px;margin:16px 0 8px;display:flex;gap:10px;align-items:baseline}.mxh:first-of-type{margin-top:4px}.mxh span{color:var(--muted);font-size:12px;font-weight:400}.per button{width:30px;min-height:30px;border-radius:8px;border:1px solid var(--line2);background:var(--raise);cursor:pointer;color:var(--ink2)}`;document.head.appendChild(ms);
+ addEventListener('storage',e=>{if(e.key===PKEY)drawMx();});}
 // ---------- cadastro de terceiros (só na aba Terceiros) ----------
 let CAD=null,cadQ='',cadDesl=false;
 function loadCad(){return fetch('/api/rdo/terceiros',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{if(j&&j.p){CAD=j.p;drawCad();}}).catch(()=>{});}
