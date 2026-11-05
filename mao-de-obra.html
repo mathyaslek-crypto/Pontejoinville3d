@@ -340,11 +340,12 @@ function drawMx(){const el=$('mx31');if(!el)return;
  el.querySelectorAll('[data-pd]').forEach(i=>i.onchange=()=>{const o=pesoDb(),v=i.value===''?null:Math.max(0,+i.value);if(v==null||v===+o.def)delete o.d[i.dataset.pd];else o.d[i.dataset.pd]=v;pesoSave(o);setTimeout(drawMx,0);});
  const pd=$('pdef');if(pd)pd.onchange=()=>{const o=pesoDb();o.def=Math.max(0,+pd.value||0);pesoSave(o);setTimeout(drawMx,0);};
  const pr=$('preset');if(pr)pr.onclick=()=>{const o=pesoDb();for(const d of dias)delete o.d[d];pesoSave(o);drawMx();};}
-if(TERC){const ms=document.createElement('style');ms.textContent=`.mxp{max-height:none}.mxp table{font-size:12px;border-collapse:separate;border-spacing:0}
-.mxp th,.mxp td{padding:5px 6px;white-space:nowrap}.mxp th.dc,.mxp td.dc{text-align:center;min-width:34px}.mxp th.dc small{display:block;font-weight:400;font-size:10px;text-transform:lowercase}
-.mxp th.dom{color:#5d6873}.mxp .nm{position:sticky;left:0;background:var(--panel);z-index:1;min-width:190px;max-width:240px;overflow:hidden;text-overflow:ellipsis}.mxp thead .nm{background:#18212a;z-index:3}
+if(TERC){const ms=document.createElement('style');ms.textContent=`main{max-width:none!important;padding-left:24px!important;padding-right:24px!important}.tw.mxp{max-height:none!important;overflow-y:visible}.mxp table{width:100%}
+@media(max-width:560px){main{padding-left:12px!important;padding-right:12px!important}}.mxp table{font-size:12px;border-collapse:separate;border-spacing:0}
+.mxp th,.mxp td{padding:3px 6px;white-space:nowrap;line-height:1.25}.mxp th.dc,.mxp td.dc{text-align:center;min-width:28px;padding:5px 2px}.mxp th.dc small{display:block;font-weight:400;font-size:10px;text-transform:lowercase}
+.mxp th.dom{color:#5d6873}.mxp .nm{position:sticky;left:0;background:var(--panel);z-index:1;min-width:170px;max-width:230px;overflow:hidden;text-overflow:ellipsis}.mxp thead .nm{background:#18212a;z-index:3}
 .mxp .nm small{display:block;color:var(--muted);font-size:10.5px}.mxp td.v{background:#1f7a5233;color:#8ee0b5;font-weight:700}.mxp td.z{color:#3b4a58}
-.mxp tfoot td{border-top:1px solid var(--line2);background:#18212a}.mxp tfoot .nm{background:#18212a}.mxp tr.pw input{width:52px;min-height:28px;border-radius:6px;border:1px solid var(--line2);background:var(--raise);color:var(--ink);text-align:center;font:inherit;font-size:11.5px;padding:0 2px;-moz-appearance:textfield}
+.mxp tfoot td{border-top:1px solid var(--line2);background:#18212a}.mxp tfoot .nm{background:#18212a}.mxp tr.pw input{width:100%;min-width:30px;max-width:52px;box-sizing:border-box;min-height:26px;border-radius:6px;border:1px solid var(--line2);background:var(--raise);color:var(--ink);text-align:center;font:inherit;font-size:10.5px;padding:0;-moz-appearance:textfield}
 .mxp tr.pw input.ov{border-color:var(--amber);color:#ffd27a}.mxp tr.pw input::-webkit-inner-spin-button{display:none}.mxh{font-size:14px;margin:16px 0 8px;display:flex;gap:10px;align-items:baseline}.mxh:first-of-type{margin-top:4px}.mxh span{color:var(--muted);font-size:12px;font-weight:400}.per button{width:30px;min-height:30px;border-radius:8px;border:1px solid var(--line2);background:var(--raise);cursor:pointer;color:var(--ink2)}`;document.head.appendChild(ms);
  addEventListener('storage',e=>{if(e.key===PKEY)drawMx();});}
 // ---------- cadastro de terceiros (só na aba Terceiros) ----------
