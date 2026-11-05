@@ -92,11 +92,20 @@ tbody tr:hover td{background:#17212b}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b2631;border:1px solid var(--line2);border-radius:10px;padding:10px 16px;font-size:14px;display:none;z-index:60;max-width:calc(100% - 24px)}
 @media(max-width:1000px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.two{grid-template-columns:1fr}}
 @media(max-width:560px){main{padding:12px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi .v{font-size:24px}header{padding:10px 12px}.card{padding:14px 12px}.hr{grid-template-columns:minmax(0,38%) 1fr 92px}}
+/* tema claro (V1.89): botão de sol/lua no topo; a escolha fica neste aparelho */
+html.light{--bg:#eef2f6;--panel:#ffffff;--raise:#f4f7fa;--line:#dde4ea;--line2:#c6d0d9;--ink:#15202a;--ink2:#34424f;--muted:#5d6b78;color-scheme:light}
+html.light header{background:#ffffffee}html.light .btn{color:#22303b}html.light .seg button{color:#34424f}html.light .seg button[aria-pressed=true]{color:#18140a}
+html.light th{background:#eef2f6}html.light tbody tr:hover td{background:#f6f9fb}html.light .dd{background:#f7f9fb}
+html.light .pill{background:#e8edf2;color:#34424f}html.light .pill.e{background:#fbefd0;color:#7a5600}html.light .hr .t{background:#e8edf2}
+html.light .mx td.z{color:#c3ccd5}html.light .mx tbody tr.on td{background:#fbefd0}
+html.light #tip{background:#fff;color:#15202a;box-shadow:0 10px 24px #0002}html.light #toast{background:#fff;color:#15202a}
+html.light svg.chart .sel{fill:#f2b33d22;stroke:#f2b33d88}
 </style>
+<script>try{if(localStorage.getItem('alya-mo-tema')==='claro')document.documentElement.classList.add('light');}catch(e){}</script>
 </head>
 <body>
 <header><a class="btn ghost" href="./" title="Voltar ao início" style="padding:0 10px">←</a><div class="mk"></div><div><h1>Mão de obra · Ponte Joinville</h1><small id="sub">Efetivo dos RDOs enviados pelos apontadores</small></div><div class="sp"></div>
- <button class="btn" id="upd">Atualizar</button></header>
+ <button class="btn" id="thm" type="button" aria-label="Trocar tema claro ou escuro" title="Tema claro / escuro" style="padding:0 10px"></button><button class="btn" id="upd">Atualizar</button></header>
 <main id="app"><div class="empty"><b>Lendo a Pasta do RDO…</b></div></main>
 <div id="tip"></div><div id="toast"></div>
 <script>
@@ -187,6 +196,9 @@ async function siteScan(manual){if(busy||location.protocol==='file:')return;busy
  busy=false;$('upd').disabled=false;if(n)save();render();
  if(err&&manual)toast(err);else if(manual)toast(n?n+(n>1?' RDOs novos lidos':' RDO novo lido'):'Nenhum RDO novo na pasta.');else if(n)toast(n+(n>1?' RDOs novos':' RDO novo')+' da Pasta do RDO');}
 $('upd').onclick=()=>siteScan(true);
+(function(){const b=$('thm'),SUN='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>',MOON='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>';
+ const sync=()=>{const l=document.documentElement.classList.contains('light');b.innerHTML=l?MOON:SUN;b.title=l?'Tema escuro':'Tema claro';};
+ b.onclick=()=>{const l=document.documentElement.classList.toggle('light');try{localStorage.setItem('alya-mo-tema',l?'claro':'escuro');}catch(e){}sync();};sync();})();
 
 // ---------- filtros ----------
 let st={per:'mes',dia:'',mes:'',lado:'todos',turno:'todos',emp:'todos',act:'',fnOff:[]};
@@ -236,12 +248,16 @@ function stackChart(s,o){const keys=FN.filter(f=>!st.fnOff.includes(f.k)),h=o.h|
   return `${sel}${segs}<text x="${x+bw/2}" y="${h-8}" text-anchor="middle">${xLab(d,i,n,d.month)}</text><rect class="hit" x="${x}" y="0" width="${bw}" height="${h-26}" data-tip="${esc(JSON.stringify(tp))}"${!d.month&&!d.none?` data-day="${d.data}"`:''}/>`;}).join('');
  return `<svg class="chart" viewBox="0 0 ${W} ${h}" role="img" aria-label="${esc(o.label||'')}">${g}${bars}</svg>`;}
 function lineChart(days,lines,o){const h=o.h||240,n=days.length,mx=scaleMax(Math.max(1,...lines.flatMap(l=>l.v))),ph=h-46,X=i=>48+(n>1?i*(W-60)/(n-1):(W-60)/2),Y=v=>h-26-v/mx*ph;
- let g='';for(let i=0;i<=4;i++){const y=h-26-ph*i/4;g+=`<line class="gl" x1="44" x2="${W}" y1="${y}" y2="${y}"/><text x="38" y="${y+4}" text-anchor="end">${fmt(mx*i/4,1)}</text>`;}
+ let g='';for(let i=0;i<=4;i++){const y=h-26-ph*i/4;g+=`<line class="gl" x1="44" x2="${W}" y1="${y}" y2="${y}"/>${Number.isInteger(mx*i/4)||o.dec?`<text x="38" y="${y+4}" text-anchor="end">${fmt(mx*i/4,1)}</text>`:''}`;}
  const ls=lines.map(l=>`<polyline fill="none" stroke="${l.c}" stroke-width="2.4" stroke-linejoin="round" points="${l.v.map((v,i)=>X(i)+','+Y(v)).join(' ')}"/>${l.v.map((v,i)=>`<circle cx="${X(i)}" cy="${Y(v)}" r="${n>40?2:3.2}" fill="${l.c}"/>`).join('')}`).join('');
+ const unit=o.unit||'pessoas';
+ // (V1.89) linha de tendência (mínimos quadrados) tracejada, na cor da linha, para as linhas com tr:true
+ const tr=lines.filter(l=>l.tr&&n>1).map(l=>{const xs=l.v.map((v,i)=>i),mx_=(n-1)/2,my=l.v.reduce((s,v)=>s+v,0)/n;let num=0,den=0;xs.forEach(i=>{num+=(i-mx_)*(l.v[i]-my);den+=(i-mx_)*(i-mx_);});const b=den?num/den:0,a=my-b*mx_,y0=Math.max(0,a),y1=Math.max(0,a+b*(n-1));
+  return `<line x1="${X(0)}" y1="${Y(y0)}" x2="${X(n-1)}" y2="${Y(y1)}" stroke="${l.c}" stroke-width="2" stroke-dasharray="7 6" opacity=".85"/>`;}).join('');
  const step=Math.max(1,Math.ceil(n/(W/60)));
  const hits=days.map((d,i)=>{const x0=n>1?X(i)-(W-60)/(n-1)/2:44,w=n>1?(W-60)/(n-1):W-44;
-  return `<text x="${X(i)}" y="${h-8}" text-anchor="middle">${i%step===0||i===n-1?brs(d):''}</text><rect class="hit" x="${x0}" y="0" width="${w}" height="${h-26}" data-tip="${esc(JSON.stringify({t:br(d)+' · '+wd(d),r:[['Total',fmt(lines.reduce((t,l)=>t+l.v[i],0),0)+' pessoas'],...lines.filter(l=>l.v[i]).map(l=>[l.k,fmt(l.v[i],0),l.c])]}))}"/>`;}).join('');
- return `<svg class="chart" viewBox="0 0 ${W} ${h}" role="img" aria-label="${esc(o.label||'')}">${g}${ls}${hits}</svg>`;}
+  return `<text x="${X(i)}" y="${h-8}" text-anchor="middle">${i%step===0||i===n-1?brs(d):''}</text><rect class="hit" x="${x0}" y="0" width="${w}" height="${h-26}" data-tip="${esc(JSON.stringify({t:br(d)+' · '+wd(d),r:[...(o.noTotal?[]:[['Total',fmt(lines.filter(l=>!l.skipT).reduce((t,l)=>t+l.v[i],0),0)+' '+unit]]),...lines.filter(l=>l.v[i]).map(l=>[l.k,fmt(l.v[i],0),l.c])]}))}"/>`;}).join('');
+ return `<svg class="chart" viewBox="0 0 ${W} ${h}" role="img" aria-label="${esc(o.label||'')}">${g}${ls}${tr}${hits}</svg>`;}
 function legend(){return `<span class="legend">${FN.map(f=>`<button type="button" data-fn="${esc(f.k)}" aria-pressed="${!st.fnOff.includes(f.k)}"><i style="background:${f.c}"></i>${esc(f.k)}</button>`).join('')}</span>`;}
 
 // ---------- tela ----------
@@ -291,7 +307,7 @@ function render(){
  $('sub').textContent=perTxt+' · '+scopeTxt;
  $('app').innerHTML=`<div class="bar">${seg('per',[['dia','Dia'],['mes','Mês'],['30','30 dias'],['tudo','Tudo']],st.per)}${perCtl}${seg('lado',[['todos','Todos'],['Adhemar','Adhemar'],['Boa Vista','Boa Vista']],st.lado)}${seg('turno',[['todos','Todos os turnos'],['dia','☀ Dia'],['noite','☾ Noite']],st.turno)}${TERC?seg('emp',[['todos','Todas as empresas'],...EMPS.map(([k,t])=>[t,t])],st.emp):''}</div>
  <div class="grid kpis">${kp.map(([t,v,u,s])=>`<div class="card kpi"><i></i><h2>${t}</h2><div class="v">${v}${u?`<small>${u}</small>`:''}</div><div class="s">${esc(s)}</div></div>`).join('')}</div>
- ${TERC?'<div id="mx31"></div>':''}<div class="card" style="margin-top:14px${TERC?';display:none':''}"><h2>Efetivo por dia${one?' · 30 dias até '+brs(a):''} ${legend()}</h2>${stackChart(s,{h:250,sel:one?a:'',label:'Efetivo por dia'})}<p class="note" style="margin:6px 0 0">${one?'Toque numa barra para ver aquele dia.':'Cada barra é a soma das pessoas das equipes no dia (encarregado + equipe).'}${s.some(d=>d.month)?' Período longo: barras por mês (diárias).':''}</p></div>
+ ${TERC?'<div id="mx31"></div><div id="tr31"></div>':''}<div class="card" style="margin-top:14px${TERC?';display:none':''}"><h2>Efetivo por dia${one?' · 30 dias até '+brs(a):''} ${legend()}</h2>${stackChart(s,{h:250,sel:one?a:'',label:'Efetivo por dia'})}<p class="note" style="margin:6px 0 0">${one?'Toque numa barra para ver aquele dia.':'Cada barra é a soma das pessoas das equipes no dia (encarregado + equipe).'}${s.some(d=>d.month)?' Período longo: barras por mês (diárias).':''}</p></div>
  <div class="grid two" style="margin-top:14px">
   <div class="card"><h2>Por função <span>${one?'pessoas no dia':'diárias no período'}</span></h2>${roles.length?`<div class="hb">${roleRows}</div>`:'<p class="note">Sem equipes no período.</p>'}</div>
   <div class="card"><h2>Por encarregado <span>${fore.length} equipe${fore.length===1?'':'s'}</span></h2>${fore.length?`<div class="tw"><table><thead><tr><th>Encarregado</th><th class="n">Dias</th><th class="n">Média</th><th class="n">${one?'Pessoas':'Diárias'}</th><th>Funções</th></tr></thead><tbody>${foreRows}</tbody></table></div>`:'<p class="note">Sem equipes no período.</p>'}</div>
@@ -299,7 +315,7 @@ function render(){
  <div class="card" style="margin-top:14px"><h2>Mão de obra por atividade <span>${one?'pessoas':'diárias'} de cada função · toque numa atividade para ver quem trabalhou</span></h2>
   ${acts.length?`<div class="tw mx"><table><thead><tr><th>Atividade</th>${cols.map(f=>`<th class="n" style="text-align:center"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${f.c};margin-right:5px"></i>${esc(f.k)}</th>`).join('')}<th class="n">Total</th></tr></thead><tbody>${mxRows}</tbody></table></div>${det}`:'<p class="note">Nenhuma atividade no período.</p>'}</div>
  <p class="note" style="margin-top:14px">${all.length} RDO${all.length===1?'':'s'} lidos da Pasta do RDO. Quando a mesma equipe trabalha em atividades em horários diferentes, cada pessoa conta uma vez por atividade. Não mostra horas-homem.</p>${TERC?'<div id="cad"></div>':''}`;
- bind();if(TERC){drawMx();drawCad();}}
+ bind();if(TERC){drawMx();drawTr(a,b,one);drawCad();}}
 
 // ---------- presença por colaborador no mês (V1.87, igual à planilha "Visualização de terceiros") ----------
 // Linhas = colaboradores (sem os encarregados), colunas = dias do mês; 1 = veio trabalhar (pela equipe do RDO, sem quem faltou).
@@ -347,8 +363,33 @@ if(TERC){const ms=document.createElement('style');ms.textContent=`main{max-width
 .mxp th.dom{color:#5d6873}.mxp .nm{position:sticky;left:0;background:var(--panel);z-index:1;min-width:170px;max-width:230px;overflow:hidden;text-overflow:ellipsis}.mxp thead .nm{background:#18212a;z-index:3}
 .mxp .nm small{display:block;color:var(--muted);font-size:10.5px}.mxp td.v{background:#1f7a5233;color:#8ee0b5;font-weight:700}.mxp td.z{color:#3b4a58}
 .mxp tfoot td{border-top:1px solid var(--line2);background:#18212a}.mxp tfoot .nm{background:#18212a}.mxp tr.pw input{width:100%;min-width:30px;max-width:52px;box-sizing:border-box;min-height:26px;border-radius:6px;border:1px solid var(--line2);background:var(--raise);color:var(--ink);text-align:center;font:inherit;font-size:10.5px;padding:0;-moz-appearance:textfield}
-.mxp tr.pw input.ov{border-color:var(--amber);color:#ffd27a}.mxp tr.pw input::-webkit-inner-spin-button{display:none}.mxh{font-size:14px;margin:16px 0 8px;display:flex;gap:10px;align-items:baseline}.mxh:first-of-type{margin-top:4px}.mxh span{color:var(--muted);font-size:12px;font-weight:400}.per button.xls{width:auto;padding:0 12px;min-height:30px;font-size:12.5px;color:#18140a;background:var(--amber);border-color:var(--amber);font-weight:600;letter-spacing:0;text-transform:none;margin-right:4px}.per button{width:30px;min-height:30px;border-radius:8px;border:1px solid var(--line2);background:var(--raise);cursor:pointer;color:var(--ink2)}`;document.head.appendChild(ms);
+.mxp tr.pw input.ov{border-color:var(--amber);color:#ffd27a}.mxp tr.pw input::-webkit-inner-spin-button{display:none}html.light .mxp thead .nm,html.light .mxp tfoot td,html.light .mxp tfoot .nm{background:#eef2f6}html.light .mxp td.v{background:#dff3e8;color:#16774a}html.light .mxp td.z{color:#b9c3cc}html.light .mxp tr.pw input.ov{color:#8a5c00}html.light .mxp tr.pw input{color:var(--ink)}html.light .cg{background:#f7f9fb}
+.mxh{font-size:14px;margin:16px 0 8px;display:flex;gap:10px;align-items:baseline}.mxh:first-of-type{margin-top:4px}.mxh span{color:var(--muted);font-size:12px;font-weight:400}.per button.xls{width:auto;padding:0 12px;min-height:30px;font-size:12.5px;color:#18140a;background:var(--amber);border-color:var(--amber);font-weight:600;letter-spacing:0;text-transform:none;margin-right:4px}.per button{width:30px;min-height:30px;border-radius:8px;border:1px solid var(--line2);background:var(--raise);cursor:pointer;color:var(--ink2)}`;document.head.appendChild(ms);
  addEventListener('storage',e=>{if(e.key===PKEY)drawMx();});}
+// ---------- gráficos de linha com tendência (V1.89, aba Terceiros) ----------
+// Só os dias com RDO entram no eixo (assim fim de semana sem lançamento não puxa a tendência para baixo).
+const PAL=['#3987e5','#d55181','#199e70','#9085e9','#d95926','#c98500','#4fb3c9','#8a99a8'];
+function drawTr(a,b,one){const el=$('tr31');if(!el)return;const [ca,cb]=one?[addD(a,-29),a]:[a,b];
+ const rs=inRange(base(),ca,cb),ds=[...new Set(rs.map(r=>r.data))].sort();
+ if(ds.length<2){el.innerHTML=`<div class="card" style="margin-top:14px"><h2>Tendência</h2><p class="note">Os gráficos de tendência aparecem quando houver pelo menos 2 dias com RDO no período.</p></div>`;return;}
+ const byD=d=>rs.filter(r=>r.data===d);
+ const emps=[...new Set(rs.flatMap(r=>r.crews.map(c=>c.emp)))].sort(),eqs=new Map;
+ for(const r of rs)for(const c of r.crews){const k=c.emp+' · '+c.enc;eqs.set(k,(eqs.get(k)||0)+c.total);}
+ const topEq=[...eqs.entries()].sort((x,y)=>y[1]-x[1]).slice(0,6).map(e=>e[0]);
+ const tot=ds.map(d=>byD(d).reduce((s,r)=>s+r.crews.reduce((t,c)=>t+c.total,0),0));
+ const lA=[{k:'Total de terceiros',c:'#f2b33d',v:tot,tr:true,skipT:true},...emps.map((e,i)=>({k:e,c:PAL[i%PAL.length],v:ds.map(d=>byD(d).reduce((s,r)=>s+r.crews.filter(c=>c.emp===e).reduce((t,c)=>t+c.total,0),0))}))];
+ const lB=topEq.map((k,i)=>({k,c:PAL[i%PAL.length],tr:true,v:ds.map(d=>byD(d).reduce((s,r)=>s+r.crews.filter(c=>c.emp+' · '+c.enc===k).reduce((t,c)=>t+c.total,0),0))}));
+ const nAt=ds.map(d=>byD(d).reduce((s,r)=>s+r.acts.length,0)),n3d=ds.map(d=>byD(d).reduce((s,r)=>s+r.acts.filter(x=>x.tipo==='3D').length,0)),nEx=ds.map((d,i)=>nAt[i]-n3d[i]),nPe=ds.map(d=>byD(d).reduce((s,r)=>s+r.acts.reduce((t,x)=>t+x.pessoas.length,0),0));
+ const lC=[{k:'Atividades',c:'#f2b33d',v:nAt,tr:true,skipT:true},{k:'Do 3D',c:'#3987e5',v:n3d},{k:'Extras',c:'#9085e9',v:nEx}];
+ const lD=[{k:'Pessoas nas atividades',c:'#199e70',v:nPe,tr:true}];
+ const lg=L=>`<span class="legend">${L.map(l=>`<span><i style="background:${l.c}"></i>${esc(l.k)}${l.tr?' <small style="color:var(--muted)">(- - tendência)</small>':''}</span>`).join('')}</span>`;
+ const pct=v=>{const n=v.length;if(n<2)return '';const mx_=(n-1)/2,my=v.reduce((s,x)=>s+x,0)/n;let num=0,den=0;v.forEach((x,i)=>{num+=(i-mx_)*(x-my);den+=(i-mx_)**2;});const b2=den?num/den:0;return b2>0.05?`<b style="color:#3fb37f">subindo ${fmt(b2,1)}/dia</b>`:b2<-0.05?`<b style="color:#e0675c">caindo ${fmt(-b2,1)}/dia</b>`:'<b>estável</b>';};
+ el.innerHTML=`<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(520px,1fr));margin-top:14px">
+  <div class="card"><h2>Efetivo por dia · por empresa ${lg(lA)}</h2>${lineChart(ds,lA,{h:230,label:'Efetivo de terceiros por dia',noTotal:true})}<p class="note" style="margin:6px 0 0">Tendência do total: ${pct(tot)}</p></div>
+  <div class="card"><h2>Efetivo por equipe ${lg(lB)}</h2>${lB.length?lineChart(ds,lB,{h:230,label:'Efetivo por equipe'}):'<p class="note">Sem equipes.</p>'}<p class="note" style="margin:6px 0 0">As ${lB.length} maiores equipes do período, com a tendência de cada uma.</p></div>
+  <div class="card"><h2>Atividades por dia ${lg(lC)}</h2>${lineChart(ds,lC,{h:230,label:'Atividades por dia',unit:'atividades',noTotal:true})}<p class="note" style="margin:6px 0 0">Tendência: ${pct(nAt)}</p></div>
+  <div class="card"><h2>Pessoas nas atividades ${lg(lD)}</h2>${lineChart(ds,lD,{h:230,label:'Pessoas nas atividades',noTotal:true})}<p class="note" style="margin:6px 0 0">Tendência: ${pct(nPe)} · cada pessoa conta uma vez por atividade.</p></div>
+ </div>`;}
 // ---------- Excel (.xlsx) da presença (V1.88) ----------
 // Gerado aqui mesmo, sem biblioteca: um .xlsx é um .zip de XMLs. Uma aba por empresa, com fórmulas nos totais
 // (total do colaborador, total por dia e, na S.Pontes, previsto = total × peso e a capacidade do mês).
@@ -364,32 +405,76 @@ function zip(files){const enc=new TextEncoder(),parts=[],cd=[];let off=0;
  return new Blob([...parts,...cd,new Uint8Array([...u32(0x06054b50),...u16(0),...u16(0),...u16(files.length),...u16(files.length),...u32(cdLen),...u32(off),...u16(0)])],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});}
 const xe=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,'');
 const colL=n=>{let s='';n++;while(n){const m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=Math.floor((n-1)/26);}return s;};
+// (V1.89) no mesmo padrão da planilha "Visualização de terceiros": Aptos Narrow 11, cabeçalho e total em cinza, dias e
+// valores em vermelho, datas como data (d-mmm), bordas finas com linhas finíssimas entre os nomes, sem linhas de grade.
 function xlsxMes(mes,dias,L,emps,peso){
  const sheets=[],y=+mes.slice(0,4),m=+mes.slice(5,7),wdN=d=>new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','');
- const C=(r,c,v,st)=>{const ref=colL(c)+r;if(v==null||v==='')return st?`<c r="${ref}" s="${st}"/>`:'';
-  if(typeof v==='number')return `<c r="${ref}"${st?` s="${st}"`:''}><v>${v}</v></c>`;
-  if(String(v).startsWith('='))return `<c r="${ref}"${st?` s="${st}"`:''}><f>${xe(String(v).slice(1))}</f></c>`;
-  return `<c r="${ref}" t="inlineStr"${st?` s="${st}"`:''}><is><t xml:space="preserve">${xe(v)}</t></is></c>`;};
+ const serial=d=>(Date.UTC(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8,10))-Date.UTC(1899,11,30))/864e5;
+ const C=(r,c,v,st)=>{const ref=colL(c)+r,sa=st?` s="${st}"`:'';if(v==null||v==='')return st?`<c r="${ref}"${sa}/>`:'';
+  if(typeof v==='number')return `<c r="${ref}"${sa}><v>${v}</v></c>`;
+  if(String(v).startsWith('='))return `<c r="${ref}"${sa}><f>${xe(String(v).slice(1))}</f></c>`;
+  return `<c r="${ref}" t="inlineStr"${sa}><is><t xml:space="preserve">${xe(v)}</t></is></c>`;};
+ // estilos (índices de cellXfs abaixo)
+ const S={hd:1,hdDia:2,hdData:3,hdTot:15,sp:4,idx:5,nome:6,cen:7,dia:8,totL:9,totD:10,totT:16,pesoL:11,pesoV:12,capL:13,capV:14};
  for(const emp of emps){const G=L.filter(p=>p.emp===emp),aco=emp==='S.Pontes',D0=4,DN=D0+dias.length-1,TC=DN+1,rows=[];
-  const row=(r,cells)=>rows.push(`<row r="${r}">${cells.join('')}</row>`);
-  row(1,[C(1,0,`${emp} · presença dos colaboradores · ${MES[m-1]} de ${y}`,1)]);
-  row(2,[C(2,0,'',2),C(2,1,'',2),C(2,2,'',2),C(2,3,'',2),...dias.map((d,i)=>C(2,D0+i,wdN(d),2)),C(2,TC,'',2)]);
-  row(3,[C(3,0,'NOME',2),C(3,1,'MATRÍCULA',2),C(3,2,'FUNÇÃO',2),C(3,3,'TURNO',2),...dias.map((d,i)=>C(3,D0+i,d.slice(8)+'/'+d.slice(5,7),2)),C(3,TC,'TOTAL',2)]);
+  const row=(r,cells,ht)=>rows.push(`<row r="${r}"${ht?` ht="${ht}" customHeight="1"`:''}>${cells.join('')}</row>`);
+  const span=(r,st)=>{const o=[];for(let c=0;c<=TC;c++)o.push(C(r,c,'',st));return o;};
+  // 1: dia da semana · 2: títulos e datas · 3: faixa fina
+  row(1,[C(1,0,'',S.hd),C(1,1,emp+' · '+MES[m-1]+' de '+y,S.hd),C(1,2,'',S.hd),C(1,3,'',S.hd),...dias.map((d,i)=>C(1,D0+i,wdN(d),S.hdDia)),C(1,TC,'Total',S.hdTot)]);
+  row(2,[C(2,0,'QUANTIDADE',S.hd),C(2,1,'NOME',S.hd),C(2,2,'FUNÇÃO',S.hd),C(2,3,'TURNO',S.hd),...dias.map((d,i)=>C(2,D0+i,serial(d),S.hdData)),C(2,TC,'',S.hdTot)]);
+  row(3,span(3,S.sp),4.15);
   let r=4;const r0=r;
-  for(const p of G){row(r,[C(r,0,title(p.n)),C(r,1,p.m),C(r,2,title(p.f)),C(r,3,p.t.has('noite')&&p.t.has('dia')?'DIURNO/NOTURNO':p.t.has('noite')?'NOTURNO':'DIURNO'),...dias.map((d,i)=>C(r,D0+i,p.d.has(d)?1:0,4)),C(r,TC,`=SUM(${colL(D0)}${r}:${colL(DN)}${r})`,1)]);r++;}
+  G.forEach((p,i)=>{row(r,[C(r,0,i+1,S.idx),C(r,1,String(p.n).toUpperCase(),S.nome),C(r,2,String(p.f).toUpperCase(),S.cen),C(r,3,p.t.has('noite')&&p.t.has('dia')?'DIURNO/NOTURNO':p.t.has('noite')?'NOTURNO':'DIURNO',S.cen),...dias.map((d,j)=>C(r,D0+j,p.d.has(d)?1:0,S.dia)),C(r,TC,`=SUM(${colL(D0)}${r}:${colL(DN)}${r})`,S.cen)]);r++;});
   const r1=r-1,rt=r;
-  row(rt,[C(rt,0,'TOTAL GERAL',1),...dias.map((d,i)=>C(rt,D0+i,`=SUM(${colL(D0+i)}${r0}:${colL(D0+i)}${r1})`,1)),C(rt,TC,`=SUM(${colL(TC)}${r0}:${colL(TC)}${r1})`,1)]);
-  if(aco){const rp=rt+1,rv=rt+2,rc=rt+3;
-   row(rp,[C(rp,0,'Peso / dia / colaborador (kg)',1),...dias.map((d,i)=>C(rp,D0+i,+peso[i],3))]);
-   row(rv,[C(rv,0,'Previsto armado / dia (kg)',1),...dias.map((d,i)=>C(rv,D0+i,`=${colL(D0+i)}${rt}*${colL(D0+i)}${rp}`,3)),C(rv,TC,`=SUM(${colL(D0)}${rv}:${colL(DN)}${rv})`,3)]);
-   row(rc,[C(rc,0,'Capacidade de produção no mês (kg)',1),C(rc,3,`=SUM(${colL(D0)}${rv}:${colL(DN)}${rv})`,3)]);}
-  const cols=`<cols><col min="1" max="1" width="34" customWidth="1"/><col min="2" max="2" width="11" customWidth="1"/><col min="3" max="3" width="16" customWidth="1"/><col min="4" max="4" width="12" customWidth="1"/><col min="${D0+1}" max="${DN+1}" width="6.5" customWidth="1"/><col min="${TC+1}" max="${TC+1}" width="8" customWidth="1"/></cols>`;
-  sheets.push({name:emp.replace(/[\\/?*\[\]:]/g,' ').slice(0,31),xml:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane xSplit="4" ySplit="3" topLeftCell="E4" activePane="bottomRight" state="frozen"/></sheetView></sheetViews>${cols}<sheetData>${rows.join('')}</sheetData></worksheet>`});}
+  row(rt,[C(rt,0,'',S.totL),C(rt,1,'TOTAL GERAL',S.totL),C(rt,2,'',S.totL),C(rt,3,'',S.totL),...dias.map((d,i)=>C(rt,D0+i,`=SUM(${colL(D0+i)}${r0}:${colL(D0+i)}${r1})`,S.totD)),C(rt,TC,`=SUM(${colL(TC)}${r0}:${colL(TC)}${r1})`,S.totT)]);
+  const merges=[`B${rt}:D${rt}`];
+  if(aco){const rp=rt+1,rv=rt+2,rc=rt+3,rpm=rt+4,rs=rt+5;
+   row(rp,[C(rp,2,'Peso/ dia/ armador',S.pesoL),C(rp,3,'',S.pesoL),...dias.map((d,i)=>C(rp,D0+i,+peso[i],S.pesoV))]);
+   row(rv,[C(rv,2,'Previsto Armado / dia',S.pesoL),C(rv,3,'',S.pesoL),...dias.map((d,i)=>C(rv,D0+i,`=${colL(D0+i)}${rt}*${colL(D0+i)}${rp}`,S.pesoV))]);
+   row(rc,[C(rc,2,'Cap. de produção',S.capL),C(rc,3,`=SUM(${colL(D0)}${rv}:${colL(DN)}${rv})`,S.capV)]);
+   row(rpm,[C(rpm,2,'Produção do mês',S.capL),C(rpm,3,'',S.capV)]);
+   row(rs,[C(rs,2,'Saldo devedor',S.capL),C(rs,3,`=D${rpm}-D${rc}`,S.capV)]);
+   merges.push(`C${rp}:D${rp}`,`C${rv}:D${rv}`);}
+  const cols=`<cols><col min="1" max="1" width="12.7" customWidth="1"/><col min="2" max="2" width="35.3" customWidth="1"/><col min="3" max="3" width="22.9" customWidth="1"/><col min="4" max="4" width="15" customWidth="1"/><col min="${D0+1}" max="${DN+1}" width="10.6" customWidth="1"/><col min="${TC+1}" max="${TC+1}" width="10.3" customWidth="1"/></cols>`;
+  const nm=(emp+' '+MES[m-1].slice(0,1).toUpperCase()+MES[m-1].slice(1)+'-'+y).replace(/[\\/?*\[\]:]/g,' ').slice(0,31);
+  sheets.push({name:nm,xml:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView showGridLines="0" workbookViewId="0"><pane xSplit="4" ySplit="3" topLeftCell="E4" activePane="bottomRight" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/>${cols}<sheetData>${rows.join('')}</sheetData><mergeCells count="${merges.length}">${merges.map(x=>`<mergeCell ref="${x}"/>`).join('')}</mergeCells><pageMargins left="0.5" right="0.5" top="0.75" bottom="0.75" header="0.3" footer="0.3"/><pageSetup orientation="landscape" paperSize="9" fitToWidth="1" fitToHeight="0"/></worksheet>`});}
+ const F='<name val="Aptos Narrow"/><family val="2"/>';
+ const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<numFmts count="2"><numFmt numFmtId="164" formatCode="#,##0.00"/><numFmt numFmtId="165" formatCode="d\\-mmm"/></numFmts>
+<fonts count="4"><font><sz val="11"/><color rgb="FF000000"/>${F}</font><font><sz val="11"/><color rgb="FFFF0000"/>${F}</font><font><b/><sz val="11"/><color rgb="FFFF0000"/>${F}</font><font><b/><sz val="11"/><color rgb="FF000000"/>${F}</font></fonts>
+<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFD9D9D9"/><bgColor indexed="64"/></patternFill></fill></fills>
+<borders count="7"><border><left/><right/><top/><bottom/><diagonal/></border>
+<border><left style="thin"><color auto="1"/></left><right/><top/><bottom style="hair"><color auto="1"/></bottom><diagonal/></border>
+<border><left style="thin"><color auto="1"/></left><right/><top style="thin"><color auto="1"/></top><bottom/><diagonal/></border>
+<border><left style="thin"><color auto="1"/></left><right/><top/><bottom/><diagonal/></border>
+<border><left/><right/><top/><bottom style="thin"><color auto="1"/></bottom><diagonal/></border>
+<border><left style="thin"><color auto="1"/></left><right/><top style="thin"><color auto="1"/></top><bottom style="thin"><color auto="1"/></bottom><diagonal/></border>
+<border><left style="thin"><color auto="1"/></left><right style="thin"><color auto="1"/></right><top style="thin"><color auto="1"/></top><bottom style="thin"><color auto="1"/></bottom><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="17">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="0" fillId="2" borderId="0" xfId="0" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="0" fontId="1" fillId="2" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="165" fontId="1" fillId="2" borderId="3" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="0" fillId="2" borderId="4" xfId="0" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="0" fillId="2" borderId="5" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="2" fillId="2" borderId="5" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="6" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="164" fontId="1" fillId="0" borderId="6" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="6" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right"/></xf>
+<xf numFmtId="164" fontId="0" fillId="0" borderId="6" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="0" fillId="2" borderId="2" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="3" fillId="2" borderId="5" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
  const files=[['[Content_Types].xml',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((s,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`],
   ['_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
   ['xl/workbook.xml',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${sheets.map((s,i)=>`<sheet name="${xe(s.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets><calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>`],
   ['xl/_rels/workbook.xml.rels',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((s,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
-  ['xl/styles.xml','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0.0"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF2B33D"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="5"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center"/></xf><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment horizontal="center"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>'],
+  ['xl/styles.xml',styles],
   ...sheets.map((s,i)=>['xl/worksheets/sheet'+(i+1)+'.xml',s.xml])];
  const a=document.createElement('a');a.href=URL.createObjectURL(zip(files));a.download=`Terceiros_presenca_${mes}.xlsx`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},2000);}
 // ---------- cadastro de terceiros (só na aba Terceiros) ----------
