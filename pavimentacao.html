@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1117">
+<title>Pavimentação · Boa Vista</title>
+<!-- V1.91 — Pavimentação do Boa Vista (Joinville/SC): 3D das ruas do projeto (PAVIMENTAÇÃO.dwg) com o pacote
+     leito · sub-base macadame seco 50 cm · base BGMC 22 cm · CBUQ faixa B 6 cm · CBUQ faixa C 4 cm.
+     O avanço é lançado por camada, rua, estaca inicial e final, lado (meia pista) e data; o 3D pinta o que foi executado
+     e o painel acompanha por camada, por rua e por data. Geometria em pav-geo.json (eixos, largura pelo hatch do
+     asfalto projetado, terreno da topografia). Lançamentos em /api/pav (só o perfil completo grava). -->
+<style>
+:root{--bg:#0e141a;--panel:#141c24;--raise:#1a242e;--line:#22303b;--line2:#304150;--ink:#e8edf2;--ink2:#c3ccd5;--muted:#8a99a8;--amber:#f2b33d;
+ --f:Bahnschrift,"DIN Alternate","Segoe UI Variable Text","Segoe UI",Roboto,Arial,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14.5px/1.45 var(--f)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;padding:12px 20px;background:#0b1117f2;backdrop-filter:blur(8px);border-bottom:1px solid var(--line);flex-wrap:wrap}
+header .mk{width:30px;height:30px;background:var(--amber);clip-path:polygon(50% 0,100% 100%,72% 100%,50% 52%,28% 100%,0 100%)}
+header h1{font-size:17px;margin:0;font-weight:600}
+header small{display:block;color:var(--muted);font-size:12px;font-weight:400}
+header .sp{flex:1}
+.btn{min-height:40px;padding:0 14px;border-radius:8px;border:1px solid var(--line2);background:var(--raise);color:#d3dbe3;cursor:pointer;display:inline-flex;align-items:center;gap:8px;font-size:14px;white-space:nowrap;text-decoration:none}
+.btn.ghost{background:transparent}.btn.pri{background:var(--amber);border-color:var(--amber);color:#18140a;font-weight:600}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+main{max-width:1500px;margin:0 auto;padding:16px 20px 60px}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:9px;overflow:hidden;background:var(--raise)}
+.seg button{border:0;background:transparent;color:#b8c4cf;padding:0 12px;min-height:36px;cursor:pointer;font-size:13.5px;white-space:nowrap}
+.seg button+button{border-left:1px solid var(--line2)}
+.seg button[aria-pressed=true]{background:var(--amber);color:#18140a;font-weight:600}
+input,select,textarea{min-height:38px;border-radius:8px;border:1px solid var(--line2);background:var(--raise);padding:0 10px;color-scheme:dark;max-width:100%}
+textarea{padding:8px 10px;min-height:38px;resize:vertical}
+label.f{display:grid;gap:4px;font-size:12px;color:var(--muted)}
+label.f>*{font-size:14px;color:var(--ink)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;position:relative;min-width:0}
+.card h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.card h2 span{letter-spacing:0;text-transform:none;font-weight:400}
+.grid{display:grid;gap:14px}
+.mt{margin-top:14px}
+/* 3D */
+#v3{position:relative;height:min(68vh,720px);min-height:420px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#0b1117}
+#v3 canvas{display:block;width:100%;height:100%;touch-action:none}
+.ov{position:absolute;z-index:3;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.ov.tl{left:12px;top:12px;max-width:calc(100% - 24px)}
+.ov.bl{left:12px;bottom:12px;max-width:calc(100% - 24px)}
+.ov.tr{right:12px;top:12px}
+.glass{background:#0e141acc;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid #ffffff1f;border-radius:12px;padding:8px 10px;font-size:12.5px;color:var(--ink2)}
+.lg{display:flex;gap:4px;flex-wrap:wrap}
+.lg button{display:inline-flex;align-items:center;gap:6px;border:1px solid transparent;background:transparent;color:var(--ink2);border-radius:8px;padding:4px 8px;cursor:pointer;font-size:12.5px}
+.lg button i{width:12px;height:12px;border-radius:3px;display:inline-block;box-shadow:inset 0 0 0 1px #ffffff30}
+.lg button[aria-pressed=false]{opacity:.38;text-decoration:line-through}
+.lg button:hover{border-color:#ffffff26}
+.rng{display:flex;align-items:center;gap:8px}
+.rng input{min-height:0;padding:0;width:120px;accent-color:var(--amber)}
+.lbl{position:absolute;z-index:2;pointer-events:none;transform:translate(-50%,-50%);font-size:11.5px;white-space:nowrap;color:#fff;text-shadow:0 1px 3px #000,0 0 6px #000}
+.lbl.st{font-size:10.5px;color:#f6dc9a}
+.lbl.rua{font-weight:700;font-size:12.5px;letter-spacing:.02em}
+#tip3{position:absolute;z-index:4;pointer-events:none;display:none;min-width:190px}
+#tip3 b{display:block;color:var(--ink);margin-bottom:2px}
+.pick{outline:2px solid var(--amber)}
+/* lançamento */
+.lan{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:10px;align-items:end}
+.lan .w2{grid-column:span 2}
+.prev{font-size:12.5px;color:var(--muted);margin-top:8px}
+/* painel */
+.kpis{grid-template-columns:repeat(6,minmax(0,1fr))}
+.kpi{padding:14px 16px}
+.kpi .v{font-size:28px;font-weight:600;line-height:1.05;font-variant-numeric:tabular-nums}
+.kpi .v small{font-size:14px;color:var(--muted);font-weight:400;margin-left:2px}
+.kpi .s{color:var(--muted);font-size:12px;margin-top:6px}
+.kpi .s b{color:var(--ink2);font-weight:500}
+.kpi i{position:absolute;left:0;top:14px;bottom:14px;width:4px;border-radius:0 3px 3px 0}
+.kpi .pb{height:6px;border-radius:4px;background:#1b2530;margin-top:10px;overflow:hidden}
+.kpi .pb i{position:static;display:block;height:100%;width:0;border-radius:4px}
+.two{grid-template-columns:1fr 1fr}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{position:sticky;top:0;background:#18212a;color:var(--muted);font-weight:600;text-align:left;padding:9px 10px;border-bottom:1px solid var(--line2);white-space:nowrap;z-index:1}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover td{background:#17212b}
+.tw{max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.mxr tbody tr{cursor:pointer}
+.cel{display:grid;gap:4px;min-width:92px}
+.cel .t{height:8px;border-radius:4px;background:#1b2530;overflow:hidden}
+.cel .t i{display:block;height:100%}
+.cel span{font-variant-numeric:tabular-nums;font-size:12.5px}
+.cel span small{color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:1px 8px;border-radius:9px;background:#22303d;color:var(--ink2);white-space:nowrap}
+.pill i{width:9px;height:9px;border-radius:2px;display:inline-block}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2);text-transform:none;letter-spacing:0;font-weight:400}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+svg.chart{width:100%;display:block;overflow:visible}
+svg.chart text{fill:var(--muted);font-size:11px;font-family:var(--f)}
+svg.chart .gl{stroke:var(--line);stroke-width:1}
+#tip{position:fixed;z-index:50;pointer-events:none;background:#0b1117;border:1px solid var(--line2);border-radius:8px;padding:8px 10px;font-size:12.5px;box-shadow:0 10px 24px #0009;min-width:170px;display:none}
+#tip b{display:block;margin-bottom:3px}
+#tip div{display:flex;justify-content:space-between;gap:14px;color:var(--ink2)}
+#tip div i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px}
+.note{font-size:12.5px;color:var(--muted)}
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.del{border:1px solid var(--line2);background:transparent;color:#ff8a8a;border-radius:7px;padding:3px 9px;cursor:pointer;font-size:12.5px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1b2631;border:1px solid var(--line2);border-radius:10px;padding:10px 16px;font-size:14px;display:none;z-index:60;max-width:calc(100% - 24px)}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.two{grid-template-columns:1fr}.lan{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:600px){main{padding:12px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi .v{font-size:23px}header{padding:10px 12px}.card{padding:14px 12px}
+ .lan{grid-template-columns:repeat(2,minmax(0,1fr))}#v3{height:62vh;min-height:360px}.rng input{width:90px}.ov.tr{display:none}}
+/* tema claro */
+html.light{--bg:#eef2f6;--panel:#ffffff;--raise:#f4f7fa;--line:#dde4ea;--line2:#c6d0d9;--ink:#15202a;--ink2:#34424f;--muted:#5d6b78;color-scheme:light}
+html.light header{background:#ffffffee}html.light .btn{color:#22303b}html.light .btn.pri{color:#18140a}html.light .seg button{color:#34424f}html.light .seg button[aria-pressed=true]{color:#18140a}
+html.light input,html.light select,html.light textarea{color-scheme:light}
+html.light th{background:#eef2f6}html.light tbody tr:hover td{background:#f6f9fb}
+html.light .pill{background:#e8edf2;color:#34424f}html.light .cel .t,html.light .kpi .pb{background:#e8edf2}
+html.light #v3{background:#dfe7ee}html.light .glass{background:#ffffffd0;border-color:#00000014;color:#34424f}
+html.light #tip{background:#fff;color:#15202a;box-shadow:0 10px 24px #0002}html.light #toast{background:#fff;color:#15202a}
+html.light .del{color:#c62828}
+</style>
+<script>try{if(localStorage.getItem('alya-mo-tema')==='claro')document.documentElement.classList.add('light');}catch(e){}</script>
+</head>
+<body>
+<header><a class="btn ghost" href="./" title="Voltar ao início" style="padding:0 10px">←</a><div class="mk"></div><div><h1>Pavimentação · Boa Vista</h1><small id="sub">Rua São Borja, Rua São Leopoldo e transversais · Joinville/SC</small></div><div class="sp"></div>
+ <button class="btn" id="thm" type="button" aria-label="Trocar tema claro ou escuro" title="Tema claro / escuro" style="padding:0 10px"></button><button class="btn" id="upd">Atualizar</button></header>
+<main>
+ <section class="card" style="padding:12px">
+  <div id="v3">
+   <div class="ov tl glass"><div class="lg" id="lg"></div></div>
+   <div class="ov tr"><div class="glass rng" title="Exagera só a espessura das camadas para enxergar de longe"><span>Espessura</span><input type="range" id="ex" min="1" max="20" step="1" value="6"><b id="exv">×6</b></div></div>
+   <div class="ov bl">
+    <div class="seg" id="vis"><button data-v="todos" aria-pressed="true">Projeto + executado</button><button data-v="exec" aria-pressed="false">Só executado</button></div>
+    <select id="foco" aria-label="Ir para a rua"></select>
+    <button class="btn" id="home" style="min-height:36px">Ver tudo</button>
+   </div>
+   <div id="tip3" class="glass"></div>
+  </div>
+  <div class="note" style="padding:8px 4px 0">Arraste para girar, role ou pinça para aproximar, botão direito ou dois dedos para mover. Toque numa rua para ver a estaca e o lado.
+   A vala marrom e a tampa vazada são o projeto; as camadas coloridas e sólidas são o que já foi executado.</div>
+ </section>
+ <section class="card mt" id="lanc" hidden>
+  <h2>Lançar avanço <span id="lanInfo">por camada, estaca a estaca e meia pista</span></h2>
+  <div class="lan">
+   <label class="f w2">Rua<select id="fRua"></select></label>
+   <label class="f w2">Camada<select id="fCam"></select></label>
+   <label class="f w2">Lado<div class="seg" id="fLado"><button data-l="E" aria-pressed="false">Esquerdo</button><button data-l="D" aria-pressed="false">Direito</button><button data-l="A" aria-pressed="true">Pista toda</button></div></label>
+   <label class="f w2">Data<input type="date" id="fData"></label>
+   <label class="f w2">Da estaca<input id="fIni" placeholder="0+000" inputmode="decimal" autocomplete="off"></label>
+   <label class="f w2">Até a estaca<input id="fFim" placeholder="0+100" inputmode="decimal" autocomplete="off"></label>
+   <label class="f w2">Observação<input id="fObs" maxlength="300" placeholder="opcional"></label>
+   <div class="w2" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="fPick" type="button" title="Toque no 3D na estaca inicial e depois na final">Pegar no 3D</button><button class="btn pri" id="fOk" type="button">Lançar</button></div>
+  </div>
+  <div class="prev" id="fPrev"></div>
+ </section>
+ <section class="mt" id="dash"></section>
+</main>
+<div id="tip"></div><div id="toast"></div>
+<script type="module">
+import * as THREE from './lib/three.module.min.js';
+import { OrbitControls } from './lib/OrbitControls.js';
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fmt = (v, d = 0) => (+v).toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+const pct = v => fmt(v * 100, v > 0 && v < .1 ? 1 : 0) + '%';
+const est = m => { m = Math.max(0, +m); const k = Math.floor(m / 1000 + 1e-9), r = m - k * 1000; return k + '+' + (r < 100 ? (r < 10 ? '00' : '0') : '') + fmt(r, r % 1 ? 1 : 0).replace(/\./g, ''); };
+const parseEst = s => { s = String(s || '').trim().replace(/\s/g, ''); if (!s) return NaN; const m = s.match(/^(\d+)\+(\d+(?:[.,]\d+)?)$/); if (m) return +m[1] * 1000 + +m[2].replace(',', '.'); return +s.replace(',', '.'); };
+const hoje = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const dBR = d => d ? d.slice(8, 10) + '/' + d.slice(5, 7) + '/' + d.slice(0, 4) : '';
+function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.h); toast.h = setTimeout(() => e.style.display = 'none', 3200); }
+const LADO = { E: 'Lado esquerdo', D: 'Lado direito', A: 'Pista toda' };
+const DENS_CBUQ = 2.4;   // t/m³, só para estimar tonelada de CBUQ
+
+// ---------- tema ----------
+(function () { const b = $('thm'), SUN = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>', MOON = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>';
+ const sync = () => { const l = document.documentElement.classList.contains('light'); b.innerHTML = l ? MOON : SUN; b.title = l ? 'Tema escuro' : 'Tema claro'; };
+ b.onclick = () => { const l = document.documentElement.classList.toggle('light'); try { localStorage.setItem('alya-mo-tema', l ? 'claro' : 'escuro'); } catch (e) { } sync(); tema3d(); render(); }; sync(); })();
+const isLight = () => document.documentElement.classList.contains('light');
+
+// ---------- dados ----------
+let G = null, CAM = [], RUAS = [], RUA = {}, L = [], PODE = false;
+const ui = { ex: 6, vis: 'todos', off: [], rua: 'todas', ate: '' };
+try { Object.assign(ui, JSON.parse(localStorage.getItem('alya-pav-ui') || '{}')); } catch (e) { }
+const saveUI = () => { try { localStorage.setItem('alya-pav-ui', JSON.stringify({ ex: ui.ex, vis: ui.vis, off: ui.off, rua: ui.rua })); } catch (e) { } };
+
+async function carregarLanc(manual) {
+  try { const r = await fetch('/api/pav', { cache: 'no-store' }); if (!r.ok) throw 0; const j = await r.json(); L = j.itens || []; PODE = !!j.pode; if (manual) toast('Lançamentos atualizados.'); }
+  catch (e) { if (manual) toast('Não consegui ler os lançamentos do site.'); }
+  $('lanc').hidden = !PODE; pintar(); render();
+}
+$('upd').onclick = () => carregarLanc(true);
+
+// intervalos executados (união) de uma rua, camada e lado até a data
+function exec(rua, cam, lado, ate) {
+  const r = RUA[rua], iv = L.filter(x => x.rua === rua && x.cam === cam && (x.lado === lado || x.lado === 'A') && (!ate || x.data <= ate))
+    .map(x => [Math.max(r.s0, Math.min(x.ini, x.fim)), Math.min(r.s1, Math.max(x.ini, x.fim))]).filter(a => a[1] > a[0]).sort((a, b) => a[0] - b[0]);
+  const u = []; for (const a of iv) { const l = u[u.length - 1]; if (l && a[0] <= l[1] + 1e-6) l[1] = Math.max(l[1], a[1]); else u.push([...a]); } return u;
+}
+// área (m²) de uma meia pista dentro dos intervalos, integrando a meia largura de 2 em 2 m
+function areaLado(rua, lado, u) {
+  const P = RUA[rua].pts, k = lado === 'E' ? 4 : 5; let a = 0, j = 0;
+  for (let i = 0; i < P.length - 1; i++) { const s0 = P[i][0], s1 = P[i + 1][0], w = (P[i][k] + P[i + 1][k]) / 2;
+    while (j < u.length && u[j][1] <= s0) j++;
+    for (let q = j; q < u.length && u[q][0] < s1; q++) a += Math.max(0, Math.min(s1, u[q][1]) - Math.max(s0, u[q][0])) * w; }
+  return a;
+}
+const comp = u => u.reduce((s, a) => s + a[1] - a[0], 0);
+function resumo(rua, cam, ate) {   // {ext, area, extP, areaP}
+  const r = RUA[rua]; let ext = 0, area = 0;
+  for (const lado of ['E', 'D']) { const u = exec(rua, cam, lado, ate); ext += comp(u) / 2; area += areaLado(rua, lado, u); }
+  return { ext, area, extP: r.s1 - r.s0, areaP: r.areaP };
+}
+
+// ---------- 3D ----------
+const host = $('v3');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1));
+host.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, 1, 0.5, 20000);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = .09; controls.maxPolarAngle = Math.PI * .495; controls.screenSpacePanning = false;
+const hemi = new THREE.HemisphereLight(0xffffff, 0x445566, 1.6); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffffff, 1.5); sun.position.set(-600, 900, 400); scene.add(sun);
+let groundMesh, ghostGroup = new THREE.Group(), execGroup = new THREE.Group(), ctxGroup = new THREE.Group();
+scene.add(ghostGroup, execGroup, ctxGroup);
+const labels = [];
+function tema3d() {
+  const l = isLight(); scene.background = new THREE.Color(l ? 0xdfe7ee : 0x0b1117);
+  scene.fog = new THREE.Fog(scene.background, 2500, 6000);
+  if (groundMesh) groundMesh.material.color.set(l ? 0xc9d6c3 : 0x5d6b56);
+  ctxGroup.children.forEach(o => { if (o.userData.kind === 'lote') o.material.color.set(l ? 0x9aa6b2 : 0x3a4652); if (o.userData.kind === 'edif') o.material.color.set(l ? 0xf2f2ef : 0x9aa3ab); });
+  ghostGroup.children.forEach(o => { if (o.userData.vala) { o.material.color.set(l ? 0x9c8268 : 0x4a3b2e); return; } o.material.color.set(l ? 0x6d8296 : 0xaec2d6); o.material.opacity = l ? .22 : .16; });
+}
+// coordenadas: x leste → X, y norte → -Z, cota → Y
+const V = (x, y, z) => new THREE.Vector3(x, z, -y);
+
+function sizeR() { const w = host.clientWidth, h = host.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+new ResizeObserver(sizeR).observe(host);
+
+// camadas de cima para baixo: profundidade do topo de cada uma
+function prof(ex) { const o = {}; let d = 0; for (const c of [...CAM].reverse()) { o[c.id] = [d, d + c.esp * ex]; d += c.esp * ex; } o.total = d; return o; }
+
+// para cada rua/lado/camada: vértices de todas as células (2 m) e o índice refeito só com as executadas
+const CELLS = [];   // {rua, lado, cam, mesh, n, ini[]}
+function construirVias() {
+  execGroup.clear(); ghostGroup.clear(); CELLS.length = 0;
+  const P = prof(ui.ex);
+  for (const r of RUAS) {
+    const pts = r.pts, n = pts.length - 1;
+    const edge = (p, lado, off) => { const a = p[3], nx = -Math.sin(a), ny = Math.cos(a), w = lado === 'E' ? p[4] : -p[5]; return [p[1] + nx * w * off, p[2] + ny * w * off]; };
+    for (const lado of ['E', 'D']) {
+      for (const c of CAM) {
+        const [d0, d1] = P[c.id], pos = new Float32Array(n * 24 * 3); let k = 0;
+        const put = (x, y, z) => { pos[k++] = x; pos[k++] = z; pos[k++] = -y; };
+        for (let i = 0; i < n; i++) {
+          const a = pts[i], b = pts[i + 1], za = a[6], zb = b[6];
+          const ai = [a[1], a[2]], bi = [b[1], b[2]], ao = edge(a, lado, 1), bo = edge(b, lado, 1);
+          // topo (4) · parede externa (4) · parede do eixo (4) · tampa início (4) · tampa fim (4) · fundo (4)
+          for (const [p, z] of [[ai, za - d0], [ao, za - d0], [bo, zb - d0], [bi, zb - d0]]) put(p[0], p[1], z);
+          for (const [p, z] of [[ao, za - d0], [ao, za - d1], [bo, zb - d1], [bo, zb - d0]]) put(p[0], p[1], z);
+          for (const [p, z] of [[bi, zb - d0], [bi, zb - d1], [ai, za - d1], [ai, za - d0]]) put(p[0], p[1], z);
+          for (const [p, z] of [[ai, za - d0], [ai, za - d1], [ao, za - d1], [ao, za - d0]]) put(p[0], p[1], z);
+          for (const [p, z] of [[bo, zb - d0], [bo, zb - d1], [bi, zb - d1], [bi, zb - d0]]) put(p[0], p[1], z);
+          for (const [p, z] of [[ai, za - d1], [bi, zb - d1], [bo, zb - d1], [ao, za - d1]]) put(p[0], p[1], z);
+        }
+        const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setIndex([]);
+        const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: c.cor, roughness: c.id.startsWith('cbuq') ? .85 : .95, metalness: 0, side: THREE.DoubleSide, flatShading: true }));
+        m.userData = { rua: r.id, lado, cam: c.id }; execGroup.add(m);
+        CELLS.push({ rua: r.id, lado, cam: c.id, mesh: m, n });
+      }
+    }
+    // projeto (vazado): caixa do pacote inteiro, pista toda
+    const gp = [], gi = []; const base = P.total;
+    for (let i = 0; i <= n; i++) { const p = pts[i], L_ = edge(p, 'E', 1), R_ = edge(p, 'D', 1), z = p[6];
+      gp.push(L_[0], z + .03, -L_[1], R_[0], z + .03, -R_[1], L_[0], z - base, -L_[1], R_[0], z - base, -R_[1]); }
+    const ti = [];   // caixa escavada: paredes e fundo, em cor de solo, atrás das camadas
+    for (let i = 0; i < n; i++) { const a = i * 4, b = a + 4;
+      gi.push(a, a + 1, b + 1, a, b + 1, b);
+      ti.push(a, b, b + 2, a, b + 2, a + 2, a + 1, a + 3, b + 3, a + 1, b + 3, b + 1, a + 2, b + 2, b + 3, a + 2, b + 3, a + 3); }
+    const tg = new THREE.BufferGeometry(); tg.setAttribute('position', new THREE.Float32BufferAttribute(gp, 3)); tg.setIndex(ti); tg.computeVertexNormals();
+    const tm = new THREE.Mesh(tg, new THREE.MeshStandardMaterial({ color: 0x4a3b2e, roughness: 1, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: 2, polygonOffsetUnits: 6 }));
+    tm.userData = { rua: r.id, ghost: true, vala: true }; ghostGroup.add(tm);
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(gp, 3)); g.setIndex(gi); g.computeVertexNormals();
+    const gm = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0xaec2d6, transparent: true, opacity: .16, depthWrite: false, side: THREE.DoubleSide }));
+    gm.userData = { rua: r.id, ghost: true }; ghostGroup.add(gm);
+  }
+  tema3d(); pintar();
+}
+
+function pintar() {
+  if (!CELLS.length) return;
+  for (const c of CELLS) {
+    const r = RUA[c.rua], P = r.pts, u = ui.off.includes(c.cam) ? [] : exec(c.rua, c.cam, c.lado, '');
+    const on = new Uint8Array(c.n);
+    for (const [a, b] of u) for (let i = 0; i < c.n; i++) { const s0 = P[i][0], s1 = P[i + 1][0]; if (Math.min(b, s1) - Math.max(a, s0) > (s1 - s0) * .5) on[i] = 1; }
+    const idx = [];
+    const q = (b) => idx.push(b, b + 1, b + 2, b, b + 2, b + 3);
+    for (let i = 0; i < c.n; i++) { if (!on[i]) continue; const b = i * 24;
+      q(b); q(b + 4); q(b + 8); q(b + 20); if (i === 0 || !on[i - 1]) q(b + 12); if (i === c.n - 1 || !on[i + 1]) q(b + 16); }
+    c.mesh.geometry.setIndex(idx); c.mesh.geometry.computeVertexNormals(); c.mesh.visible = idx.length > 0;
+  }
+  ghostGroup.children.forEach(o => { o.visible = o.userData.vala || ui.vis !== 'exec'; });
+}
+
+function construirContexto() {
+  ctxGroup.clear();
+  // terreno sem os triângulos dentro da faixa das vias (assim aparece o corte das camadas)
+  const T = G.terreno, cell = 20, grid = new Map();
+  for (const r of RUAS) for (const p of r.pts) { const k = Math.floor(p[1] / cell) + ',' + Math.floor(p[2] / cell); (grid.get(k) || grid.set(k, []).get(k)).push(p); }
+  const dentro = (x, y) => { const cx = Math.floor(x / cell), cy = Math.floor(y / cell);
+    for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (const p of grid.get((cx + i) + ',' + (cy + j)) || []) {
+      const a = p[3], dx = x - p[1], dy = y - p[2], al = dx * Math.cos(a) + dy * Math.sin(a), lat = -dx * Math.sin(a) + dy * Math.cos(a);
+      if (Math.abs(al) <= 1.05 && lat < p[4] + .02 && lat > -p[5] - .02) return true; } return false; };
+  const pos = []; for (const [x, y, z] of T.v) pos.push(x, z - .02, -y);
+  const idx = []; for (const t of T.t) { const a = T.v[t[0]], b = T.v[t[1]], c = T.v[t[2]];
+    const cx = (a[0] + b[0] + c[0]) / 3, cy = (a[1] + b[1] + c[1]) / 3;
+    if (dentro(cx, cy)) continue; idx.push(t[0], t[2], t[1]); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+  groundMesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0x5d6b56, roughness: 1, side: THREE.DoubleSide, flatShading: true, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }));
+  groundMesh.userData.kind = 'terreno'; ctxGroup.add(groundMesh);
+  // cota do terreno por ponto (para as linhas e edificações)
+  const zAt = (x, y) => { let best = 1e9, z = 2; for (let i = 0; i < T.v.length; i += 3) { const v = T.v[i], d = (v[0] - x) ** 2 + (v[1] - y) ** 2; if (d < best) { best = d; z = v[2]; } } return z; };
+  const linhas = (arr, cor, kind, dz = .15) => { const p = []; for (const pl of arr) { const z = zAt(pl[0][0], pl[0][1]) + dz; for (let i = 0; i < pl.length - 1; i++) p.push(pl[i][0], z, -pl[i][1], pl[i + 1][0], z, -pl[i + 1][1]); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3));
+    const m = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: cor })); m.userData.kind = kind; ctxGroup.add(m); };
+  linhas(G.lotes, 0x3a4652, 'lote'); linhas(G.meiofio, 0xd9dde2, 'mf', .25); linhas(G.rio, 0x3aa0d8, 'rio', .05);
+  // edificações extrudadas (3,5 m)
+  const shapes = []; for (const pl of G.edif) { if (pl.length < 3) continue; const s = new THREE.Shape(pl.map(([x, y]) => new THREE.Vector2(x, y))); shapes.push([s, zAt(pl[0][0], pl[0][1])]); }
+  const geos = shapes.map(([s, z]) => { const g = new THREE.ExtrudeGeometry(s, { depth: 3.5, bevelEnabled: false }); g.rotateX(-Math.PI / 2); g.translate(0, z, 0); return g; });
+  for (const g of geos) { const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: 0x9aa3ab, roughness: .9 })); m.userData.kind = 'edif'; ctxGroup.add(m); }
+  // rótulos: nome da rua e estacas de 100 em 100 m
+  host.querySelectorAll('.lbl').forEach(e => e.remove()); labels.length = 0;
+  const addL = (txt, cls, p, rua) => { const e = document.createElement('div'); e.className = 'lbl ' + cls; e.textContent = txt; host.appendChild(e); labels.push({ e, v: V(p[1], p[2], p[6] + 2), cls, rua }); };
+  for (const r of RUAS) {
+    const m = r.pts[Math.floor(r.pts.length / 2)]; addL(r.nome.replace(/^Rua /, ''), 'rua', m, r.id);
+    for (const p of r.pts) if (Math.abs(p[0] / 100 - Math.round(p[0] / 100)) < .011 || p === r.pts[0] || p === r.pts[r.pts.length - 1]) addL(est(p[0]), 'st', p, r.id);
+  }
+}
+
+function enquadrar(rua) {
+  const box = new THREE.Box3();
+  for (const r of RUAS) if (!rua || r.id === rua) for (const p of r.pts) box.expandByPoint(V(p[1], p[2], p[6]));
+  const c = box.getCenter(new THREE.Vector3()), s = box.getSize(new THREE.Vector3()).length();
+  controls.target.copy(c);
+  const d = Math.max(45, s * .58 * Math.max(1, 1.3 / camera.aspect));
+  camera.position.set(c.x - d * .45, c.y + d * .62, c.z + d * .62); camera.near = Math.max(.3, d / 3000); camera.far = d * 12; camera.updateProjectionMatrix(); controls.update();
+}
+
+const v3 = new THREE.Vector3();
+function anim() {
+  requestAnimationFrame(anim); controls.update(); renderer.render(scene, camera);
+  const w = host.clientWidth, h = host.clientHeight, dist = camera.position.distanceTo(controls.target);
+  for (const l of labels) {
+    v3.copy(l.v).project(camera);
+    const show = v3.z < 1 && Math.abs(v3.x) < 1.05 && Math.abs(v3.y) < 1.05 && (l.cls === 'rua' || dist < (focoRua && l.rua === focoRua ? 900 : 380));
+    if (!show) { if (l.e.style.display !== 'none') l.e.style.display = 'none'; continue; }
+    l.e.style.display = ''; l.e.style.left = ((v3.x + 1) / 2 * w) + 'px'; l.e.style.top = ((1 - v3.y) / 2 * h) + 'px';
+  }
+}
+let focoRua = '';
+
+// clique / toque: estaca e lado
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
+function onde(ev) {
+  const r = renderer.domElement.getBoundingClientRect(); mouse.set((ev.clientX - r.left) / r.width * 2 - 1, -(ev.clientY - r.top) / r.height * 2 + 1);
+  ray.setFromCamera(mouse, camera);
+  const hits = ray.intersectObjects([...ghostGroup.children, ...execGroup.children.filter(m => m.visible)], false);
+  if (!hits.length) return null;
+  const pt = hits[0].point, x = pt.x, y = -pt.z; let best = null;
+  for (const rr of RUAS) for (let i = 0; i < rr.pts.length; i++) { const p = rr.pts[i], d = (p[1] - x) ** 2 + (p[2] - y) ** 2; if (!best || d < best.d) best = { d, r: rr, i }; }
+  if (!best || best.d > 400) return null;
+  const p = best.r.pts[best.i], a = p[3], dx = x - p[1], dy = y - p[2];
+  const s = Math.max(best.r.s0, Math.min(best.r.s1, p[0] + dx * Math.cos(a) + dy * Math.sin(a))), lat = -dx * Math.sin(a) + dy * Math.cos(a);
+  return { rua: best.r.id, st: Math.round(s * 10) / 10, lado: lat >= 0 ? 'E' : 'D', hit: hits[0].object.userData };
+}
+let pickStep = 0, down = null;
+renderer.domElement.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 6) return; const o = onde(e), t = $('tip3');
+  if (!o) { t.style.display = 'none'; return; }
+  const r = RUA[o.rua], linhas = CAM.slice().reverse().map(c => { const u = exec(o.rua, c.id, o.lado, ''); const ok = u.some(a => o.st >= a[0] - .01 && o.st <= a[1] + .01);
+    const it = ok ? L.filter(x => x.rua === o.rua && x.cam === c.id && (x.lado === o.lado || x.lado === 'A') && o.st >= Math.min(x.ini, x.fim) - .01 && o.st <= Math.max(x.ini, x.fim) + .01).sort((a, b) => a.data < b.data ? -1 : 1)[0] : null;
+    return `<div style="display:flex;justify-content:space-between;gap:10px"><span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${c.cor};margin-right:6px"></i>${esc(c.curto)}</span><span>${ok ? dBR(it && it.data) || 'feito' : '<span style="opacity:.6">—</span>'}</span></div>`; }).join('');
+  t.innerHTML = `<b>${esc(r.nome)}</b><div class="note" style="margin-bottom:6px">Estaca ${est(o.st)} · ${LADO[o.lado].toLowerCase()} · largura ${fmt(r.pts[Math.round((o.st - r.s0) / 2)]?.[4] + r.pts[Math.round((o.st - r.s0) / 2)]?.[5] || r.larg, 1)} m</div>${linhas}`;
+  const b = host.getBoundingClientRect(); t.style.display = 'block';
+  t.style.left = Math.min(b.width - 220, e.clientX - b.left + 12) + 'px'; t.style.top = Math.min(b.height - 190, e.clientY - b.top + 12) + 'px';
+  if (pickStep && PODE) {
+    $('fRua').value = o.rua;
+    if (pickStep === 1) { $('fIni').value = est(o.st); $('fFim').value = ''; pickStep = 2; toast('Agora toque na estaca final.'); }
+    else { $('fFim').value = est(o.st); pickStep = 0; $('fPick').classList.remove('pick'); toast('Trecho pego no 3D. Confira e toque em Lançar.'); }
+    prevLan();
+  }
+});
+
+// legenda / filtros do 3D
+function legenda() {
+  $('lg').innerHTML = CAM.slice().reverse().map(c => `<button data-c="${c.id}" aria-pressed="${!ui.off.includes(c.id)}" title="${esc(c.nome)} · ${fmt(c.esp * 100)} cm"><i style="background:${c.cor}"></i>${esc(c.curto)}</button>`).join('')
+    + `<button data-c="terreno" aria-pressed="${!ui.off.includes('terreno')}"><i style="background:${isLight() ? '#c9d6c3' : '#5d6b56'}"></i>Terreno</button>`;
+  $('lg').querySelectorAll('button').forEach(b => b.onclick = () => { const c = b.dataset.c; ui.off = ui.off.includes(c) ? ui.off.filter(x => x !== c) : [...ui.off, c]; saveUI(); legenda(); aplicarVis(); });
+}
+function aplicarVis() { if (groundMesh) groundMesh.visible = !ui.off.includes('terreno'); pintar(); }
+$('ex').value = ui.ex; $('exv').textContent = '×' + ui.ex;
+$('ex').oninput = () => { $('exv').textContent = '×' + $('ex').value; };
+$('ex').onchange = () => { ui.ex = +$('ex').value; saveUI(); construirVias(); };
+$('vis').querySelectorAll('button').forEach(b => { b.setAttribute('aria-pressed', b.dataset.v === ui.vis); b.onclick = () => { ui.vis = b.dataset.v; saveUI(); $('vis').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); pintar(); }; });
+$('home').onclick = () => { focoRua = ''; $('foco').value = ''; enquadrar(); };
+$('foco').onchange = () => { focoRua = $('foco').value; enquadrar(focoRua || undefined); };
+
+// ---------- lançamento ----------
+let fLado = 'A';
+$('fLado').querySelectorAll('button').forEach(b => b.onclick = () => { fLado = b.dataset.l; $('fLado').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); prevLan(); });
+$('fData').value = hoje();
+['fRua', 'fCam', 'fIni', 'fFim', 'fData'].forEach(id => $(id).addEventListener('input', prevLan));
+$('fPick').onclick = () => { pickStep = pickStep ? 0 : 1; $('fPick').classList.toggle('pick', !!pickStep); if (pickStep) { toast('Toque no 3D na estaca inicial.'); host.scrollIntoView({ behavior: 'smooth', block: 'center' }); } };
+function lerForm() {
+  const rua = $('fRua').value, cam = $('fCam').value, a = parseEst($('fIni').value), b = parseEst($('fFim').value), r = RUA[rua];
+  if (!r) return { err: 'Escolha a rua.' };
+  if (!isFinite(a) || !isFinite(b)) return { err: 'Preencha as estacas (ex.: 0+120 ou 120).' };
+  const ini = Math.max(r.s0, Math.min(a, b)), fim = Math.min(r.s1, Math.max(a, b));
+  if (fim - ini < .5) return { err: `O trecho precisa estar dentro da rua (${est(r.s0)} a ${est(r.s1)}).` };
+  if (!$('fData').value) return { err: 'Escolha a data.' };
+  return { it: { rua, cam, ini, fim, lado: fLado, data: $('fData').value, obs: $('fObs').value.trim() } };
+}
+function prevLan() {
+  const f = lerForm(), e = $('fPrev'); if (f.err) { e.textContent = f.err; return; }
+  const it = f.it, c = CAM.find(x => x.id === it.cam), u = [[it.ini, it.fim]];
+  const area = (it.lado === 'D' ? 0 : areaLado(it.rua, 'E', u)) + (it.lado === 'E' ? 0 : areaLado(it.rua, 'D', u));
+  e.innerHTML = `${esc(RUA[it.rua].nome)} · ${esc(c.nome)} · ${est(it.ini)} a ${est(it.fim)} · ${LADO[it.lado].toLowerCase()} → <b>${fmt(it.fim - it.ini, 1)} m</b> de extensão, <b>${fmt(area, 1)} m²</b>, ${c.id.startsWith('cbuq') ? '≈ <b>' + fmt(area * c.esp * DENS_CBUQ, 1) + ' t</b>' : '<b>' + fmt(area * c.esp, 1) + ' m³</b>'}`;
+}
+$('fOk').onclick = async () => {
+  const f = lerForm(); if (f.err) { toast(f.err); return; }
+  $('fOk').disabled = true;
+  try { const r = await fetch('/api/pav', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ op: 'add', it: f.it }) });
+    const j = await r.json(); if (!r.ok) throw new Error(j.error || 'erro');
+    L = j.itens; toast('Lançado: ' + est(f.it.ini) + ' a ' + est(f.it.fim) + '.'); $('fIni').value = $('fFim').value = $('fObs').value = ''; prevLan(); pintar(); render(); }
+  catch (e) { toast('Não lançou: ' + e.message); }
+  $('fOk').disabled = false;
+};
+async function apagar(id) {
+  const x = L.find(i => i.id === id); if (!x || !confirm(`Excluir o lançamento de ${CAMN(x.cam)} em ${RUA[x.rua].nome}, ${est(x.ini)} a ${est(x.fim)} (${dBR(x.data)})?`)) return;
+  try { const r = await fetch('/api/pav', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ op: 'del', id }) });
+    const j = await r.json(); if (!r.ok) throw new Error(j.error || 'erro'); L = j.itens; toast('Lançamento excluído.'); pintar(); render(); }
+  catch (e) { toast('Não excluiu: ' + e.message); }
+}
+const CAMN = id => (CAM.find(c => c.id === id) || {}).nome || id;
+
+// ---------- painel ----------
+const W = 900;
+function render() {
+  if (!G) return;
+  const el = $('dash'), ruas = ui.rua === 'todas' ? RUAS : RUAS.filter(r => r.id === ui.rua), ate = ui.ate || '';
+  const tot = {}; for (const c of CAM) { let a = 0, ap = 0, e = 0, ep = 0; for (const r of ruas) { const s = resumo(r.id, c.id, ate); a += s.area; ap += s.areaP; e += s.ext; ep += s.extP; } tot[c.id] = { a, ap, e, ep }; }
+  const geral = CAM.reduce((s, c) => s + tot[c.id].a * c.esp, 0) / Math.max(1e-9, CAM.reduce((s, c) => s + tot[c.id].ap * c.esp, 0));
+  const datas = [...new Set(L.filter(x => ruas.some(r => r.id === x.rua) && (!ate || x.data <= ate)).map(x => x.data))].sort();
+  const ult = datas[datas.length - 1];
+  let h = `<div class="card" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+    <select id="dRua" aria-label="Rua"><option value="todas">Todas as ruas</option>${RUAS.map(r => `<option value="${r.id}"${ui.rua === r.id ? ' selected' : ''}>${esc(r.nome)}</option>`).join('')}</select>
+    <label class="note" style="display:flex;gap:8px;align-items:center">Situação em <input type="date" id="dAte" value="${esc(ate)}"></label>
+    ${ate ? '<button class="btn" id="dHoje" style="min-height:36px">Hoje</button>' : ''}
+    <span class="note" style="margin-left:auto">${L.length} lançamento${L.length === 1 ? '' : 's'}${ult ? ' · último em ' + dBR(ult) : ''}</span></div>`;
+  // KPIs
+  h += `<div class="grid kpis"><div class="card kpi"><i style="background:var(--amber)"></i><div class="note">Avanço geral</div><div class="v">${pct(geral)}</div><div class="s">ponderado pelo volume do pacote</div><div class="pb"><i style="width:${Math.min(100, geral * 100)}%;background:var(--amber)"></i></div></div>`
+    + CAM.slice().reverse().map(c => { const t = tot[c.id], p = t.a / Math.max(1e-9, t.ap);
+      const q = c.id.startsWith('cbuq') ? `≈ ${fmt(t.a * c.esp * DENS_CBUQ)} t de ${fmt(t.ap * c.esp * DENS_CBUQ)} t` : `${fmt(t.a * c.esp)} m³ de ${fmt(t.ap * c.esp)} m³`;
+      return `<div class="card kpi"><i style="background:${c.cor}"></i><div class="note">${esc(c.nome)}</div><div class="v">${pct(p)}</div><div class="s"><b>${fmt(t.a)} m²</b> de ${fmt(t.ap)} m²<br>${q}</div><div class="pb"><i style="width:${Math.min(100, p * 100)}%;background:${c.cor}"></i></div></div>`; }).join('') + `</div>`;
+  // matriz ruas x camadas
+  h += `<div class="card mt"><h2>Avanço por rua e camada <span>área executada / área de projeto · toque na rua para ver no 3D</span></h2><div class="tw"><table class="mxr"><thead><tr><th>Rua</th><th class="n">Extensão</th><th class="n">Largura</th>${CAM.slice().reverse().map(c => `<th><span class="pill"><i style="background:${c.cor}"></i>${esc(c.curto)}</span></th>`).join('')}</tr></thead><tbody>`
+    + ruas.map(r => `<tr data-r="${r.id}"><td><b>${esc(r.nome)}</b><span class="note" style="display:block">${est(r.s0)} a ${est(r.s1)}</span></td><td class="n">${fmt(r.s1 - r.s0)} m</td><td class="n">${fmt(r.larg, 1)} m</td>`
+      + CAM.slice().reverse().map(c => { const s = resumo(r.id, c.id, ate), p = s.area / Math.max(1e-9, s.areaP);
+        return `<td><div class="cel"><span>${pct(p)} <small>· ${fmt(s.ext)} m</small></span><div class="t"><i style="width:${Math.min(100, p * 100)}%;background:${c.cor}"></i></div></div></td>`; }).join('') + `</tr>`).join('')
+    + `</tbody></table></div><div class="note" style="margin-top:8px">Extensão executada conta a meia pista como meia extensão. Largura média da pista pelo asfalto projetado do desenho.</div></div>`;
+  // gráficos por data
+  h += `<div class="grid two mt"><div class="card"><h2>Avanço acumulado por camada <span class="legend">${CAM.slice().reverse().map(c => `<span><i style="background:${c.cor}"></i>${esc(c.curto)}</span>`).join('')}</span></h2><div id="gAc"></div></div>
+    <div class="card"><h2>Produção por dia <span>m² executados em cada data, por camada</span></h2><div id="gDia"></div></div></div>`;
+  // lançamentos
+  const LL = L.filter(x => ruas.some(r => r.id === x.rua) && (!ate || x.data <= ate)).sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : (a.at < b.at ? 1 : -1));
+  h += `<div class="card mt"><h2>Lançamentos <span>${LL.length} no filtro</span></h2>${LL.length ? `<div class="tw"><table><thead><tr><th>Data</th><th>Rua</th><th>Camada</th><th>Trecho</th><th>Lado</th><th class="n">Extensão</th><th class="n">Área</th><th>Obs.</th>${PODE ? '<th></th>' : ''}</tr></thead><tbody>`
+    + LL.map(x => { const c = CAM.find(k => k.id === x.cam), u = [[x.ini, x.fim]], a = (x.lado === 'D' ? 0 : areaLado(x.rua, 'E', u)) + (x.lado === 'E' ? 0 : areaLado(x.rua, 'D', u));
+      return `<tr><td>${dBR(x.data)}</td><td>${esc(RUA[x.rua].nome)}</td><td><span class="pill"><i style="background:${c.cor}"></i>${esc(c.curto)}</span></td><td>${est(x.ini)} a ${est(x.fim)}</td><td>${LADO[x.lado]}</td><td class="n">${fmt(x.fim - x.ini, 1)} m</td><td class="n">${fmt(a, 1)} m²</td><td class="note">${esc(x.obs)}</td>${PODE ? `<td><button class="del" data-del="${x.id}">Excluir</button></td>` : ''}</tr>`; }).join('')
+    + `</tbody></table></div>` : `<div class="empty">Nenhum lançamento ainda.${PODE ? ' Use “Lançar avanço” acima, ou toque em “Pegar no 3D” e marque o trecho direto nas ruas.' : ''}</div>`}</div>`;
+  el.innerHTML = h;
+  $('dRua').onchange = () => { ui.rua = $('dRua').value; saveUI(); render(); };
+  $('dAte').onchange = () => { ui.ate = $('dAte').value; render(); };
+  if ($('dHoje')) $('dHoje').onclick = () => { ui.ate = ''; render(); };
+  el.querySelectorAll('tr[data-r]').forEach(tr => tr.onclick = () => { focoRua = tr.dataset.r; $('foco').value = focoRua; enquadrar(focoRua); host.scrollIntoView({ behavior: 'smooth', block: 'center' }); });
+  el.querySelectorAll('[data-del]').forEach(b => b.onclick = () => apagar(b.dataset.del));
+  graficos(ruas, datas);
+}
+
+function graficos(ruas, datas) {
+  const A = $('gAc'), D = $('gDia');
+  if (!datas.length) { A.innerHTML = D.innerHTML = '<div class="empty">Os gráficos aparecem depois do primeiro lançamento.</div>'; return; }
+  const serie = {}, prod = {};
+  for (const c of CAM) { const ap = ruas.reduce((s, r) => s + r.areaP, 0); let prev = 0; serie[c.id] = []; prod[c.id] = [];
+    for (const d of datas) { const a = ruas.reduce((s, r) => s + resumo(r.id, c.id, d).area, 0); serie[c.id].push(a / Math.max(1e-9, ap)); prod[c.id].push(Math.max(0, a - prev)); prev = a; } }
+  const n = datas.length, h = 240, X = i => 48 + (n > 1 ? i * (W - 60) / (n - 1) : (W - 60) / 2), lab = d => d.slice(8, 10) + '/' + d.slice(5, 7), step = Math.max(1, Math.ceil(n / 12));
+  // acumulado (%)
+  let g = ''; for (let i = 0; i <= 4; i++) { const y = h - 26 - (h - 46) * i / 4; g += `<line class="gl" x1="44" x2="${W}" y1="${y}" y2="${y}"/><text x="38" y="${y + 4}" text-anchor="end">${i * 25}%</text>`; }
+  const Ya = v => h - 26 - Math.min(1, v) * (h - 46);
+  const ls = CAM.map(c => `<polyline fill="none" stroke="${c.cor === '#16171a' ? (isLight() ? '#16171a' : '#e8edf2') : c.cor}" stroke-width="2.4" stroke-linejoin="round" points="${serie[c.id].map((v, i) => X(i) + ',' + Ya(v)).join(' ')}"/>`
+    + serie[c.id].map((v, i) => `<circle cx="${X(i)}" cy="${Ya(v)}" r="3" fill="${c.cor === '#16171a' ? (isLight() ? '#16171a' : '#e8edf2') : c.cor}"/>`).join('')).join('');
+  const xl = datas.map((d, i) => i % step ? '' : `<text x="${X(i)}" y="${h - 6}" text-anchor="middle">${lab(d)}</text>`).join('');
+  const hit = (tipo) => datas.map((d, i) => { const w = n > 1 ? (W - 60) / (n - 1) : W - 60; return `<rect class="hit" data-i="${i}" data-t="${tipo}" x="${X(i) - w / 2}" y="0" width="${w}" height="${h - 20}" fill="transparent"/>`; }).join('');
+  A.innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${h}">${g}${ls}${xl}${hit('a')}</svg>`;
+  // produção por dia (barras empilhadas, m²)
+  const tot = datas.map((d, i) => CAM.reduce((s, c) => s + prod[c.id][i], 0)), mx = Math.max(1, ...tot), nice = (v => { const p = 10 ** Math.floor(Math.log10(v)); return Math.ceil(v / p / (v / p > 5 ? 2 : 1)) * p * (v / p > 5 ? 2 : 1); })(mx);
+  const Yb = v => (h - 46) * v / nice; let gb = ''; for (let i = 0; i <= 4; i++) { const y = h - 26 - (h - 46) * i / 4; gb += `<line class="gl" x1="44" x2="${W}" y1="${y}" y2="${y}"/><text x="38" y="${y + 4}" text-anchor="end">${fmt(nice * i / 4)}</text>`; }
+  const bw = Math.min(42, (W - 60) / n * .6);
+  const bars = datas.map((d, i) => { let y = h - 26; return CAM.map(c => { const v = prod[c.id][i]; if (!v) return ''; const hh = Yb(v); y -= hh; return `<rect x="${X(i) - bw / 2}" y="${y}" width="${bw}" height="${hh}" fill="${c.cor === '#16171a' ? (isLight() ? '#16171a' : '#cfd6dd') : c.cor}" rx="2"/>`; }).join(''); }).join('');
+  D.innerHTML = `<svg class="chart" viewBox="0 0 ${W} ${h}">${gb}${bars}${xl}${hit('d')}</svg>`;
+  const tip = $('tip');
+  [A, D].forEach(box => box.querySelectorAll('.hit').forEach(r => { r.onmousemove = e => { const i = +r.dataset.i, t = r.dataset.t;
+    tip.innerHTML = `<b>${dBR(datas[i])}</b>` + CAM.slice().reverse().map(c => `<div><span><i style="background:${c.cor}"></i>${esc(c.curto)}</span><span>${t === 'a' ? pct(serie[c.id][i]) : fmt(prod[c.id][i], 1) + ' m²'}</span></div>`).join('');
+    tip.style.display = 'block'; tip.style.left = Math.min(innerWidth - 200, e.clientX + 14) + 'px'; tip.style.top = (e.clientY + 14) + 'px'; }; r.onmouseleave = () => tip.style.display = 'none'; }));
+}
+
+// ---------- início ----------
+(async function () {
+  try { const r = await fetch('pav-geo.json'); G = await r.json(); }
+  catch (e) { $('dash').innerHTML = '<div class="card empty">Não consegui carregar o desenho das ruas.</div>'; return; }
+  CAM = G.camadas.map(c => ({ ...c, curto: { leito: 'Leito', sub: 'Sub-base', base: 'Base BGMC', cbuqb: 'CBUQ B', cbuqc: 'CBUQ C' }[c.id] || c.nome }));
+  RUAS = G.ruas; RUAS.forEach(r => { RUA[r.id] = r; let a = 0; for (let i = 0; i < r.pts.length - 1; i++) a += (r.pts[i + 1][0] - r.pts[i][0]) * ((r.pts[i][4] + r.pts[i + 1][4] + r.pts[i][5] + r.pts[i + 1][5]) / 2); r.areaP = a; });
+  $('fRua').innerHTML = RUAS.map(r => `<option value="${r.id}">${esc(r.nome)}</option>`).join('');
+  $('fCam').innerHTML = CAM.map(c => `<option value="${c.id}">${esc(c.nome)} · ${fmt(c.esp * 100)} cm</option>`).join('');
+  $('foco').innerHTML = '<option value="">Ir para a rua…</option>' + RUAS.map(r => `<option value="${r.id}">${esc(r.nome)}</option>`).join('');
+  sizeR(); construirContexto(); construirVias(); legenda(); aplicarVis(); enquadrar(); anim(); prevLan(); render();
+  carregarLanc(false);
+})();
+</script>
+</body>
+</html>

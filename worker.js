@@ -325,10 +325,11 @@ async function usuariosApi(req, env, url) {
   return json({ error: 'método não permitido' }, 405);
 }
 
-async function api(req, env, url) {
+async function api(req, env, url, prof, email) {
   if (!env.DADOS) return json({ error: 'armazenamento não configurado' }, 503);
   const parts = url.pathname.split('/').filter(Boolean); // ['api','state',key?]
   if (parts[1] === 'clima' && req.method === 'GET') return clima();
+  if (parts[1] === 'pav') return pavApi(req, env, prof, email);
   if (parts[1] !== 'state') return json({ error: 'rota desconhecida' }, 404);
   if (req.method === 'GET' && parts.length === 2) {
     const keys = (url.searchParams.get('keys') || '').split(',').filter(k => KEYS.has(k));
@@ -358,12 +359,41 @@ async function api(req, env, url) {
   return json({ error: 'método não permitido' }, 405);
 }
 
+// ---------- pavimentação do Boa Vista (V1.91) ----------
+// Lançamentos de avanço por camada: {id,rua,cam,ini,fim,lado:'E'|'D'|'A',data,obs,by,at} guardados em pav-v1.
+// Todos com acesso ao 3D leem; só o perfil completo lança, altera e exclui.
+const PAV_RUAS = new Set(['sb', 'sl', 'to', 'co', 'in', 'bw', 'pa', 'df', 'r1']), PAV_CAM = new Set(['leito', 'sub', 'base', 'cbuqb', 'cbuqc']);
+function pavItem(o) {
+  const ini = +o.ini, fim = +o.fim;
+  if (!PAV_RUAS.has(o.rua) || !PAV_CAM.has(o.cam) || !['E', 'D', 'A'].includes(o.lado)) return null;
+  if (!isFinite(ini) || !isFinite(fim) || ini < 0 || fim > 5000 || fim - ini < 0.5) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(o.data || ''))) return null;
+  return { rua: o.rua, cam: o.cam, ini: Math.round(ini * 100) / 100, fim: Math.round(fim * 100) / 100, lado: o.lado, data: o.data, obs: String(o.obs || '').slice(0, 300) };
+}
+async function pavApi(req, env, prof, email) {
+  const cur = (await env.DADOS.get('pav-v1', 'json').catch(() => null)) || { seq: 0, itens: [] };
+  if (req.method === 'GET') return json({ itens: cur.itens, pode: prof === 'completo' });
+  if (req.method !== 'POST') return json({ error: 'método' }, 405);
+  if (prof !== 'completo') return json({ error: 'só o perfil completo lança a pavimentação' }, 403);
+  let b; try { b = await req.json(); } catch (e) { return json({ error: 'corpo inválido' }, 400); }
+  const now = new Date().toISOString();
+  if (b.op === 'add' || b.op === 'upd') {
+    const it = pavItem(b.it || {}); if (!it) return json({ error: 'lançamento inválido' }, 400);
+    if (b.op === 'add') cur.itens.push({ id: 'p' + (++cur.seq), ...it, by: email, at: now });
+    else { const i = cur.itens.findIndex(x => x.id === b.id); if (i < 0) return json({ error: 'não encontrado' }, 404); cur.itens[i] = { ...cur.itens[i], ...it, by: email, at: now }; }
+  } else if (b.op === 'del') {
+    const n = cur.itens.length; cur.itens = cur.itens.filter(x => x.id !== b.id); if (cur.itens.length === n) return json({ error: 'não encontrado' }, 404);
+  } else return json({ error: 'operação desconhecida' }, 400);
+  await env.DADOS.put('pav-v1', JSON.stringify(cur));
+  return json({ ok: true, itens: cur.itens, pode: true });
+}
+
 // ---------- quem pode ver o quê ----------
 // Login continua na Cloudflare Access (código no e-mail). Aqui o Worker lê o e-mail do token assinado pela Access
 // e libera as páginas por perfil:
-//   completo  → tudo (início, 3D, pluviometria, paralisações, mão de obra e RDO)
+//   completo  → tudo (início, 3D, pluviometria, paralisações, mão de obra, pavimentação e RDO); só ele lança a pavimentação
 //   apontador → só o RDO (qualquer outro endereço volta para o RDO)
-//   equipe    → início, 3D, pluviometria, paralisações e mão de obra (sem o RDO)
+//   equipe    → início, 3D, pluviometria, paralisações, mão de obra e pavimentação só para ver (sem o RDO)
 //   equipe-rdo → o mesmo da equipe e também o RDO (abre e envia; não exclui nada da pasta)
 const FULL = new Set(['mathyaslek@gmail.com']);
 const RDO_ONLY = new Set(['kailane.costa@alyaconstrutora.com', 'joao.psimoes@alyaconstrutora.com', 'anderson.silva@alyaconstrutora.com',
@@ -490,7 +520,7 @@ export default {
     // (V1.68) usuários do RDO com senha: tela e API só do perfil completo
     if (path === '/api/rdo-usuarios' || path.startsWith('/api/rdo-usuarios/')) return prof === 'completo' ? usuariosApi(req, env, url) : json({ error: 'só o perfil completo' }, 403);
     if ((path === '/usuarios' || path === '/usuarios.html') && prof !== 'completo') return blocked('A tela de usuários do RDO é só do perfil completo.', '/', 'Ir para o início');
-    if (path.startsWith('/api/')) return api(req, env, url);
+    if (path.startsWith('/api/')) return api(req, env, url, prof, email);
     if (path === '/planejamento' || path === '/planejamento.html') return withLoader(await env.ASSETS.fetch(new Request(url.origin + '/3d', req)), INJ_PLAN);
     return withLoader(await env.ASSETS.fetch(req), path === '/3d' || path === '/3d.html' ? INJ_3D : '');
   }
