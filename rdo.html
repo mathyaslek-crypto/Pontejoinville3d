@@ -198,7 +198,8 @@ a.btn{text-decoration:none}
 .tq{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;padding:10px 12px;border-radius:10px;border:1px solid var(--line2);background:transparent;color:inherit;font:inherit;cursor:pointer}
 .tq small{color:var(--muted);font-size:11.5px;white-space:nowrap}
 .tq[aria-pressed=true]{border-color:#3fb37f88}
-.tq[aria-pressed=false]{opacity:.55;text-decoration:line-through}
+.tq[aria-pressed=false]{text-decoration:line-through;text-decoration-color:#ff5a5a;border-color:#e5484d;background:#e5484d22;color:#ff8a8a}.tq[aria-pressed=false] small{color:#ff8a8a}.tq[aria-pressed=false] small::after{content:" · FALTOU";font-weight:800;color:#ff5a5a}
+html.light .tq[aria-pressed=false]{background:#fde8e8;color:#b42323;border-color:#e5484d}html.light .tq[aria-pressed=false] small{color:#b42323}html.light .tq[aria-pressed=false] small::after{color:#c62828}
 .trow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line2);border-radius:10px;margin-bottom:6px}
 .trow span{display:block;color:var(--muted);font-size:12px}
 .tg3{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:1px 7px;border-radius:999px;background:#5b3fd133;color:#c9b8ff;margin-right:6px;vertical-align:1px}
@@ -477,7 +478,7 @@ return {Doc,width,enc};
 
 const CATALOG_SEED=window.CATALOG_SEED||{schema:'alya-catalogo-1',generated:'',pieces:[]};   // (V1.76) vem do rdo-catalogo.js
 const LOGO=document.querySelector('header.top img').src;
-const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.28';
+const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.29';
 const PASTA='https://queirozgalvao1.sharepoint.com/:f:/s/PonteJoinville/IgDE4PJCU0C9RJfF4FAkIarTAa_wdhMCQYOGRe-1D9gsBmM?e=5Pvp5v';
 const OBRA={nome:'Ponte de Joinville',numero:'70.578',empresa:'Alya Construtora'};
 const $=id=>document.getElementById(id);
@@ -1291,7 +1292,7 @@ async function retryPending(){if(retrying||sending||!navigator.onLine)return;let
  retrying=false;if(ok){note(ok===1?'RDO pendente enviado para a pasta do site.':ok+' RDOs pendentes enviados para a pasta do site.');try{render();}catch(e){}}}
 addEventListener('online',()=>setTimeout(retryPending,1500));setTimeout(retryPending,4000);
 // Versão nova do RDO: o app confere sozinho quando volta para a tela e se atualiza (os dados ficam no aparelho).
-const RDO_VER='1.92';
+const RDO_VER='1.93';
 async function checkVer(){try{if(location.protocol==='file:')return;let r=await fetch('/api/rdo/versao',{cache:'no-store'});if(!r.ok||!/json/.test(r.headers.get('content-type')||''))return;let j=await r.json();
  if(!j||!j.rdo||j.rdo===RDO_VER)return;let k='rdo-ver-'+j.rdo;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');}catch(e){}
  if($('sheet').hidden&&!sending&&!retrying){save();location.reload();}else note('Tem uma versão nova do RDO: ela abre quando você fechar esta tela.');}catch(e){}}
