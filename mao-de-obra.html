@@ -407,6 +407,12 @@ const xe=v=>String(v??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt
 const colL=n=>{let s='';n++;while(n){const m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=Math.floor((n-1)/26);}return s;};
 // (V1.89) no mesmo padrão da planilha "Visualização de terceiros": Aptos Narrow 11, cabeçalho e total em cinza, dias e
 // valores em vermelho, datas como data (d-mmm), bordas finas com linhas finíssimas entre os nomes, sem linhas de grade.
+// (V1.90) feriados: nacionais + Sexta-feira Santa, Corpus Christi (pela Páscoa) + aniversário de Joinville (9/mar)
+function feriado(d){const y=+d.slice(0,4),md=d.slice(5);if(['01-01','03-09','04-21','05-01','09-07','10-12','11-02','11-15','11-20','12-25'].includes(md))return true;
+ const a=y%19,b=Math.floor(y/100),c=y%100,dd=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-dd-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),
+  mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1,P=Date.UTC(y,mo-1,da),t=Date.UTC(y,+d.slice(5,7)-1,+d.slice(8,10));
+ return t===P-2*864e5||t===P+60*864e5;}
+const diaVermelho=d=>{const w=new Date(d+'T12:00:00').getDay();return w===0||w===6||feriado(d);};
 function xlsxMes(mes,dias,L,emps,peso){
  const sheets=[],y=+mes.slice(0,4),m=+mes.slice(5,7),wdN=d=>new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','');
  const serial=d=>(Date.UTC(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8,10))-Date.UTC(1899,11,30))/864e5;
@@ -416,17 +422,19 @@ function xlsxMes(mes,dias,L,emps,peso){
   return `<c r="${ref}" t="inlineStr"${sa}><is><t xml:space="preserve">${xe(v)}</t></is></c>`;};
  // estilos (índices de cellXfs abaixo)
  const S={hd:1,hdDia:2,hdData:3,hdTot:15,sp:4,idx:5,nome:6,cen:7,dia:8,totL:9,totD:10,totT:16,pesoL:11,pesoV:12,capL:13,capV:14};
+ // (V1.90) vermelho só em sábado, domingo e feriado; dia de semana em preto
+ const V=d=>diaVermelho(d),sDia=d=>V(d)?S.hdDia:17,sData=d=>V(d)?S.hdData:18,sVal=d=>V(d)?S.dia:19,sTot=d=>V(d)?S.totD:20;
  for(const emp of emps){const G=L.filter(p=>p.emp===emp),aco=emp==='S.Pontes',D0=4,DN=D0+dias.length-1,TC=DN+1,rows=[];
   const row=(r,cells,ht)=>rows.push(`<row r="${r}"${ht?` ht="${ht}" customHeight="1"`:''}>${cells.join('')}</row>`);
   const span=(r,st)=>{const o=[];for(let c=0;c<=TC;c++)o.push(C(r,c,'',st));return o;};
   // 1: dia da semana · 2: títulos e datas · 3: faixa fina
-  row(1,[C(1,0,'',S.hd),C(1,1,emp+' · '+MES[m-1]+' de '+y,S.hd),C(1,2,'',S.hd),C(1,3,'',S.hd),...dias.map((d,i)=>C(1,D0+i,wdN(d),S.hdDia)),C(1,TC,'Total',S.hdTot)]);
-  row(2,[C(2,0,'QUANTIDADE',S.hd),C(2,1,'NOME',S.hd),C(2,2,'FUNÇÃO',S.hd),C(2,3,'TURNO',S.hd),...dias.map((d,i)=>C(2,D0+i,serial(d),S.hdData)),C(2,TC,'',S.hdTot)]);
+  row(1,[C(1,0,'',S.hd),C(1,1,emp+' · '+MES[m-1]+' de '+y,S.hd),C(1,2,'',S.hd),C(1,3,'',S.hd),...dias.map((d,i)=>C(1,D0+i,wdN(d),sDia(d))),C(1,TC,'Total',S.hdTot)]);
+  row(2,[C(2,0,'QUANTIDADE',S.hd),C(2,1,'NOME',S.hd),C(2,2,'FUNÇÃO',S.hd),C(2,3,'TURNO',S.hd),...dias.map((d,i)=>C(2,D0+i,serial(d),sData(d))),C(2,TC,'',S.hdTot)]);
   row(3,span(3,S.sp),4.15);
   let r=4;const r0=r;
-  G.forEach((p,i)=>{row(r,[C(r,0,i+1,S.idx),C(r,1,String(p.n).toUpperCase(),S.nome),C(r,2,String(p.f).toUpperCase(),S.cen),C(r,3,p.t.has('noite')&&p.t.has('dia')?'DIURNO/NOTURNO':p.t.has('noite')?'NOTURNO':'DIURNO',S.cen),...dias.map((d,j)=>C(r,D0+j,p.d.has(d)?1:0,S.dia)),C(r,TC,`=SUM(${colL(D0)}${r}:${colL(DN)}${r})`,S.cen)]);r++;});
+  G.forEach((p,i)=>{row(r,[C(r,0,i+1,S.idx),C(r,1,String(p.n).toUpperCase(),S.nome),C(r,2,String(p.f).toUpperCase(),S.cen),C(r,3,p.t.has('noite')&&p.t.has('dia')?'DIURNO/NOTURNO':p.t.has('noite')?'NOTURNO':'DIURNO',S.cen),...dias.map((d,j)=>C(r,D0+j,p.d.has(d)?1:0,sVal(d))),C(r,TC,`=SUM(${colL(D0)}${r}:${colL(DN)}${r})`,S.cen)]);r++;});
   const r1=r-1,rt=r;
-  row(rt,[C(rt,0,'',S.totL),C(rt,1,'TOTAL GERAL',S.totL),C(rt,2,'',S.totL),C(rt,3,'',S.totL),...dias.map((d,i)=>C(rt,D0+i,`=SUM(${colL(D0+i)}${r0}:${colL(D0+i)}${r1})`,S.totD)),C(rt,TC,`=SUM(${colL(TC)}${r0}:${colL(TC)}${r1})`,S.totT)]);
+  row(rt,[C(rt,0,'',S.totL),C(rt,1,'TOTAL GERAL',S.totL),C(rt,2,'',S.totL),C(rt,3,'',S.totL),...dias.map((d,i)=>C(rt,D0+i,`=SUM(${colL(D0+i)}${r0}:${colL(D0+i)}${r1})`,sTot(d))),C(rt,TC,`=SUM(${colL(TC)}${r0}:${colL(TC)}${r1})`,S.totT)]);
   const merges=[`B${rt}:D${rt}`];
   if(aco){const rp=rt+1,rv=rt+2,rc=rt+3,rpm=rt+4,rs=rt+5;
    row(rp,[C(rp,2,'Peso/ dia/ armador',S.pesoL),C(rp,3,'',S.pesoL),...dias.map((d,i)=>C(rp,D0+i,+peso[i],S.pesoV))]);
@@ -451,7 +459,7 @@ function xlsxMes(mes,dias,L,emps,peso){
 <border><left style="thin"><color auto="1"/></left><right/><top style="thin"><color auto="1"/></top><bottom style="thin"><color auto="1"/></bottom><diagonal/></border>
 <border><left style="thin"><color auto="1"/></left><right style="thin"><color auto="1"/></right><top style="thin"><color auto="1"/></top><bottom style="thin"><color auto="1"/></bottom><diagonal/></border></borders>
 <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-<cellXfs count="17">
+<cellXfs count="21">
 <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
 <xf numFmtId="0" fontId="0" fillId="2" borderId="0" xfId="0" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
 <xf numFmtId="0" fontId="1" fillId="2" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
@@ -468,6 +476,10 @@ function xlsxMes(mes,dias,L,emps,peso){
 <xf numFmtId="0" fontId="1" fillId="0" borderId="6" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right"/></xf>
 <xf numFmtId="164" fontId="0" fillId="0" borderId="6" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
 <xf numFmtId="0" fontId="0" fillId="2" borderId="2" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="3" fillId="2" borderId="5" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="0" fillId="2" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="165" fontId="0" fillId="2" borderId="3" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
 <xf numFmtId="0" fontId="3" fillId="2" borderId="5" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
 </cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
  const files=[['[Content_Types].xml',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((s,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}</Types>`],
