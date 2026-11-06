@@ -60,6 +60,12 @@ async function rdoDelete(env, id, meta) {      // apaga os arquivos e a ficha de
   else { let cur; do { const r = await env.DADOS.list({ prefix: 'rdo:f:' + id + ':', cursor: cur }); for (const k of r.keys) await env.DADOS.delete(k.name); cur = r.list_complete ? null : r.cursor; } while (cur); }
   await env.DADOS.delete('rdo:m:' + id);
 }
+// (V1.94) um envio já gravado só pode ser completado/trocado por quem enviou (ou pelo perfil completo)
+async function rdoDono(env, id, prof, email) {
+  if (prof === 'completo') return true;
+  const e = await env.DADOS.get('rdo:m:' + id, 'json').catch(() => null);
+  return !e || e.por === email;
+}
 async function rdoApi(req, env, url, prof, email) {
   const parts = url.pathname.split('/').filter(Boolean);   // ['api','rdo',acao,id?,n?]
   const acao = parts[2], id = parts[3] ? decodeURIComponent(parts[3]) : '', n = parts[4];
@@ -236,6 +242,7 @@ async function rdoApi(req, env, url, prof, email) {
   if (acao === 'arquivo' && req.method === 'PUT') {
     if (!canSend) return json({ error: 'sem acesso' }, 403);
     if (!RDO_ID.test(id) || !/^\d{1,3}$/.test(n || '')) return json({ error: 'endereço inválido' }, 400);
+    if (!(await rdoDono(env, id, prof, email))) return json({ error: 'este envio é de outra pessoa' }, 403);
     const body = await req.arrayBuffer();
     if (!body.byteLength || body.byteLength > RDO_MAX) return json({ error: 'arquivo vazio ou grande demais' }, 413);
     let nome = ''; try { nome = decodeURIComponent(req.headers.get('x-nome') || ''); } catch (e) {}
@@ -247,6 +254,7 @@ async function rdoApi(req, env, url, prof, email) {
   if (acao === 'fim' && req.method === 'POST') {
     if (!canSend) return json({ error: 'sem acesso' }, 403);
     if (!RDO_ID.test(id)) return json({ error: 'endereço inválido' }, 400);
+    if (!(await rdoDono(env, id, prof, email))) return json({ error: 'este envio é de outra pessoa' }, 403);
     let b; try { b = await req.json(); } catch (e) { return json({ error: 'corpo inválido' }, 400); }
     const arquivos = [];
     for (const f of (Array.isArray(b.arquivos) ? b.arquivos : []).slice(0, 200)) {
@@ -261,7 +269,7 @@ async function rdoApi(req, env, url, prof, email) {
     await env.DADOS.put('rdo:m:' + id, JSON.stringify(e));
     const idx = await rdoIndex(env);
     // mesmo dia, apontador, turno e revisão enviados de novo: fica só o envio mais novo (não duplica a pasta)
-    const dup = idx.itens.filter(x => x.id !== id && e.rev != null && x.rev === e.rev && x.data === e.data && x.turno === e.turno && x.autor === e.autor);
+    const dup = idx.itens.filter(x => x.id !== id && e.rev != null && x.rev === e.rev && x.data === e.data && x.turno === e.turno && x.autor === e.autor && (x.por === email || prof === 'completo'));   // (V1.94) só apaga envio da mesma pessoa
     for (const x of dup) await rdoDelete(env, x.id);
     const gone = new Set(dup.map(x => x.id));
     idx.itens = [e].concat(idx.itens.filter(x => x.id !== id && !gone.has(x.id)));
@@ -364,8 +372,7 @@ async function api(req, env, url, prof, email) {
     if (body.v.length > 20e6) return json({ error: 'dados grandes demais' }, 413);
     const cur = await env.DADOS.get('meta:' + key, 'json').catch(() => null);
     if (cur && cur.t > body.t) return json({ ok: false, newer: cur }, 409);
-    const by = req.headers.get('cf-access-authenticated-user-email') || '';
-    const meta = { t: body.t, by, size: body.v.length };
+    const meta = { t: body.t, by: email || '', size: body.v.length };
     await env.DADOS.put('state:' + key, body.v);
     await env.DADOS.put('meta:' + key, JSON.stringify(meta));
     return json({ ok: true, meta });
@@ -418,7 +425,18 @@ const isRdo = p => p === '/rdo' || p === '/rdo.html' || p === '/rdo/';
 
 const b64u = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), c => c.charCodeAt(0));
 let certCache = { iss: '', at: 0, keys: [] };
-async function verifiedEmail(req) {
+// (V1.94) segurança: o token precisa ter validade (exp) e ser do MESMO time da Cloudflare Access do site. O time fica fixo
+// em ACCESS_ISS (variável do Worker, se configurada) ou é gravado no KV no primeiro login válido depois desta versão
+// ('access-iss-v1'); tokens de qualquer outro time *.cloudflareaccess.com são recusados.
+let issPin = null;
+async function issOk(env, iss) {
+  if (env && env.ACCESS_ISS) return iss === String(env.ACCESS_ISS).replace(/\/+$/, '');
+  if (!env || !env.DADOS) return false;
+  if (!issPin) issPin = await env.DADOS.get('access-iss-v1').catch(() => null);
+  if (!issPin) { issPin = iss; await env.DADOS.put('access-iss-v1', iss); return true; }
+  return iss === issPin;
+}
+async function verifiedEmail(req, env) {
   const jwt = req.headers.get('cf-access-jwt-assertion');
   if (!jwt) return null;
   const [h, p, sig] = jwt.split('.');
@@ -427,7 +445,9 @@ async function verifiedEmail(req) {
   try { head = JSON.parse(new TextDecoder().decode(b64u(h))); pay = JSON.parse(new TextDecoder().decode(b64u(p))); } catch (e) { return null; }
   const iss = String(pay.iss || '');
   if (!/^https:\/\/[a-z0-9-]+\.cloudflareaccess\.com$/.test(iss)) return null;
-  if (pay.exp && pay.exp * 1000 < Date.now()) return null;
+  if (!pay.exp || pay.exp * 1000 < Date.now() - 60e3) return null;
+  if (pay.nbf && pay.nbf * 1000 > Date.now() + 60e3) return null;
+  if (head.alg !== 'RS256') return null;
   if (certCache.iss !== iss || Date.now() - certCache.at > 3600e3) {
     const r = await fetch(iss + '/cdn-cgi/access/certs');
     if (!r.ok) return null;
@@ -437,7 +457,8 @@ async function verifiedEmail(req) {
   if (!jwk) return null;
   const key = await crypto.subtle.importKey('jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
   const ok = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, b64u(sig), new TextEncoder().encode(h + '.' + p));
-  return ok ? String(pay.email || '').toLowerCase() : null;
+  if (!ok || !(await issOk(env, iss))) return null;
+  return String(pay.email || '').toLowerCase() || null;
 }
 function profileOf(email) { return FULL.has(email) ? 'completo' : RDO_ONLY.has(email) ? 'apontador' : EQUIPE_RDO.has(email) ? 'equipe-rdo' : 'equipe'; }
 function blocked(msg, link, label) {
@@ -517,10 +538,24 @@ async function withLoader(res, extra = '') {
     .transform(res);
 }
 
+// (V1.94) cabeçalhos de segurança em tudo que o site entrega; e escrita na API só a partir do próprio site (contra CSRF)
+const SEG = { 'x-frame-options': 'SAMEORIGIN', 'x-content-type-options': 'nosniff', 'referrer-policy': 'same-origin', 'strict-transport-security': 'max-age=31536000; includeSubDomains', 'permissions-policy': 'interest-cohort=()' };
+function comSeg(res) {
+  if (!res || res.status === 101) return res;
+  const h = new Headers(res.headers); for (const [k, v] of Object.entries(SEG)) if (!h.has(k)) h.set(k, v);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+}
 export default {
-  async fetch(req, env) {
+  async fetch(req, env) { return comSeg(await rota(req, env)); }
+};
+async function rota(req, env) {
+  {
     const url = new URL(req.url), path = url.pathname;
-    const email = await verifiedEmail(req).catch(() => null);
+    if (path.startsWith('/api/') && !['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+      const o = req.headers.get('origin'), sf = req.headers.get('sec-fetch-site');
+      if ((o && o !== url.origin) || (sf && !['same-origin', 'none'].includes(sf))) return json({ error: 'origem não permitida' }, 403);
+    }
+    const email = await verifiedEmail(req, env).catch(() => null);
     if (!email) return blocked('Não foi possível confirmar o seu login. Feche a página e entre de novo pelo link do site.', '/', 'Entrar de novo');
     const prof = profileOf(email);
     if (path.startsWith('/api/rdo/')) return env.DADOS ? rdoApi(req, env, url, prof, email) : json({ error: 'armazenamento não configurado' }, 503);
@@ -538,7 +573,7 @@ export default {
     if (path === '/planejamento' || path === '/planejamento.html') return withLoader(await env.ASSETS.fetch(new Request(url.origin + '/3d', req)), INJ_PLAN);
     return withLoader(await env.ASSETS.fetch(req), path === '/3d' || path === '/3d.html' ? INJ_3D : '');
   }
-};
+}
 
 // (V1.68) usado também pelo endereço só do RDO (rdo-worker.js)
 export { rdoApi };
