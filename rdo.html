@@ -478,7 +478,7 @@ return {Doc,width,enc};
 
 const CATALOG_SEED=window.CATALOG_SEED||{schema:'alya-catalogo-1',generated:'',pieces:[]};   // (V1.76) vem do rdo-catalogo.js
 const LOGO=document.querySelector('header.top img').src;
-const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.29';
+const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.30';
 const PASTA='https://queirozgalvao1.sharepoint.com/:f:/s/PonteJoinville/IgDE4PJCU0C9RJfF4FAkIarTAa_wdhMCQYOGRe-1D9gsBmM?e=5Pvp5v';
 const OBRA={nome:'Ponte de Joinville',numero:'70.578',empresa:'Alya Construtora'};
 const $=id=>document.getElementById(id);
@@ -626,7 +626,15 @@ const allCrews=x=>x.crews.concat(x.tcrews||[]);
 const fOf=c=>c&&c.t?{n:c.fid,c:'Encarregado '+empName(c.emp),f:Object.keys(c.counts||{})}:foreman(c.fid);
 const tRoster=()=>(db.terc&&db.terc.p)||{};
 const tMembers=enc=>Object.values(tRoster()).filter(p=>p.ativo!==false&&p.enc===enc&&p.m!==enc).sort((a,b)=>String(a.funcao).localeCompare(b.funcao)||String(a.nome).localeCompare(b.nome));
-function tSync(c){let E=tRoster()[c.enc];if(!E)return;c.fid=title(E.nome);let aus=new Set(c.aus||[]);c.pres=tMembers(c.enc).filter(p=>!aus.has(p.m)).map(p=>({m:p.m,n:p.nome,f:p.funcao}));let k={};for(let q of c.pres)k[q.f]=(k[q.f]||0)+1;c.counts=k;}
+// (V0.30) cada dia guarda a própria equipe em c.mem (presentes + faltas). tSync puxa a equipe do cadastro e só roda quando
+// a equipe é criada ou editada NESTE dia; abrir o dia usa tRefresh, que só atualiza nome/função e não troca quem é da equipe.
+// Assim mudar a equipe no cadastro para o dia 3 não altera o dia 4 que já estava lançado.
+function tPres(c){let aus=new Set(c.aus||[]);c.pres=(c.mem||[]).filter(p=>!aus.has(p.m)).map(p=>({...p}));let k={};for(let q of c.pres)k[q.f]=(k[q.f]||0)+1;c.counts=k;}
+function tSync(c){let E=tRoster()[c.enc];if(!E)return;c.fid=title(E.nome);c.mem=tMembers(c.enc).map(p=>({m:p.m,n:p.nome,f:p.funcao}));let ms=new Set(c.mem.map(p=>p.m));c.aus=(c.aus||[]).filter(m=>ms.has(m));tPres(c);}
+function tRefresh(c){let R=tRoster(),E=R[c.enc];if(!E)return;c.fid=title(E.nome);
+ if(!c.mem){let seen=new Set((c.pres||[]).map(p=>p.m));c.mem=(c.pres||[]).map(p=>({...p}));for(let m of c.aus||[])if(!seen.has(m)&&R[m])c.mem.push({m,n:R[m].nome,f:R[m].funcao});}
+ for(let p of c.mem)if(R[p.m]){p.n=R[p.m].nome;p.f=R[p.m].funcao;}
+ c.mem.sort((a,b)=>String(a.f).localeCompare(b.f)||String(a.n).localeCompare(b.n));tPres(c);}
 let tercBusy=null;
 function tLoad(force){if(tercBusy)return tercBusy;if(!force&&db.terc&&Date.now()-(db.terc.lt||0)<60e3)return Promise.resolve(false);
  tercBusy=fetch('/api/rdo/terceiros',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{if(!j||!j.p)return false;let sig=JSON.stringify(j.p),ch=!db.terc||db.terc.sig!==sig;db.terc={p:j.p,lt:Date.now(),sig};save();return ch;}).catch(()=>false).finally(()=>{tercBusy=null;});return tercBusy;}
@@ -693,8 +701,8 @@ function keepScroll(fn){let y=scrollY;fn();scrollTo(0,y);}
 
 // ---------- Hoje ----------
 function pageToday(){
- let x0=getDay();if(!x0.finalized)for(let c of x0.tcrews)tSync(c);
- if(x0.tcrews.length||!db.terc)tLoad().then(ch=>{if(ch&&tab==='Hoje'&&$('sheet').hidden){let y=getDay();if(!y.finalized)for(let c of y.tcrews)tSync(c);keepScroll(render);}});
+ let x0=getDay();if(!x0.finalized)for(let c of x0.tcrews)tRefresh(c);
+ if(x0.tcrews.length||!db.terc)tLoad().then(ch=>{if(ch&&tab==='Hoje'&&$('sheet').hidden){let y=getDay();if(!y.finalized)for(let c of y.tcrews)tRefresh(c);keepScroll(render);}});
  let x=getDay(),fin=x.finalized,dis=fin?'disabled':'',st=dayStats(),w=win(day,x.shift),gs=gridStats(),stops=x.stops,nWx=ownP(x).filter(i=>x.rainP[i]!=null).length;
  const ok={t:!!x.author,p:pluvioDone(x),e:x.crews.length>0,a:st.acts.length>0&&!crewCheck().length,s:true,q:eqCount(x)>0};
  $('content').innerHTML=`
@@ -845,7 +853,7 @@ function actCard(a,st){let n=(st.assign.get(a.key)||[]).length,cr=a.crews.map(c=
  return `<button type="button" class="it" data-act="${a.key}"><i class="${k}"></i><span class="p">${a.terc?'<span class="tg3">Terceiros</span>':''}${esc(a.label)}</span><span class="st ${k}">${a.kind==='extra'?'Extra':esc(a.status)}</span><span class="sb">${a.kind==='3d'?esc(a.sub)+' · ':''}${span(a.sm,a.em)}${a.concrete!=null?` · <span class="cc">${fmt(a.concrete,2)} m³ concreto</span>`:''}</span><span class="mt">${cr.length?esc(cr.join(', ')):'Sem equipe'} · ${n} pessoa${n===1?'':'s'}${a.desc?' · '+esc(a.desc):''}</span></button>`;}
 function stopCard(p,st){let a=st.acts.find(x=>x.key===p.act),c=p.crew==='all'?'Todas as equipes da atividade':short(crewOf(getDay(),p.crew)?.fid||'');
  return `<button type="button" class="it" data-stop="${p.id}"><i class="k-s"></i><span class="p">${esc(p.type)}</span><span class="st k-s">${fmtH((p.em-p.sm)/60)}</span><span class="sb">${span(p.sm,p.em)} · ${esc(actName(a))}</span><span class="mt">${esc(c)}${p.desc?' · '+esc(p.desc):''}</span></button>`;}
-function tCard(c,dis){let aus=new Set(c.aus||[]),live=!dis&&tRoster()[c.enc],list=live?tMembers(c.enc).map(p=>({m:p.m,n:p.nome,f:p.funcao})):(c.pres||[]);
+function tCard(c,dis){let aus=new Set(c.aus||[]),live=!dis&&tRoster()[c.enc],list=live?(c.mem||c.pres||[]):(c.pres||[]);
  return `<div class="crew" data-tcrew="${c.id}"><div class="hd"><span class="av">${initials(c.fid)}</span><div class="nm"><b>${esc(title(c.fid))}</b><span>${esc(empName(c.emp))} · Encarregado${(tRoster()[c.enc]&&!/ENCARREG/.test(tRoster()[c.enc].funcao))?' · '+esc(title(tRoster()[c.enc].funcao)):''}</span></div><div class="tot">${crewTotal(c)}<small>pessoas</small></div></div>
  ${list.length?`<div class="tm">${list.map(q=>`<button type="button" class="tq" data-tpres="${esc(q.m)}" aria-pressed="${!aus.has(q.m)}" ${dis}><span>${esc(title(q.n))}</span><small>${esc(title(q.f))} · ${esc(q.m)}</small></button>`).join('')}</div>${dis?'':'<p class="hint" style="padding:0 12px;margin:0 0 8px">Toque no nome de quem faltou hoje.</p>'}`:`<p class="hint" style="padding:0 12px">${live?'Equipe sem colaboradores. Toque em Editar equipe para cadastrar.':'Sem colaboradores.'}</p>`}
  ${dis?'':`<div class="ft"><button class="btn sm" type="button" data-troster="${c.id}">Editar equipe</button><button class="btn sm danger" type="button" data-rmt="${c.id}">Remover</button></div>`}</div>`;}
@@ -924,7 +932,7 @@ function bindToday(){
  $('addCrew').onclick=()=>openForemen(()=>closeSheet());
  $('addTerc').onclick=()=>openTercAdd();
  document.querySelectorAll('[data-tcrew]').forEach(box=>{let c=x.tcrews.find(k=>k.id===box.dataset.tcrew);
-  box.querySelectorAll('[data-tpres]').forEach(b=>b.onclick=()=>{let m=b.dataset.tpres,a=new Set(c.aus||[]);a.has(m)?a.delete(m):a.add(m);c.aus=[...a];tSync(c);refreshWorkers();touch(day);save();keepScroll(render);});
+  box.querySelectorAll('[data-tpres]').forEach(b=>b.onclick=()=>{let m=b.dataset.tpres,a=new Set(c.aus||[]);a.has(m)?a.delete(m):a.add(m);c.aus=[...a];if(!c.mem)tRefresh(c);tPres(c);refreshWorkers();touch(day);save();keepScroll(render);});
   box.querySelector('[data-troster]').onclick=()=>openRoster(c);
   box.querySelector('[data-rmt]').onclick=e=>{let b=e.currentTarget,used=listActs().some(a=>a.crews.some(k=>k.id===c.id));if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent=used?'Está em atividades · remover mesmo assim?':'Toque de novo para remover';return;}
    x.tcrews=x.tcrews.filter(k=>k!==c);for(let e of dayEvents(day))if(e.crews){e.crews=e.crews.filter(k=>k.id!==c.id);e.updated=new Date().toISOString();}for(let t of x.extras)t.crews=t.crews.filter(k=>k.id!==c.id);for(let p of x.stops)if(p.crew===c.id)p.crew='all';refreshWorkers();touch(day);save();keepScroll(render);};});
@@ -1292,7 +1300,7 @@ async function retryPending(){if(retrying||sending||!navigator.onLine)return;let
  retrying=false;if(ok){note(ok===1?'RDO pendente enviado para a pasta do site.':ok+' RDOs pendentes enviados para a pasta do site.');try{render();}catch(e){}}}
 addEventListener('online',()=>setTimeout(retryPending,1500));setTimeout(retryPending,4000);
 // Versão nova do RDO: o app confere sozinho quando volta para a tela e se atualiza (os dados ficam no aparelho).
-const RDO_VER='1.93';
+const RDO_VER='1.94';
 async function checkVer(){try{if(location.protocol==='file:')return;let r=await fetch('/api/rdo/versao',{cache:'no-store'});if(!r.ok||!/json/.test(r.headers.get('content-type')||''))return;let j=await r.json();
  if(!j||!j.rdo||j.rdo===RDO_VER)return;let k='rdo-ver-'+j.rdo;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');}catch(e){}
  if($('sheet').hidden&&!sending&&!retrying){save();location.reload();}else note('Tem uma versão nova do RDO: ela abre quando você fechar esta tela.');}catch(e){}}

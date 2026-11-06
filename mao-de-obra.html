@@ -113,7 +113,7 @@ html.light svg.chart .sel{fill:#f2b33d22;stroke:#f2b33d88}
 // (V1.86) a mesma página mostra os terceiros com ?terceiros (aba Terceiros do início): equipes das empresas terceiras e o cadastro
 const TERC=/[?&]terceiros\b/.test(location.search);
 const EMPS=[['SPT','S.Pontes'],['BML','BML'],['BSM','BSM'],['BRG','Berg Mineração']],empName=k=>(EMPS.find(e=>e[0]===k)||[])[1]||k||'';
-const KEY=TERC?'alya-terc-v2':'alya-mo-v1',$=id=>document.getElementById(id);
+const KEY=TERC?'alya-terc-v3':'alya-mo-v2',$=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=(n,d=1)=>Number(n||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:d});
 const br=d=>d?d.split('-').reverse().join('/'):'—';
@@ -180,8 +180,11 @@ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}};
 function importPkg(o,at){let n=0;
  for(const [d,x] of Object.entries(o.days||{})){if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||!x)continue;
   const key=d+'|'+(x.author||o.from||'?')+'|'+(x.shift==='noite'?'noite':'dia');
-  if(String(db.at[key]||'')>at)continue;
-  try{const r=readDay(o,d,x);if(r.crews.length||r.acts.length)db.days[key]=r;else delete db.days[key];db.at[key]=at;n++;}catch(e){console.error('mão de obra: dia',d,e);}}
+  // (V1.92) vale a versão ENVIADA do dia (a do PDF): um pacote de outro dia também leva cópia deste dia, às vezes
+  // em rascunho ou reaberto; rascunho nunca passa por cima de dia enviado, e entre enviados vale o envio mais novo
+  const rk=x.finalized&&x.finalized.at?'2|'+x.finalized.at+'|'+at:'1|'+at;
+  if(String(db.at[key]||'')>rk)continue;
+  try{const r=readDay(o,d,x);if(r.crews.length||r.acts.length)db.days[key]=r;else delete db.days[key];db.at[key]=rk;n++;}catch(e){console.error('mão de obra: dia',d,e);}}
  return n;}
 
 let busy=false;
