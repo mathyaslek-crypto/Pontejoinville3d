@@ -333,7 +333,9 @@ function drawMx(){const el=$('mx31');if(!el)return;
  const last=lastDate(),mes=mxMes||(st.per==='mes'?(st.mes||last.slice(0,7)):(st.per==='dia'?(st.dia||last).slice(0,7):last.slice(0,7)));
  const y=+mes.slice(0,4),m=+mes.slice(5,7),nd=new Date(y,m,0).getDate(),dias=[];for(let i=1;i<=nd;i++)dias.push(mes+'-'+String(i).padStart(2,'0'));
  const rs=base().filter(r=>r.data.slice(0,7)===mes),P=new Map;
- for(const r of rs)for(const c of r.crews)for(const q of c.pres||[]){let p=P.get(q.m);if(!p){p={m:q.m,n:q.n,f:q.f,emp:c.emp,t:new Set,d:new Set};P.set(q.m,p);}p.d.add(r.data);p.t.add(r.turno);p.f=q.f;}
+ // (V1.93) cadastro unido a outro conta no certo; excluído some da planilha
+ for(const r of rs)for(const c of r.crews)for(const q of c.pres||[]){const mm=cadM(q.m);if(cadExc(mm))continue;const K=CAD&&CAD[mm];
+  let p=P.get(mm);if(!p){p={m:mm,n:K?K.nome:q.n,f:K?K.funcao:q.f,emp:c.emp,t:new Set,d:new Set};P.set(mm,p);}p.d.add(r.data);p.t.add(r.turno);if(!K)p.f=q.f;}
  const L=[...P.values()].sort((a,b)=>(a.t.has('noite')?1:0)-(b.t.has('noite')?1:0)||String(a.f).localeCompare(b.f)||String(a.n).localeCompare(b.n));
  const pdb=pesoDb(),peso=dias.map(d=>pdb.d[d]!=null?+pdb.d[d]:+pdb.def);
  const wd=d=>new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'short'}).replace('.','');
@@ -493,8 +495,13 @@ function xlsxMes(mes,dias,L,emps,peso){
   ...sheets.map((s,i)=>['xl/worksheets/sheet'+(i+1)+'.xml',s.xml])];
  const a=document.createElement('a');a.href=URL.createObjectURL(zip(files));a.download=`Terceiros_presenca_${mes}.xlsx`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},2000);}
 // ---------- cadastro de terceiros (só na aba Terceiros) ----------
-let CAD=null,cadQ='',cadDesl=false;
-function loadCad(){return fetch('/api/rdo/terceiros',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{if(j&&j.p){CAD=j.p;drawCad();}}).catch(()=>{});}
+let CAD=null,cadQ='',cadDesl=false,CADP=false,cadEd='',cadUn='';
+const cadM=m=>{let k=m,n=0;while(CAD&&CAD[k]&&CAD[k].uniu&&n++<10)k=CAD[k].uniu;return k;};
+const cadExc=m=>!!(CAD&&CAD[m]&&CAD[m].excluido&&!CAD[m].uniu);
+function loadCad(){return fetch('/api/rdo/terceiros',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(j=>{if(j&&j.p){CAD=j.p;CADP=!!j.pode;drawCad();if(typeof drawMx==='function')drawMx();}}).catch(()=>{});}
+async function cadOp(body,msg){try{const r=await fetch('/api/rdo/terceiros',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});const j=await r.json().catch(()=>({}));
+ if(!r.ok)throw new Error(j.error||('erro '+r.status));CAD=j.p;cadEd=cadUn='';toast(msg);const op=[...document.querySelectorAll('#cad details.cg')].map(d=>d.open);drawCad();document.querySelectorAll('#cad details.cg').forEach((d,i)=>{if(op[i])d.open=true;});drawMx();}catch(e){toast('Não salvou: '+e.message);}}
+const TFN=['ARMADOR','AJUDANTE','CARPINTEIRO','PEDREIRO','SOLDADOR','CALDEREIRO','TOPOGRAFO','OPERADOR','OPERADOR DE ESC.','OP. TRATOR','OP. DE MAQUINA','OP. MOTO NIVELADORA','MOTORISTA','ENCARREGADO'];
 function drawCad(){const el=$('cad');if(!el)return;
  if(!CAD){el.innerHTML='<div class="card" style="margin-top:14px"><h2>Cadastro de terceiros</h2><p class="note">Carregando…</p></div>';return;}
  const all=Object.values(CAD),q=norm(cadQ),emp=st.emp==='todos'?null:(EMPS.find(e=>e[1]===st.emp)||[])[0];
@@ -502,16 +509,44 @@ function drawCad(){const el=$('cad');if(!el)return;
  const isL=p=>!!p.lider||/ENCARREG/.test(p.funcao||''),encs=all.filter(p=>isL(p)&&(!emp||p.emp===emp)),byEnc=new Map;
  for(const p of all.filter(ok)){const k=isL(p)?p.m:(p.enc||'');if(!byEnc.has(k))byEnc.set(k,[]);byEnc.get(k).push(p);}
  const ativos=all.filter(p=>p.ativo!==false&&(!emp||p.emp===emp)),fn={};for(const p of ativos)fn[title(p.funcao)]=(fn[title(p.funcao)]||0)+1;
+ const sel='min-height:34px;border-radius:7px;border:1px solid var(--line2);background:var(--raise);padding:0 8px;max-width:100%';
+ const cadRow=p=>{const st_=p.uniu?`<span class="note"> · unido a ${esc(p.uniu)}${CAD[p.uniu]?' '+esc(title(CAD[p.uniu].nome)):''}</span>`:p.excluido?'<span class="note"> · excluído</span>':'';
+  const acts=!CADP?'':p.ativo===false?`<td><button class="btn" style="min-height:32px;padding:0 10px" data-crest="${esc(p.m)}">Restaurar</button></td>`
+   :`<td style="white-space:nowrap"><button class="btn" style="min-height:32px;padding:0 10px" data-ced="${esc(p.m)}">Editar</button> <button class="btn" style="min-height:32px;padding:0 10px" data-cun="${esc(p.m)}" title="Este cadastro é a mesma pessoa de outro">Unir</button> <button class="btn" style="min-height:32px;padding:0 10px;color:#ff8a8a" data-cdel="${esc(p.m)}">Excluir</button></td>`;
+  let h=`<tr><td>${esc(p.m)}</td><td>${esc(title(p.nome))}${st_}</td><td>${esc(title(p.funcao))}</td><td>${p.turno==='noite'?'Noite':'Dia'}</td><td class="note">${p.alterado?br(p.alterado.slice(0,10)):''}</td>${acts}</tr>`;
+  if(CADP&&cadEd===p.m){const encOp=all.filter(e=>isL(e)&&e.emp===p.emp&&e.m!==p.m&&e.ativo!==false);
+   h+=`<tr><td colspan="6"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;padding:6px 0">
+    <label class="note" style="display:grid;gap:3px">Nome<input id="ceN" value="${esc(p.nome)}" maxlength="80" style="${sel};min-width:240px"></label>
+    <label class="note" style="display:grid;gap:3px">Função<select id="ceF" style="${sel}">${[...new Set(TFN.concat([p.funcao]))].map(f=>`<option value="${esc(f)}"${f===p.funcao?' selected':''}>${esc(title(f))}</option>`).join('')}</select></label>
+    <label class="note" style="display:grid;gap:3px">Turno<select id="ceT" style="${sel}"><option value="dia">Dia</option><option value="noite"${p.turno==='noite'?' selected':''}>Noite</option></select></label>
+    ${isL(p)?'':`<label class="note" style="display:grid;gap:3px">Encarregado<select id="ceE" style="${sel}"><option value="">Sem encarregado</option>${encOp.map(e=>`<option value="${esc(e.m)}"${p.enc===e.m?' selected':''}>${esc(title(e.nome))}</option>`).join('')}</select></label>`}
+    <button class="btn pri" style="min-height:34px" data-cesv="${esc(p.m)}">Salvar</button><button class="btn" style="min-height:34px" data-cex>Cancelar</button></div></td></tr>`;}
+  if(CADP&&cadUn===p.m){const op=all.filter(o=>o.emp===p.emp&&o.m!==p.m&&o.ativo!==false).sort((a,b)=>String(a.nome).localeCompare(b.nome));
+   h+=`<tr><td colspan="6"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;padding:6px 0"><label class="note" style="display:grid;gap:3px">${esc(p.m)} ${esc(title(p.nome))} é a mesma pessoa que
+    <select id="cuP" style="${sel};min-width:280px"><option value="">Escolha…</option>${op.map(o=>`<option value="${esc(o.m)}"${!cadQ&&norm(o.nome)===norm(p.nome)?' selected':''}>${esc(o.m)} · ${esc(title(o.nome))} · ${esc(title(o.funcao))}</option>`).join('')}</select></label>
+    <button class="btn pri" style="min-height:34px" data-cusv="${esc(p.m)}">Unir</button><button class="btn" style="min-height:34px" data-cex>Cancelar</button>
+    <span class="note" style="flex-basis:100%">Os dias que ${esc(p.m)} aparece nos RDOs passam a contar no cadastro escolhido, e ${esc(p.m)} vai para Desligados. Dá para desfazer em Restaurar.</span></div></td></tr>`;}
+  return h;};
  const grupos=[...encs.map(e=>e.m),''].filter(k=>byEnc.has(k)).map(k=>{const E=CAD[k],L=byEnc.get(k).sort((a,b)=>(isL(a)?-1:0)-(isL(b)?-1:0)||String(a.funcao).localeCompare(b.funcao)||String(a.nome).localeCompare(b.nome));
-  return `<details class="cg" ${q?'open':''}><summary><b>${E?esc(title(E.nome)):'Sem encarregado'}</b><span>${E?esc(empName(E.emp))+' · turno '+(E.turno==='noite'?'da noite':'do dia')+' · ':''}${L.length} pessoa${L.length===1?'':'s'}</span></summary><div class="tw"><table><thead><tr><th>Matrícula</th><th>Nome</th><th>Função</th><th>Turno</th><th>Alterado</th></tr></thead><tbody>${L.map(p=>`<tr><td>${esc(p.m)}</td><td>${esc(title(p.nome))}</td><td>${esc(title(p.funcao))}</td><td>${p.turno==='noite'?'Noite':'Dia'}</td><td class="note">${p.alterado?br(p.alterado.slice(0,10)):''}</td></tr>`).join('')}</tbody></table></div></details>`;}).join('');
+  return `<details class="cg" ${q?'open':''}><summary><b>${E?esc(title(E.nome)):'Sem encarregado'}</b><span>${E?esc(empName(E.emp))+' · turno '+(E.turno==='noite'?'da noite':'do dia')+' · ':''}${L.length} pessoa${L.length===1?'':'s'}</span></summary><div class="tw"><table><thead><tr><th>Matrícula</th><th>Nome</th><th>Função</th><th>Turno</th><th>Alterado</th>${CADP?'<th></th>':''}</tr></thead><tbody>${L.map(cadRow).join('')}</tbody></table></div></details>`;}).join('');
  el.innerHTML=`<div class="card" style="margin-top:14px"><h2>Cadastro de terceiros <span>${ativos.length} ativo${ativos.length===1?'':'s'} · ${Object.entries(fn).sort((a,b)=>b[1]-a[1]).map(([f,n])=>f+' '+n).join(' · ')||'nenhum'}</span></h2>
   <div class="bar" style="margin:0 0 10px"><input id="cq" type="search" placeholder="Buscar nome, matrícula ou função" value="${esc(cadQ)}" style="flex:1;min-width:200px;min-height:38px;border-radius:8px;border:1px solid var(--line2);background:var(--raise);padding:0 12px">${seg('desl',[['0','Ativos'],['1','Desligados']],cadDesl?'1':'0')}</div>
   ${grupos||'<p class="note">Ninguém encontrado. Os apontadores cadastram os colaboradores no RDO (3T · Terceiros do dia › Editar equipe).</p>'}
   <p class="note" style="margin:10px 0 0">A matrícula é criada automaticamente (sigla da empresa + número) e acompanha o colaborador mesmo se ele mudar de equipe ou turno.</p></div>`;
  const cq=$('cq');cq.oninput=()=>{cadQ=cq.value;const pos=cq.selectionStart;drawCad();const n=$('cq');n.focus();try{n.setSelectionRange(pos,pos);}catch(e){}};
- document.querySelectorAll('[data-desl]').forEach(b=>b.onclick=()=>{cadDesl=b.dataset.desl==='1';drawCad();});}
+ document.querySelectorAll('[data-desl]').forEach(b=>b.onclick=()=>{cadDesl=b.dataset.desl==='1';drawCad();});
+ // ações do perfil completo (V1.93)
+ const keepOpen=()=>[...el.querySelectorAll('details.cg')].map((d,i)=>d.open?i:-1).filter(i=>i>=0);
+ const redraw=()=>{const o=keepOpen();drawCad();const ds=el.querySelectorAll('details.cg');o.forEach(i=>ds[i]&&(ds[i].open=true));};
+ el.querySelectorAll('[data-ced]').forEach(b=>b.onclick=()=>{cadEd=b.dataset.ced;cadUn='';redraw();});
+ el.querySelectorAll('[data-cun]').forEach(b=>b.onclick=()=>{cadUn=b.dataset.cun;cadEd='';redraw();});
+ el.querySelectorAll('[data-cex]').forEach(b=>b.onclick=()=>{cadEd=cadUn='';redraw();});
+ el.querySelectorAll('[data-cesv]').forEach(b=>b.onclick=()=>{const body={op:'upd',m:b.dataset.cesv,nome:$('ceN').value,funcao:$('ceF').value,turno:$('ceT').value};if($('ceE'))body.enc=$('ceE').value;cadOp(body,'Cadastro atualizado.');});
+ el.querySelectorAll('[data-cusv]').forEach(b=>b.onclick=()=>{const para=$('cuP').value;if(!para)return toast('Escolha com quem unir.');cadOp({op:'unir',m:b.dataset.cusv,para},b.dataset.cusv+' unido a '+para+'.');});
+ el.querySelectorAll('[data-cdel]').forEach(b=>{b.onclick=()=>{if(b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='Confirmar';setTimeout(()=>{b.dataset.arm='';b.textContent='Excluir';},3500);return;}cadOp({op:'del',m:b.dataset.cdel},b.dataset.cdel+' excluído.');};});
+ el.querySelectorAll('[data-crest]').forEach(b=>b.onclick=()=>cadOp({op:'rest',m:b.dataset.crest},b.dataset.crest+' restaurado.'));}
 if(TERC){document.title='Terceiros · Ponte Joinville';const h=document.querySelector('header h1');if(h)h.textContent='Terceiros · Ponte Joinville';const sb=$('sub');if(sb)sb.textContent='Mão de obra das empresas terceiras';loadCad();$('upd').addEventListener('click',loadCad);
- const cs=document.createElement('style');cs.textContent='.cg{border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:#111920}.cg summary{cursor:pointer;padding:10px 12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.cg summary span{color:var(--muted);font-size:12.5px}.cg .tw{border:0;border-top:1px solid var(--line);border-radius:0 0 10px 10px}';document.head.appendChild(cs);}
+ const cs=document.createElement('style');cs.textContent='.cg{border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:#111920}.cg summary{cursor:pointer;padding:10px 12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.cg summary span{color:var(--muted);font-size:12.5px}.cg .tw{border:0;border-top:1px solid var(--line);border-radius:0 0 10px 10px}.btn.pri{background:#f2b33d;border-color:#f2b33d;color:#18140a;font-weight:600}';document.head.appendChild(cs);}
 function bind(){
  document.querySelectorAll('[data-per]').forEach(b=>b.onclick=()=>{st.per=b.dataset.per;saveUI();render();});
  document.querySelectorAll('[data-lado]').forEach(b=>b.onclick=()=>{st.lado=b.dataset.lado;saveUI();render();});

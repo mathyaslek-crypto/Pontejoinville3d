@@ -478,7 +478,7 @@ return {Doc,width,enc};
 
 const CATALOG_SEED=window.CATALOG_SEED||{schema:'alya-catalogo-1',generated:'',pieces:[]};   // (V1.76) vem do rdo-catalogo.js
 const LOGO=document.querySelector('header.top img').src;
-const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.30';
+const KEY='alya-rdo-v04',KEY03='alya-rdo-v03',APP='RDO Alya V0.31';
 const PASTA='https://queirozgalvao1.sharepoint.com/:f:/s/PonteJoinville/IgDE4PJCU0C9RJfF4FAkIarTAa_wdhMCQYOGRe-1D9gsBmM?e=5Pvp5v';
 const OBRA={nome:'Ponte de Joinville',numero:'70.578',empresa:'Alya Construtora'};
 const $=id=>document.getElementById(id);
@@ -887,7 +887,13 @@ function openRoster(c){let x=getDay(),ed=null,emp=c.emp;
   $('tes')&&($('tes').onclick=()=>{let body={op:'upd',m:ed,nome:$('ten').value,funcao:$('tef').value,turno:$('tet').value};if($('tee'))body.enc=$('tee').value;else body.lider=true;run(body,'Cadastro atualizado.');});
   $('tex')&&($('tex').onclick=()=>{ed=null;draw();});
   $('ted')&&($('ted').onclick=e=>{let b=e.currentTarget;if(b.dataset.armed!=='1'){b.dataset.armed='1';b.textContent='Confirmar desligamento';return;}run({op:'upd',m:ed,ativo:false},'Desligado do cadastro.');});
-  $('taok').onclick=()=>{let n=$('tan').value.trim();if(n.length<3)return note('Digite o nome do colaborador.',true);run({op:'add',emp,nome:n,funcao:$('taf').value,enc:c.enc,turno:E.turno||x.shift},'Colaborador cadastrado com matrícula nova.');};
+  $('taok').onclick=()=>{let n=$('tan').value.trim();if(n.length<3)return note('Digite o nome do colaborador.',true);
+   // (V0.31) nome igual a alguém já cadastrado: avisa e pede o segundo toque para cadastrar mesmo assim
+   const nk=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toLowerCase(),R=tRoster(),bt=$('taok');
+   const igual=Object.values(R).filter(q=>q.ativo!==false&&nk(q.nome)===nk(n));
+   if(igual.length&&bt.dataset.ok!==nk(n)){bt.dataset.ok=nk(n);bt.textContent='Cadastrar mesmo assim';
+    return note('Já existe '+igual.map(q=>title(q.nome)+' ('+q.m+' · '+empName(q.emp)+(q.enc&&R[q.enc]?' · equipe de '+title(R[q.enc].nome):'')+')').join(', ')+'. Se for a mesma pessoa, use "Trazer de outra equipe". Para cadastrar outra pessoa com o mesmo nome, toque de novo.',true);}
+   run({op:'add',emp,nome:n,funcao:$('taf').value,enc:c.enc,turno:E.turno||x.shift},'Colaborador cadastrado com matrícula nova.');};
   $('tmvok')&&($('tmvok').onclick=()=>{let m=$('tmv').value;if(!m)return;run({op:'upd',m,enc:c.enc,turno:E.turno||x.shift},'Colaborador trazido para esta equipe.');});};
  draw();tLoad(true).then(ch=>{if(ch&&!$('sheet').hidden&&$('trok')&&!ed)draw();});}
 // Atividade de terceiros: do 3D ou extra
@@ -1300,7 +1306,7 @@ async function retryPending(){if(retrying||sending||!navigator.onLine)return;let
  retrying=false;if(ok){note(ok===1?'RDO pendente enviado para a pasta do site.':ok+' RDOs pendentes enviados para a pasta do site.');try{render();}catch(e){}}}
 addEventListener('online',()=>setTimeout(retryPending,1500));setTimeout(retryPending,4000);
 // Versão nova do RDO: o app confere sozinho quando volta para a tela e se atualiza (os dados ficam no aparelho).
-const RDO_VER='1.94';
+const RDO_VER='1.95';
 async function checkVer(){try{if(location.protocol==='file:')return;let r=await fetch('/api/rdo/versao',{cache:'no-store'});if(!r.ok||!/json/.test(r.headers.get('content-type')||''))return;let j=await r.json();
  if(!j||!j.rdo||j.rdo===RDO_VER)return;let k='rdo-ver-'+j.rdo;try{if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');}catch(e){}
  if($('sheet').hidden&&!sending&&!retrying){save();location.reload();}else note('Tem uma versão nova do RDO: ela abre quando você fechar esta tela.');}catch(e){}}

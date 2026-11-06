@@ -36,7 +36,7 @@ async function clima() {
 //   rdo:f:<id>:<n>  arquivo (com nome, tipo e tamanho nos metadados)      rdo:m:<id>  ficha do envio
 //   rdo:index       lista de todos os envios (lida pela pasta da página inicial, 3D, pluviometria e paralisações)
 // Apontador e perfil completo enviam; perfil completo e equipe leem; só o perfil completo exclui.
-const RDO_ID = /^[A-Za-z0-9_.-]{6,140}$/, RDO_MAX = 24 * 1024 * 1024, RDO_VER = '1.94';   // RDO_VER igual ao do rdo.html
+const RDO_ID = /^[A-Za-z0-9_.-]{6,140}$/, RDO_MAX = 24 * 1024 * 1024, RDO_VER = '1.95';   // RDO_VER igual ao do rdo.html
 const KINDS = new Set(['pdf', 'pacote', 'foto', 'pluvio', 'outro']);
 async function rdoIndex(env) {
   let idx = await env.DADOS.get('rdo:index', 'json').catch(() => null);
@@ -175,7 +175,7 @@ async function rdoApi(req, env, url, prof, email) {
     };
     if (req.method === 'GET') {
       if (!canSend && !canRead) return json({ error: 'sem acesso' }, 403);
-      return json(await ler());
+      return json(Object.assign(await ler(), { pode: prof === 'completo' }));
     }
     if (req.method !== 'POST') return json({ error: 'método não permitido' }, 405);
     if (!canSend) return json({ error: 'sem acesso' }, 403);
@@ -208,6 +208,20 @@ async function rdoApi(req, env, url, prof, email) {
         const cur = db.p[txt(b.m, 20)]; if (!cur) return json({ error: 'colaborador não encontrado' }, 404);
         db.p[cur.m] = Object.assign(limpa(b, cur), { alterado: now, por: email }); mat = cur.m;
         if (db.p[mat].enc === mat) db.p[mat].enc = '';
+      } else if (['del', 'unir', 'rest'].includes(b.op)) {
+        // (V1.93) só o perfil completo, pelo painel de Terceiros: excluir (fica desligado, marcado como excluído),
+        // unir um cadastro duplicado a outro (os dias do duplicado passam a contar no certo) e restaurar
+        if (prof !== 'completo') return json({ error: 'só o perfil completo' }, 403);
+        const cur = db.p[txt(b.m, 20)]; if (!cur) return json({ error: 'colaborador não encontrado' }, 404);
+        if (b.op === 'del') Object.assign(cur, { ativo: false, excluido: now, alterado: now, por: email });
+        else if (b.op === 'rest') { cur.ativo = true; delete cur.excluido; delete cur.uniu; Object.assign(cur, { alterado: now, por: email }); }
+        else {
+          const alvo = db.p[txt(b.para, 20)];
+          if (!alvo || alvo.m === cur.m || alvo.emp !== cur.emp || alvo.uniu) return json({ error: 'escolha outro colaborador da mesma empresa' }, 400);
+          Object.assign(cur, { ativo: false, uniu: alvo.m, alterado: now, por: email });
+          for (const x of Object.values(db.p)) { if (x.uniu === cur.m) x.uniu = alvo.m; if (x.enc === cur.m) x.enc = alvo.m; }
+        }
+        mat = cur.m;
       } else if (b.op === 'import' && prof === 'completo' && Array.isArray(b.itens)) {
         // planilha: primeiro os encarregados (para ligar a equipe pelo nome), depois os demais
         const key = s => txt(s, 80).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
